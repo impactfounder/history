@@ -12,6 +12,7 @@ import {
   formatRowLabel,
   formatYear,
   levelOf,
+  levelWithHysteresis,
   maxScrollTop,
   railWindow,
   railY,
@@ -24,6 +25,7 @@ import {
   zoomAt,
   zoomToYear,
   type Axis,
+  type Level,
 } from "./axis";
 
 // PRD §5-5A 검산표 T1~T10을 그대로 옮긴 것 + 왕복 속성 검증.
@@ -171,6 +173,56 @@ describe("T5 — 레벨 경계", () => {
 
     expect(visibleRows(5000, { s: 39.9, viewportH: 800 }).unit).toBe(10);
     expect(visibleRows(t, { s: 40.1, viewportH: 800 }).unit).toBe(1);
+  });
+});
+
+describe("T12 — 레벨 전환 히스테리시스", () => {
+  it("경계를 조금 넘은 정도로는 레벨이 바뀌지 않는다", () => {
+    // 십년 구간은 [4, 40). 5% 이력이면 42까지 버틴다.
+    expect(levelWithHysteresis(41, "decade")).toBe("decade");
+    expect(levelWithHysteresis(43, "decade")).toBe("year");
+    // 반대 방향: 연도 구간 [40, 400)은 38까지 버틴다
+    expect(levelWithHysteresis(39, "year")).toBe("year");
+    expect(levelWithHysteresis(37, "year")).toBe("decade");
+  });
+
+  it("경계에서 미세하게 왕복해도 레벨이 붙어 있다", () => {
+    let level: Level = "decade";
+    let flips = 0;
+    for (const s of [39.8, 40.2, 39.9, 40.1, 39.95, 40.05, 39.99]) {
+      const next = levelWithHysteresis(s, level);
+      if (next !== level) flips++;
+      level = next;
+    }
+    expect(flips).toBe(0);
+    expect(level).toBe("decade");
+  });
+
+  it("이력 없이 판정하면 같은 구간에서 계속 뒤집힌다", () => {
+    let flips = 0;
+    let level: Level = "decade";
+    for (const s of [39.8, 40.2, 39.9, 40.1, 39.95, 40.05, 39.99]) {
+      const next = levelOf(s);
+      if (next !== level) flips++;
+      level = next;
+    }
+    expect(flips).toBeGreaterThan(4);
+  });
+
+  it("prev가 null이면(첫 렌더·URL 복원) 이력 없이 판정한다", () => {
+    expect(levelWithHysteresis(41, null)).toBe("year");
+    expect(levelWithHysteresis(39, null)).toBe("decade");
+  });
+
+  it("멀리 뛰면 이력을 무시하고 바로 넘어간다", () => {
+    expect(levelWithHysteresis(300, "century")).toBe("year");
+    expect(levelWithHysteresis(1, "year")).toBe("century");
+  });
+
+  it("visibleRows가 붙잡아 둔 레벨을 그대로 쓴다", () => {
+    const a: Axis = { s: 41, viewportH: 800 };
+    expect(visibleRows(5000, a).unit).toBe(1); // 이력 없이는 연도
+    expect(visibleRows(5000, a, "decade").unit).toBe(10); // 붙잡아 두면 십년
   });
 });
 

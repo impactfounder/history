@@ -11,7 +11,8 @@ import {
   contentHeight,
   formatRowLabel,
   formatYear,
-
+  levelOf,
+  levelWithHysteresis,
   railWindow,
   scaleBounds,
   scrollTopForYear,
@@ -19,6 +20,7 @@ import {
   yearToY,
   zoomToYear,
   type Axis,
+  type Level,
 } from "@/lib/timeline/axis";
 
 /** 기본 4열 (PRD §5-2). 데이터는 M1에서 붙는다. */
@@ -41,6 +43,8 @@ export function TimelineGrid() {
   // s의 초기값은 십년 레벨. 착지 지점은 §11 C-1이 정해지면 바꾼다.
   const [axis, setAxis] = useState<Axis>({ s: 8, viewportH: 800 });
   const [scrollTop, setScrollTop] = useState(0);
+  /** 의미 레벨은 스케일에서 바로 나오지 않는다 — 경계 왕복을 막는 이력이 있다(§5-3). */
+  const [level, setLevel] = useState<Level>(() => levelOf(8));
   const [railH, setRailH] = useState(800);
 
   /** 줌으로 계산한 scrollTop. 스페이서 height가 쓰인 뒤 같은 패스에서 대입한다. */
@@ -140,8 +144,13 @@ export function TimelineGrid() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // ── 의미 레벨: s에서 파생하되 이력을 둔다(§5-3) ──────────────────────────
+  useEffect(() => {
+    setLevel((prev) => levelWithHysteresis(axis.s, prev));
+  }, [axis.s]);
+
   // ── 파생값 ───────────────────────────────────────────────────────────────
-  const rows = visibleRows(scrollTop, axis);
+  const rows = visibleRows(scrollTop, axis, level);
   const from = rows.from - rows.unit * OVERSCAN_ROWS;
   const to = rows.to + rows.unit * OVERSCAN_ROWS;
   const buckets: number[] = [];
@@ -224,7 +233,8 @@ export function TimelineGrid() {
       <footer className="shrink-0 border-t border-neutral-200 bg-neutral-50 px-4 py-2 font-mono text-[11px] text-neutral-600">
         <div className="flex flex-wrap gap-x-5 gap-y-1">
           <span>
-            레벨 <b className="text-neutral-900">{rows.level}</b> · s{" "}
+            레벨 <b className="text-neutral-900">{rows.level}</b>
+            {levelOf(axis.s) !== rows.level && <span className="text-amber-700"> (이력 유지)</span>} · s{" "}
             <b className="text-neutral-900">{axis.s.toFixed(2)}</b> px/년 (
             {bounds.min.toFixed(2)}–{bounds.max})
           </span>

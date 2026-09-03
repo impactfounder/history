@@ -123,6 +123,39 @@ export function levelOf(s: number): Level {
   return "month";
 }
 
+/** 레벨이 차지하는 스케일 구간 `[lo, hi)`. PRD §5-3 표. */
+export const LEVEL_BAND: Record<Level, [number, number]> = {
+  century: [0, S_DECADE],
+  decade: [S_DECADE, S_YEAR],
+  year: [S_YEAR, S_MONTH],
+  month: [S_MONTH, Infinity],
+};
+
+/** 경계에서 왕복할 때 크로스페이드가 깜빡이지 않도록 두는 이력. PRD §5-3. */
+export const LEVEL_HYSTERESIS = 0.05;
+
+/**
+ * 이력을 둔 레벨 판정. 지금 레벨의 구간을 `margin`만큼 넓혀서, 그 안에 있는
+ * 동안은 버틴다.
+ *
+ * 왜: 경계값(4·40·400) 근처에서 손가락이 조금만 흔들려도 `levelOf`는
+ * 레벨을 왕복시키고, 그때마다 행 단위가 바뀌면서 크로스페이드가 깜빡인다.
+ * 좌표 변환은 레벨에 의존하지 않으므로(§5-5A) 이력을 둬도 위치는 틀어지지
+ * 않는다 — 행을 어떻게 묶어 보여줄지만 늦게 바뀔 뿐이다.
+ *
+ * `prev`가 null이면(첫 렌더·URL 복원) 이력 없이 판정한다.
+ */
+export function levelWithHysteresis(
+  s: number,
+  prev: Level | null,
+  margin: number = LEVEL_HYSTERESIS,
+): Level {
+  const next = levelOf(s);
+  if (prev === null || prev === next) return next;
+  const [lo, hi] = LEVEL_BAND[prev];
+  return s >= lo * (1 - margin) && s < hi * (1 + margin) ? prev : next;
+}
+
 /**
  * 스케일 하한·상한.
  *
@@ -154,12 +187,15 @@ export function bucketStart(year: number, unit: number): number {
 /**
  * 지금 렌더해야 할 행 범위. `from`·`to`는 버킷의 시작 연도다.
  * 이 출력에서 프리페치할 청크 키가 나온다(`chunkKeyFor`).
+ *
+ * `level`을 넘기면 그것을 쓴다 — 히스테리시스로 붙잡아 둔 레벨을 그대로
+ * 반영하기 위해서다. 생략하면 스케일에서 바로 판정한다.
  */
 export function visibleRows(
   scrollTop: number,
   a: Axis,
+  level: Level = levelOf(a.s),
 ): { level: Level; unit: number; from: number; to: number } {
-  const level = levelOf(a.s);
   if (level === "month") {
     throw new Error("월 레벨은 P1이다(PRD §4-2). 행 버킷이 정의되어 있지 않다.");
   }
