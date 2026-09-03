@@ -54,8 +54,10 @@
 
 <h2>3. scrollTop 정밀도</h2>
 <p class="lead" style="margin:0 0 8px">
-  줌 앵커는 <code>scrollTop</code>에 계산값을 대입하고 다시 읽는다. 엔진이 정수로
-  반올림하면 앵커가 최대 0.5px 어긋나고, 줌을 반복하면 누적될 수 있다.
+  줌 앵커는 <code>scrollTop</code>에 계산값을 대입하고 다시 읽는다. 엔진은 그 값을
+  <strong>기기 픽셀 격자(1/DPR)</strong>에 스냅한다 — DPR 1이면 격자가 정수와 같아져
+  "정수 반올림"처럼 보이므로, 격자 자체를 재야 오해가 없다. 격자의 절반만큼
+  앵커가 어긋나고, 줌을 반복하면 누적될 수 있다.
 </p>
 <table id="t-precision"></table>
 
@@ -97,21 +99,35 @@ function findMaxHeight() {
   return a;
 }
 
-/** 주어진 높이에서 scrollTop 왕복 오차를 잰다. */
+/**
+ * scrollTop 왕복 오차와 **스냅 격자**를 잰다.
+ * 엔진은 scrollTop을 기기 픽셀 격자(1/DPR)에 맞춘다 — DPR 1이면 격자가
+ * 정수와 같아져 "정수 반올림"처럼 보인다. 격자 자체를 재야 오해가 없다.
+ */
 function precisionAt(h) {
   measure(h);
   const max = probe.scrollHeight - probe.clientHeight;
-  const samples = [0.5, 1.25, max / 3, max / 2, max - 0.5, max];
-  let worst = 0, keepsFraction = false;
-  for (const v of samples) {
+
+  // 격자: 좁은 구간을 촘촘히 훑어 서로 다른 반환값 사이의 최소 간격을 찾는다
+  const base = Math.min(100, Math.floor(max / 2));
+  const seen = new Set();
+  for (let d = 0; d <= 2; d += 0.02) {
+    probe.scrollTop = base + d;
+    seen.add(probe.scrollTop);
+  }
+  const vals = [...seen].sort((x, y) => x - y);
+  let quantum = Infinity;
+  for (let i = 1; i < vals.length; i++) quantum = Math.min(quantum, vals[i] - vals[i - 1]);
+  if (!Number.isFinite(quantum)) quantum = 0;
+
+  let worst = 0;
+  for (const v of [0.5, 1.25, max / 3, max / 2, max - 0.5, max]) {
     const want = Math.min(Math.max(v, 0), max);
     probe.scrollTop = want;
-    const got = probe.scrollTop;
-    worst = Math.max(worst, Math.abs(got - want));
-    if (!Number.isInteger(got)) keepsFraction = true;
+    worst = Math.max(worst, Math.abs(probe.scrollTop - want));
   }
   probe.scrollTop = 0;
-  return { max, worst, keepsFraction };
+  return { max, worst, quantum };
 }
 
 function fmt(n) { return n.toLocaleString("ko-KR"); }
@@ -142,7 +158,7 @@ function run() {
   document.getElementById("t-targets").innerHTML = rows;
 
   // 3. 정밀도
-  let prows = `<tr><th>스페이서 높이</th><th>최대 scrollTop</th><th>왕복 최대 오차</th><th>소수 유지</th><th>연도 환산 오차</th></tr>`;
+  let prows = `<tr><th>스페이서 높이</th><th>최대 scrollTop</th><th>스냅 격자</th><th>왕복 최대 오차</th><th>연도 환산 오차</th></tr>`;
   const precResults = [];
   for (const s of [40, 399]) {
     const h = AXIS_SPAN_YEARS * s;
@@ -151,8 +167,8 @@ function run() {
     precResults.push({ s, h, ...p, yearErr });
     const cls = p.worst <= 0.001 ? "ok" : p.worst <= 1 ? "warn" : "bad";
     prows += `<tr>${cell(fmt(h) + " px (s=" + s + ")", "num")}${cell(fmt(Math.round(p.max)) + " px", "num")}` +
+             `${cell(p.quantum.toFixed(4) + " px", "num")}` +
              `<td class="${cls} num">${p.worst.toFixed(4)} px</td>` +
-             `${cell(p.keepsFraction ? "예" : "아니오")}` +
              `${cell((yearErr * 365).toFixed(2) + " 일", "num")}</tr>`;
   }
   document.getElementById("t-precision").innerHTML = prows;
@@ -172,7 +188,7 @@ function run() {
       `  ${r.ok ? "OK  " : "FAIL"} s=${String(r.s).padStart(4)} → ${fmt(r.want).padStart(12)} px  (인정 ${fmt(r.got)} px)  ${r.label}`),
     "",
     ...precResults.map(r =>
-      `  s=${String(r.s).padStart(3)}  왕복 오차 ${r.worst.toFixed(4)} px  소수유지 ${r.keepsFraction ? "예" : "아니오"}  → 연도 환산 ${(r.yearErr * 365).toFixed(2)}일`),
+      `  s=${String(r.s).padStart(3)}  격자 ${r.quantum.toFixed(4)} px  왕복 오차 ${r.worst.toFixed(4)} px  → 연도 환산 ${(r.yearErr * 365).toFixed(2)}일`),
     "",
     "판정: " + (targetResults.filter(r => r.s <= 399).every(r => r.ok)
       ? "P0(최대 약 100만 px) 통과 — 가상 원점 불필요"

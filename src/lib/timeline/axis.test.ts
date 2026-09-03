@@ -101,7 +101,8 @@ describe("T2·T3 — 줌 앵커", () => {
 });
 
 describe("T11 — 앵커를 연도 공간에 두면 반올림이 누적되지 않는다", () => {
-  // Chrome 152 실측: scrollTop은 정수로 반올림된다(왕복 오차 0.5px, C-11).
+  // Chrome 152 실측: scrollTop은 기기 픽셀 격자(1/DPR)에 스냅된다(C-11).
+  // 최악은 DPR 1 — 격자가 1px이라 정수 반올림과 같다. 그 조건으로 검증한다.
   const round = (v: number) => Math.round(v);
 
   const STEPS = [57, 91, 138, 211, 307, 399];

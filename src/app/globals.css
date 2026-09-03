@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+/*
+  브랜드 색은 아직 정하지 않았다(PRD 부록 A-3). 스켈레톤 단계에서는 중립
+  회색만 쓰고, 브랜드가 정해지면 mvmt-core/tokens/brand.json을 벤더링해
+  토큰으로 참조한다. hex를 직접 기입하지 않는다.
+*/
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  /* 한글 타이포: 고아 줄바꿈 금지 */
+  word-break: keep-all;
+  text-wrap: pretty;
+  overscroll-behavior: none;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+/* 긴 URL·영문 연속 문자열만 예외 */
+.break-url {
+  overflow-wrap: break-word;
+}

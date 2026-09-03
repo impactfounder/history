@@ -186,8 +186,8 @@ export function anchorYearAt(scrollTop: number, anchorOffsetY: number, a: Axis):
 /**
  * 앵커 **연도**를 직접 받아 scrollTop을 낸다. 줌 제스처는 이 함수를 써야 한다.
  *
- * 왜: 브라우저가 scrollTop을 정수로 반올림한다(Chrome 152 실측, 왕복 오차
- * 0.5px — PRD §11 C-11). 매 프레임 "반올림된 scrollTop → 앵커 연도"를 다시
+ * 왜: 브라우저가 scrollTop을 기기 픽셀 격자(1/DPR)에 스냅한다(Chrome 152 실측,
+ * DPR 1.25에서 격자 0.8px — PRD §11 C-11). 매 프레임 "스냅된 scrollTop → 앵커 연도"를 다시
  * 읽으면 그 오차가 다음 프레임의 입력이 되고, 확대할 때 sNext/s 배로 증폭돼
  * 제스처를 오래 끌수록 앵커가 흘러간다. 앵커 연도를 제스처 시작 시점에
  * 한 번만 정하면 누적이 원천적으로 사라진다.
