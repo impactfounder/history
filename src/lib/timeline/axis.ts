@@ -172,13 +172,40 @@ export function visibleRows(
 // 줌
 // ─────────────────────────────────────────────────────────────────────────────
 
+// 호출부 공통 주의: 스페이서 height를 쓴 **뒤 같은 레이아웃 패스 안에서**
+// 결과를 scrollTop에 대입해야 한 프레임도 튀지 않는다(useLayoutEffect).
+// 사내 선례는 friday.ceo apps/web/src/components/calendar/WeekView.tsx:199-208.
+
+/**
+ * 앵커가 가리키는 연도. 제스처가 시작될 때 한 번 구해 두고 끝까지 들고 다닌다.
+ */
+export function anchorYearAt(scrollTop: number, anchorOffsetY: number, a: Axis): number {
+  return yToYear(scrollTop + anchorOffsetY, a);
+}
+
+/**
+ * 앵커 **연도**를 직접 받아 scrollTop을 낸다. 줌 제스처는 이 함수를 써야 한다.
+ *
+ * 왜: 브라우저가 scrollTop을 정수로 반올림한다(Chrome 152 실측, 왕복 오차
+ * 0.5px — PRD §11 C-11). 매 프레임 "반올림된 scrollTop → 앵커 연도"를 다시
+ * 읽으면 그 오차가 다음 프레임의 입력이 되고, 확대할 때 sNext/s 배로 증폭돼
+ * 제스처를 오래 끌수록 앵커가 흘러간다. 앵커 연도를 제스처 시작 시점에
+ * 한 번만 정하면 누적이 원천적으로 사라진다.
+ */
+export function zoomToYear(
+  anchorYear: number,
+  anchorOffsetY: number,
+  sNext: number,
+  viewportH: number,
+): number {
+  const next = (anchorYear - AXIS_YEAR_START) * sNext + viewportH / 2 - anchorOffsetY;
+  return clamp(next, 0, maxScrollTop({ s: sNext, viewportH }));
+}
+
 /**
  * 스케일이 `s` → `sNext`로 바뀔 때 앵커 아래 연도를 고정하는 scrollTop.
- * `anchorOffsetY`는 앵커(커서·핀치 중심·뷰포트 중앙)의 뷰포트 내 y오프셋이다.
- *
- * 호출부 주의: 스페이서 height를 쓴 **뒤 같은 레이아웃 패스 안에서** 이 값을
- * scrollTop에 대입해야 한 프레임도 튀지 않는다(useLayoutEffect).
- * 사내 선례는 friday.ceo apps/web/src/components/calendar/WeekView.tsx:199-208.
+ * **단발 줌(더블클릭·줌 바·`+`/`−` 키)용이다.** 휠·핀치처럼 연속으로 이어지는
+ * 제스처는 `anchorYearAt` + `zoomToYear` 조합을 써서 반올림 누적을 피한다.
  */
 export function zoomAt(
   scrollTop: number,
@@ -187,9 +214,9 @@ export function zoomAt(
   sNext: number,
   viewportH: number,
 ): number {
-  const p = viewportH / 2; // padTop은 s에 무관하므로 양쪽에서 같은 값을 쓴다
-  const next = (scrollTop + anchorOffsetY - p) * (sNext / s) + p - anchorOffsetY;
-  return clamp(next, 0, maxScrollTop({ s: sNext, viewportH }));
+  // 단발 줌(더블클릭·줌 바·키보드)용. 연속 제스처는 zoomToYear를 쓴다.
+  const year = anchorYearAt(scrollTop, anchorOffsetY, { s, viewportH });
+  return zoomToYear(year, anchorOffsetY, sNext, viewportH);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

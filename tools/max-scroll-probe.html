@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>history — 최대 스크롤 높이 실측 (PRD §11 C-11 / R1)</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0; padding: 24px;
+    font: 14px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+    word-break: keep-all; text-wrap: pretty;
+    max-width: 900px;
+  }
+  h1 { font-size: 18px; margin: 0 0 4px; text-wrap: balance; }
+  h2 { font-size: 15px; margin: 28px 0 8px; }
+  p.lead { margin: 0 0 20px; opacity: .75; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0 16px; }
+  th, td { border: 1px solid rgba(128,128,128,.35); padding: 6px 10px; text-align: left; }
+  th { background: rgba(128,128,128,.12); font-weight: 600; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .ok { color: #1a7f4b; font-weight: 600; }
+  .warn { color: #a86a00; font-weight: 600; }
+  .bad { color: #b3261e; font-weight: 600; }
+  #probe { height: 200px; overflow-y: auto; border: 1px solid rgba(128,128,128,.35); }
+  #summary {
+    white-space: pre-wrap; font: 12px/1.5 ui-monospace, "Cascadia Code", Consolas, monospace;
+    background: rgba(128,128,128,.10); padding: 12px; border-radius: 6px;
+    overflow-x: auto;
+  }
+  button { font: inherit; padding: 6px 14px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<h1>최대 스크롤 높이 실측</h1>
+<p class="lead">
+  PRD §11 C-11 · 위험 항목 R1. 시간축 전체를 실제 스크롤 높이로 만드는 것이
+  0.4 조작 모델의 전제다. 연도 레벨 상한 <code>s=399</code>에서 스페이서가
+  약 100만 px이 되는데, 엔진이 이 높이를 받아주는지와
+  <strong>그 높이에서 <code>scrollTop</code>이 정밀도를 유지하는지</strong>를 잰다.
+  Chrome · Firefox · Safari · 삼성인터넷에서 각각 열어 결과를 기록한다.
+</p>
+
+<button id="run">다시 측정</button>
+
+<div id="probe"><div id="spacer"></div></div>
+
+<h2>1. 엔진이 받아주는 최대 높이</h2>
+<table id="t-max"></table>
+
+<h2>2. P0·P1 목표 높이에서의 동작</h2>
+<table id="t-targets"></table>
+
+<h2>3. scrollTop 정밀도</h2>
+<p class="lead" style="margin:0 0 8px">
+  줌 앵커는 <code>scrollTop</code>에 계산값을 대입하고 다시 읽는다. 엔진이 정수로
+  반올림하면 앵커가 최대 0.5px 어긋나고, 줌을 반복하면 누적될 수 있다.
+</p>
+<table id="t-precision"></table>
+
+<h2>기록용 요약</h2>
+<div id="summary">측정 중…</div>
+
+<script>
+const AXIS_SPAN_YEARS = 2526;               // PRD §5-5A
+const TARGETS = [
+  { label: "세기 → 십년 경계",  s: 4 },
+  { label: "십년 → 연도 경계",  s: 40 },
+  { label: "연도 상한 (P0 최대)", s: 399 },
+  { label: "월 레벨 진입 (P1)",  s: 400 },
+  { label: "월 레벨 상한 가정 (P1)", s: 4000 },
+];
+
+const probe = document.getElementById("probe");
+const spacer = document.getElementById("spacer");
+
+/** 스페이서를 h로 두고 엔진이 실제로 인정한 스크롤 높이를 돌려준다. */
+function measure(h) {
+  spacer.style.height = h + "px";
+  // scrollHeight는 컨테이너 높이(200)를 하한으로 갖는다
+  return probe.scrollHeight;
+}
+
+/** 엔진이 받아주는 최대 높이를 이분 탐색한다. */
+function findMaxHeight() {
+  const accepts = (h) => Math.abs(measure(h) - h) <= 1;
+  let lo = 1e4;
+  if (!accepts(lo)) return 0;
+  let hi = lo;
+  while (hi < 1e12 && accepts(hi * 2)) hi *= 2;   // 상계 찾기
+  let a = hi, b = hi * 2;
+  for (let i = 0; i < 60 && b - a > 1; i++) {
+    const mid = Math.floor((a + b) / 2);
+    if (accepts(mid)) a = mid; else b = mid;
+  }
+  return a;
+}
+
+/** 주어진 높이에서 scrollTop 왕복 오차를 잰다. */
+function precisionAt(h) {
+  measure(h);
+  const max = probe.scrollHeight - probe.clientHeight;
+  const samples = [0.5, 1.25, max / 3, max / 2, max - 0.5, max];
+  let worst = 0, keepsFraction = false;
+  for (const v of samples) {
+    const want = Math.min(Math.max(v, 0), max);
+    probe.scrollTop = want;
+    const got = probe.scrollTop;
+    worst = Math.max(worst, Math.abs(got - want));
+    if (!Number.isInteger(got)) keepsFraction = true;
+  }
+  probe.scrollTop = 0;
+  return { max, worst, keepsFraction };
+}
+
+function fmt(n) { return n.toLocaleString("ko-KR"); }
+function cell(v, cls) { return `<td class="${cls || ""}">${v}</td>`; }
+
+function run() {
+  const maxH = findMaxHeight();
+
+  // 1. 최대 높이
+  document.getElementById("t-max").innerHTML =
+    `<tr><th>항목</th><th>값</th></tr>
+     <tr><td>엔진</td><td>${navigator.userAgent}</td></tr>
+     <tr><td>기기 픽셀 비율</td><td class="num">${window.devicePixelRatio}</td></tr>
+     <tr><td>받아주는 최대 요소 높이</td><td class="num">${fmt(maxH)} px</td></tr>`;
+
+  // 2. 목표 높이
+  let rows = `<tr><th>레벨</th><th>s (px/년)</th><th>스페이서 높이</th><th>인정된 높이</th><th>판정</th></tr>`;
+  const targetResults = [];
+  for (const t of TARGETS) {
+    const want = AXIS_SPAN_YEARS * t.s;
+    const got = measure(want);
+    const ok = Math.abs(got - want) <= 1;
+    targetResults.push({ ...t, want, got, ok });
+    rows += `<tr>${cell(t.label)}${cell(t.s, "num")}${cell(fmt(want) + " px", "num")}` +
+            `${cell(fmt(got) + " px", "num")}` +
+            `<td class="${ok ? "ok" : "bad"}">${ok ? "통과" : "잘림"}</td></tr>`;
+  }
+  document.getElementById("t-targets").innerHTML = rows;
+
+  // 3. 정밀도
+  let prows = `<tr><th>스페이서 높이</th><th>최대 scrollTop</th><th>왕복 최대 오차</th><th>소수 유지</th><th>연도 환산 오차</th></tr>`;
+  const precResults = [];
+  for (const s of [40, 399]) {
+    const h = AXIS_SPAN_YEARS * s;
+    const p = precisionAt(h);
+    const yearErr = p.worst / s;
+    precResults.push({ s, h, ...p, yearErr });
+    const cls = p.worst <= 0.001 ? "ok" : p.worst <= 1 ? "warn" : "bad";
+    prows += `<tr>${cell(fmt(h) + " px (s=" + s + ")", "num")}${cell(fmt(Math.round(p.max)) + " px", "num")}` +
+             `<td class="${cls} num">${p.worst.toFixed(4)} px</td>` +
+             `${cell(p.keepsFraction ? "예" : "아니오")}` +
+             `${cell((yearErr * 365).toFixed(2) + " 일", "num")}</tr>`;
+  }
+  document.getElementById("t-precision").innerHTML = prows;
+
+  spacer.style.height = "0px";
+
+  // 요약
+  const lines = [
+    "history 최대 스크롤 높이 실측 — PRD §11 C-11 / R1",
+    "측정일: " + new Date().toLocaleDateString("sv-SE"),  // 로컬 날짜(YYYY-MM-DD)
+    "UA: " + navigator.userAgent,
+    "DPR: " + window.devicePixelRatio,
+    "",
+    "받아주는 최대 요소 높이: " + fmt(maxH) + " px",
+    "",
+    ...targetResults.map(r =>
+      `  ${r.ok ? "OK  " : "FAIL"} s=${String(r.s).padStart(4)} → ${fmt(r.want).padStart(12)} px  (인정 ${fmt(r.got)} px)  ${r.label}`),
+    "",
+    ...precResults.map(r =>
+      `  s=${String(r.s).padStart(3)}  왕복 오차 ${r.worst.toFixed(4)} px  소수유지 ${r.keepsFraction ? "예" : "아니오"}  → 연도 환산 ${(r.yearErr * 365).toFixed(2)}일`),
+    "",
+    "판정: " + (targetResults.filter(r => r.s <= 399).every(r => r.ok)
+      ? "P0(최대 약 100만 px) 통과 — 가상 원점 불필요"
+      : "P0가 한계에 걸린다 — 가상 원점 필요"),
+  ];
+  document.getElementById("summary").textContent = lines.join("\n");
+  console.log("[history-probe]\n" + lines.join("\n"));
+}
+
+document.getElementById("run").addEventListener("click", run);
+run();
+</script>
+</body>
+</html>

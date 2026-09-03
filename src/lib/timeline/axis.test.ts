@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  anchorYearAt,
   AXIS_SPAN_YEARS,
   AXIS_YEAR_END,
   AXIS_YEAR_START,
@@ -21,6 +22,7 @@ import {
   yearToY,
   yToYear,
   zoomAt,
+  zoomToYear,
   type Axis,
 } from "./axis";
 
@@ -95,6 +97,51 @@ describe("T2·T3 — 줌 앵커", () => {
       yToYear(600 + 799, { s: 4, viewportH: 800 }),
       0,
     );
+  });
+});
+
+describe("T11 — 앵커를 연도 공간에 두면 반올림이 누적되지 않는다", () => {
+  // Chrome 152 실측: scrollTop은 정수로 반올림된다(왕복 오차 0.5px, C-11).
+  const round = (v: number) => Math.round(v);
+
+  const STEPS = [57, 91, 138, 211, 307, 399];
+  const S_END = STEPS[STEPS.length - 1]!;
+
+  /** 확대 제스처를 6단계 흉내 내고 앵커 연도가 얼마나 흘렀는지 최댓값을 낸다. */
+  function worstDrift(holdYear: boolean): number {
+    let worst = 0;
+    for (const a of [0, 137, 400, 613, 799]) {
+      for (const y0 of [1500, 1592.37, 300.5, 1863.9]) {
+        let s = 40;
+        let t = round(scrollTopForYear(y0, { s, viewportH: 800 }));
+        const anchorYear = anchorYearAt(t, a, { s, viewportH: 800 });
+        for (const sNext of STEPS) {
+          t = round(
+            holdYear
+              ? zoomToYear(anchorYear, a, sNext, 800)
+              : zoomAt(t, a, s, sNext, 800), // 반올림된 값이 다음 입력이 된다
+          );
+          s = sNext;
+        }
+        worst = Math.max(worst, Math.abs(yToYear(t + a, { s, viewportH: 800 }) - anchorYear));
+      }
+    }
+    return worst;
+  }
+
+  it("앵커 연도를 들고 다니면 오차가 마지막 반올림 한 번치를 넘지 않는다", () => {
+    // 0.5px / 399 px per year ≈ 0.46일
+    expect(worstDrift(true)).toBeLessThanOrEqual(0.5 / S_END + 1e-9);
+  });
+
+  it("scrollTop을 매번 다시 읽으면 그 경계를 넘어선다", () => {
+    expect(worstDrift(false)).toBeGreaterThan(worstDrift(true));
+  });
+
+  it("zoomAt은 zoomToYear에 위임하므로 단발 결과가 같다", () => {
+    const a = 250;
+    const year = anchorYearAt(3000, a, { s: 40, viewportH: 800 });
+    expect(zoomAt(3000, a, 40, 120, 800)).toBeCloseTo(zoomToYear(year, a, 120, 800), 10);
   });
 });
 
