@@ -50,7 +50,10 @@ const SYSTEM = `너는 한국어 역사 연표 데이터의 큐레이션 보조�
 - scope: local | regional | global
 - importance: 1~5. 5는 교과서 첫 줄에 나오는 급(임진왜란·한국전쟁), 3이 기본
 - kind: event | period
-- year: 천문학적 연수. 입력의 year를 그대로 쓰되 명백히 틀렸으면 고친다`;
+- year: 천문학적 연수. 입력의 year를 그대로 쓰되 명백히 틀렸으면 고친다
+- historicity: historical | traditional. 단군·온조 건국처럼 "전한다"로 적힌 전승 연대는 traditional
+- approximate: 원문이 "경", "무렵", "c."처럼 근사를 뜻하면 true
+- note: 원문이 잘려 있거나, 사실이 의심되거나, 명칭이 갈리면 검토자에게 한 줄. 문제없으면 생략`;
 
 /** @param {any[]} rows */
 function userPrompt(rows) {
@@ -81,6 +84,9 @@ const SCHEMA = {
           },
           scope: { type: "string", enum: ["local", "regional", "global"] },
           importance: { type: "integer", minimum: 1, maximum: 5 },
+          historicity: { type: "string", enum: ["historical", "traditional"] },
+          approximate: { type: "boolean" },
+          note: { type: "string" },
         },
         required: ["from", "kind", "year", "title_ko", "category", "scope", "importance"],
         additionalProperties: false,
@@ -138,7 +144,7 @@ async function main() {
   }
 
   const out = [];
-  const stats = { drafted: 0, rejected: 0, periods: 0, split: 0 };
+  const stats = { drafted: 0, rejected: 0, periods: 0, split: 0, notes: 0 };
 
   for (const [i, b] of batches.entries()) {
     process.stderr.write(`배치 ${i + 1}/${batches.length} … `);
@@ -163,13 +169,21 @@ async function main() {
       if (ev.kind === "period") stats.periods++;
       if (!overlap.ok) stats.rejected++;
       else stats.drafted++;
+      if (ev.note) stats.notes++;
 
       out.push({
         status: overlap.ok ? "needs_review" : "rejected",
         rejected_reason: overlap.ok ? undefined : overlap.reasons.join(" / "),
+        review_note: ev.note,
         region,
         kind: ev.kind,
-        date: { year: ev.year, precision: src.date.precision, era: src.date.era },
+        date: {
+          year: ev.year,
+          precision: src.date.precision,
+          era: ev.year <= 0 ? "bc" : "ad",
+          approximate: ev.approximate || src.date.approximate || undefined,
+        },
+        historicity: ev.historicity ?? "historical",
         title_ko: ev.title_ko,
         summary_ko: ev.summary_ko ?? null,
         category: ev.category,
@@ -179,6 +193,7 @@ async function main() {
         names_native: src.names_native,
         source: src.source,
         source_text: src.text,
+        source_row: src.id,
         model: MODEL,
       });
     }
@@ -199,6 +214,7 @@ async function main() {
   검토 대기     ${stats.drafted}
   자동 반려     ${stats.rejected}  ← 원문 재사용(editorial-policy §1-6)
   시대 구분     ${stats.periods}  ← polities로 보낼 후보
+  검토 메모     ${stats.notes}  ← 잘린 원문·사실 의심·명칭 확인
 
 기록: curation/events/${region}.jsonl`);
 }
