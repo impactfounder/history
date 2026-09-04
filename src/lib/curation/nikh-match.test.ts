@@ -18,6 +18,7 @@ describe("stripYear / parseWikiDate / segments", () => {
     expect(stripYear("約前1747年：不降西征。")).toBe("不降西征。");
     expect(stripYear("紀元前2万年頃 現生人類が入植する。")).toBe("現生人類が入植する。");
     expect(stripYear("1960年代 高度成長")).toBe("高度成長");
+    expect(stripYear("1543年（天文12年、一説に1542年（天文11年）） ポルトガル人、種子島に漂着")).toBe("ポルトガル人、種子島に漂着"); // 괄호 한 겹 중첩
   });
   it("행 안의 월·일을 읽는다", () => {
     expect(parseWikiDate("1983년 6월 30일 KBS 이산가족 찾기")).toEqual({ m: 6, d: 30 });
