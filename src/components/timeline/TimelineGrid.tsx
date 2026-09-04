@@ -47,21 +47,30 @@ interface PublishedEvent {
   approx: boolean;
   hist: "historical" | "traditional";
   title: string;
-  names: Partial<Record<RegionId, { ko?: string; nat?: string; lang?: string }>>;
-  cat: string;
+  lang: string;
+  names: Partial<Record<RegionId, { nat?: string; lang?: string }>>;
   regions: { r: RegionId; imp: number; role: string }[];
   date_ko: string;
+  /** 국사편찬위 연표에 맞춰진 공식 항목 수(한국 열). */
+  official?: number;
 }
 interface Chunk { events: PublishedEvent[] }
+/** 국사편찬위원회 연표 한 항목 — 원문 그대로. */
+interface OfficialEntry { id: string; db: string; series: string | null; date_ko: string; text: string; url: string | null }
 interface Detail {
   id: string;
   title: string;
-  summary: string | null;
-  review_note?: string;
-  status: string;
+  /** 위키백과 연표 원문 줄. editorial-policy §1-6 — 우리가 쓴 문장은 없다. */
+  text: string;
+  lang: string;
+  year: number;
+  license: string;
+  official: (OfficialEntry & { license: string })[];
   src: { url: string; revid: number; accessedAt: string; license: string }[];
 }
-interface Manifest { stage: "published" | "preview"; counts: { events: number } }
+/** official/kr/{연도}.json — 이 해의 공식 연표. */
+interface OfficialYear { year: number; count: number; shown: number; license: string; entries: OfficialEntry[] }
+interface Manifest { stage: "published" | "preview"; counts: { events: number; officialMatched?: number } }
 
 const DATA = "/data/v1";
 
@@ -93,6 +102,8 @@ export function TimelineGrid() {
   const [, bump] = useState(0);
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const [selected, setSelected] = useState<{ ev: PublishedEvent; detail: Detail | null } | null>(null);
+  /** 상세 패널 "이 해의 공식 연표" — 눌렀을 때만 받는다(한 해 최대 80건). */
+  const [officialYear, setOfficialYear] = useState<OfficialYear | null>(null);
 
   useEffect(() => {
     fetch(`${DATA}/manifest.json`)
@@ -222,7 +233,14 @@ export function TimelineGrid() {
   };
   const loadedChunks = Array.from(chunks.current.values()).filter(Boolean).length;
 
+  const openOfficialYear = (year: number) => {
+    fetch(`${DATA}/official/kr/${year}.json`)
+      .then((r) => (r.ok ? (r.json() as Promise<OfficialYear>) : null))
+      .then((o) => setOfficialYear(o))
+      .catch(() => setOfficialYear(null));
+  };
   const openDetail = (ev: PublishedEvent) => {
+    setOfficialYear(null);
     setSelected({ ev, detail: null });
     fetch(`${DATA}/events/detail/${ev.id}.json`)
       .then((r) => (r.ok ? (r.json() as Promise<Detail>) : null))
@@ -246,7 +264,7 @@ export function TimelineGrid() {
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-neutral-200 px-4">
         <span className="font-semibold tracking-tight">history</span>
         {manifest?.stage === "preview" ? (
-          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-800">미리보기 · 미검토 데이터 {manifest.counts.events}건</span>
+          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-800">미리보기 · {manifest.counts.events}건 · 원문 그대로</span>
         ) : (
           <span className="text-neutral-400">{manifest ? `${manifest.counts.events}건` : "데이터 없음"}</span>
         )}
@@ -254,6 +272,7 @@ export function TimelineGrid() {
           시간 이동은 스크롤 · 확대는 <kbd className="rounded border px-1">Ctrl</kbd>+휠 또는{" "}
           <kbd className="rounded border px-1">+</kbd>/<kbd className="rounded border px-1">−</kbd>
         </span>
+        <a href="/sources" className="text-[11px] text-neutral-500 underline">출처</a>
       </header>
 
       <div className="flex min-h-0 flex-1">
@@ -317,8 +336,9 @@ export function TimelineGrid() {
                               title={ev.date_ko}
                               className={`max-w-full truncate rounded border px-1.5 py-0.5 text-left leading-tight ${tone}${ev.hist === "traditional" ? " italic" : ""}`}
                             >
-                              {ev.names[c.id]?.ko ?? ev.title}
+                              {ev.title}
                               {ev.hist === "traditional" && <span className="text-neutral-400"> (전승)</span>}
+                              {ev.official ? <span className="text-neutral-400" title="국사편찬위원회 연표에 있는 사건"> ◆</span> : null}
                             </button>
                           );
                         })}
@@ -344,31 +364,60 @@ export function TimelineGrid() {
             <div className="mb-3 text-[12px] text-neutral-500">{selected.ev.date_ko} · 중요도 {selected.ev.regions[0]?.imp}</div>
             {selected.detail ? (
               <>
-                {selected.detail.status !== "published" && (
-                  <div className="mb-2 rounded bg-amber-50 px-2 py-1 text-[11px] text-amber-800">{selected.detail.status} — 검토 전 초안</div>
-                )}
-                <p className="mb-3 leading-relaxed">{selected.detail.summary ?? <span className="text-neutral-400">요약 없음</span>}</p>
-                {selected.detail.review_note && (
-                  <p className="mb-3 rounded border border-dashed border-neutral-300 px-2 py-1 text-[12px] text-neutral-600">검토 메모: {selected.detail.review_note}</p>
-                )}
-                {/* 이 사건을 부르는 이름 (§5-9) */}
-                <table className="mb-3 w-full text-[12px]">
-                  <tbody>
-                    {COLUMNS.filter((c) => selected.ev.names[c.id]).map((c) => {
-                      const n = selected.ev.names[c.id]!;
-                      return (
+                {/* 공식 연표가 맞춰진 사건은 그쪽 본문이 앞에 선다(editorial-policy §1-7) */}
+                {selected.detail.official.map((o) => (
+                  <div key={o.id} className="mb-3 rounded border border-neutral-200 bg-neutral-50 px-3 py-2">
+                    <div className="mb-1 text-[11px] text-neutral-500">국사편찬위원회 · {o.db.replace(/^주제별연표_/, "")}{o.series ? ` (${o.series})` : ""} · {o.date_ko}</div>
+                    <p className="leading-relaxed [text-wrap:pretty] [word-break:keep-all]">{o.text}</p>
+                    {o.url && (
+                      <a href={o.url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-[11px] text-neutral-500 underline">한국사데이터베이스에서 보기</a>
+                    )}
+                  </div>
+                ))}
+                <p className="mb-1 text-[11px] text-neutral-500">위키백과 연표 원문{selected.detail.lang !== "ko" && <span> ({selected.detail.lang}) · 한글 옮김은 아직</span>}</p>
+                <p className="mb-3 leading-relaxed [text-wrap:pretty] [word-break:keep-all]">{selected.detail.text}</p>
+                {/* 이 사건을 부르는 이름 (§5-9) — 사이트링크 원문 */}
+                {COLUMNS.some((c) => selected.ev.names[c.id]?.nat) && (
+                  <table className="mb-3 w-full text-[12px]">
+                    <tbody>
+                      {COLUMNS.filter((c) => selected.ev.names[c.id]?.nat).map((c) => (
                         <tr key={c.id} className="border-t border-neutral-100">
                           <td className="py-1 pr-2 text-neutral-500">{c.label}</td>
-                          <td className="py-1">{n.ko ?? <span className="text-neutral-400">한글 옮김 전</span>}{n.nat && <span className="text-neutral-500"> ({n.nat})</span>}</td>
+                          <td className="py-1">{selected.ev.names[c.id]!.nat}</td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-                <div className="text-[11px] text-neutral-500">
-                  출처 {selected.detail.src.map((s) => (
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+                {selected.ev.regions[0]?.r === "kr" && (
+                  <div className="mb-3">
+                    {officialYear ? (
+                      <div className="rounded border border-neutral-200">
+                        <div className="border-b border-neutral-200 px-2 py-1 text-[11px] text-neutral-500">
+                          {officialYear.year <= 0 ? `기원전 ${1 - officialYear.year}년` : `${officialYear.year}년`}의 국사편찬위원회 연표 {officialYear.count}건
+                          {officialYear.count > officialYear.shown && ` 중 ${officialYear.shown}건`}
+                        </div>
+                        <ul className="max-h-72 overflow-y-auto text-[12px]" style={{ overscrollBehavior: "contain" }}>
+                          {officialYear.entries.map((o) => (
+                            <li key={o.id} className="border-t border-neutral-100 px-2 py-1 [word-break:keep-all]">
+                              <span className="text-neutral-500">{o.date_ko.replace(/^.*?년\s*/, "") || "날짜 미상"}</span> {o.text}
+                              {o.url && <a href={o.url} target="_blank" rel="noreferrer" className="ml-1 text-neutral-400 underline">↗</a>}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : (
+                      <button type="button" onClick={() => openOfficialYear(selected.detail!.year)} className="rounded border border-neutral-300 px-2 py-1 text-[12px] hover:bg-neutral-50">
+                        이 해의 공식 연표 더 보기
+                      </button>
+                    )}
+                  </div>
+                )}
+                <div className="text-[11px] leading-relaxed text-neutral-500">
+                  출처 {selected.detail.official.length > 0 && <span>국사편찬위원회 연표(공공누리 · 제한 없음) · </span>}
+                  {selected.detail.src.map((s) => (
                     <a key={s.url} href={s.url} target="_blank" rel="noreferrer" className="underline">{new URL(s.url).hostname}</a>
-                  ))} · {selected.detail.src[0]?.license}
+                  ))} ({selected.detail.license}) · <a href="/sources" className="underline">출처와 라이선스</a>
                 </div>
               </>
             ) : (
