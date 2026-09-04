@@ -8,8 +8,8 @@
  *   3. category·scope·importance 초안
  *   4. 원문 재사용을 기계로 막는다 (editorial-policy §1-6, `overlap.mjs`)
  *
- * 모델은 mvmt-core 레지스트리 별칭 `standard`를 쓴다. ID 하드코딩 금지
- * (전사 규칙 9-A, PRD §8). 별칭을 바꾸는 것은 실제 모델 변경이므로 대표 승인 사항.
+ * 모델은 `src/lib/curation/model.mjs`의 DRAFT_MODEL 한 곳에서 정한다.
+ * history는 무브먼트와 무관한 독립 프로젝트라 회사 레지스트리를 쓰지 않는다(PRD §8).
  *
  * 사용:
  *   node tools/draft.mjs kr --limit 50        실제 호출
@@ -18,10 +18,10 @@
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import Anthropic from "@anthropic-ai/sdk";
-import { CLAUDE_MODEL_ALIASES } from "../src/lib/mvmt/models.mjs";
+import { DRAFT_MODEL } from "../src/lib/curation/model.mjs";
 import { checkOverlap } from "../src/lib/curation/overlap.mjs";
 
-const MODEL = CLAUDE_MODEL_ALIASES.standard;
+const MODEL = DRAFT_MODEL;
 /** 한 요청에 넣는 후보 행 수. 시스템 프롬프트를 분산시키면서 응답이 잘리지 않는 크기. */
 const BATCH = 12;
 
@@ -130,7 +130,7 @@ async function main() {
     const perBatch = inputTokens / Math.min(3, batches.length);
     const totalIn = perBatch * batches.length;
     const totalOut = rows.length * 160; // 레코드당 출력 (가정)
-    console.log(`모델 ${MODEL} (별칭 standard)
+    console.log(`모델 ${MODEL}
 행 ${rows.length} · 배치 ${batches.length}개 (배치당 ${BATCH}행)
 입력 토큰 추정 ${Math.round(totalIn).toLocaleString()} · 출력 토큰 추정 ${totalOut.toLocaleString()} (가정)
 ※ 단가는 모델마다 다르므로 여기서 금액을 계산하지 않는다. 위 토큰 수로 판단할 것.`);
@@ -211,7 +211,7 @@ main().catch((e) => {
   ) {
     console.error(
       "인증 credential이 없다. 둘 중 하나를 하고 다시 실행할 것:\n" +
-        "  1) ANTHROPIC_API_KEY를 .env에 둔다 (전사 규칙 8 — 코드·커밋·로그에 남기지 말 것)\n" +
+        "  1) ANTHROPIC_API_KEY를 .env에 둔다 (키를 코드·커밋·로그에 남기지 말 것)\n" +
         "  2) `ant auth login`으로 프로필을 만든다 (SDK가 자동으로 읽는다)",
     );
     process.exit(2);

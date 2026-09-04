@@ -2,8 +2,8 @@
 
 /*
   브랜드 색은 아직 정하지 않았다(PRD 부록 A-3). 스켈레톤 단계에서는 중립
-  회색만 쓰고, 브랜드가 정해지면 mvmt-core/tokens/brand.json을 벤더링해
-  토큰으로 참조한다. hex를 직접 기입하지 않는다.
+  회색만 쓰고, 브랜드가 정해지면 이 파일의 @theme 토큰으로 넣는다.
+  무브먼트 팔레트와 무관한 독립 브랜드다. 색은 토큰으로만 참조한다.
 */
 @theme {
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
