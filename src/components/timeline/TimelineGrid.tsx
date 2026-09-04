@@ -297,8 +297,8 @@ export function TimelineGrid() {
                   {COLUMNS.map((c) => {
                     const evs = cellEvents(c.id, b);
                     const shown = evs.slice(0, max);
+                    // 칩은 가로로 흐른다(§5-10 목업 "칩 칩 +2"). 세로로 쌓으면 s가 작을 때 행 높이를 넘겨 잘린다.
                     return (
-                      {/* 칩은 가로로 흐른다(§5-10 목업 "칩 칩 +2"). 세로로 쌓으면 s가 작을 때 행 높이를 넘겨 잘린다. */}
                       <div key={c.id} className="flex min-w-0 flex-1 flex-wrap content-start gap-1 overflow-hidden border-r border-neutral-100 px-1 py-0.5">
                         {shown.map((ev) => {
                           // 시각 위계(§5-10): 중요도 5 굵게 > 4 > 3 기본. 전승은 기울임.
