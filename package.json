@@ -10,7 +10,9 @@
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "publish": "node tools/publish.mjs",
+    "publish:preview": "node tools/publish.mjs --stage preview"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
