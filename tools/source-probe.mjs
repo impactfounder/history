@@ -129,7 +129,10 @@ function analyze(html) {
   }
 
   // 2) 연도로 시작하는 목록 항목 — 목차·각주·내비게이션은 이 조건에서 걸러진다
-  const lis = html.match(/<li\b[^>]*>[\s\S]*?<\/li>/g) ?? [];
+  // 표 셀 안의 목록은 이미 표 행으로 셌다 — 그대로 두면 두 번 센다(2026-09-05 수정.
+  // 이전 보고서의 후보 행은 표 안 목록을 중복 집계해 부풀려져 있었다).
+  const withoutTables = html.replace(/<table[^>]*class="[^"]*wikitable[^"]*"[\s\S]*?<\/table>/g, "");
+  const lis = withoutTables.match(/<li\b[^>]*>[\s\S]*?<\/li>/g) ?? [];
   let listItems = 0;
   for (const li of lis) {
     const text = strip(li);

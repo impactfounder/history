@@ -116,7 +116,8 @@ async function main() {
   const rows = raw
     .trim()
     .split("\n")
-    .map((l, i) => ({ id: `r${i}`, ...JSON.parse(l) }))
+    .map((l, i) => ({ ...JSON.parse(l), _row: i }))
+    .map((r) => ({ ...r, id: r.id ?? `r${r._row}` }))
     .slice(0, limit);
 
   const batches = chunk(rows, BATCH);
@@ -193,7 +194,7 @@ async function main() {
         names_native: src.names_native,
         source: src.source,
         source_text: src.text,
-        source_row: src.id,
+        source_id: src.id,
         model: MODEL,
       });
     }

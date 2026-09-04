@@ -16,6 +16,15 @@
 
 import { mkdir, writeFile } from "node:fs/promises";
 import { setTimeout as sleep } from "node:timers/promises";
+import { createHash } from "node:crypto";
+
+/**
+ * 후보 행의 안정 id. 재수집해도 원문·리비전이 같으면 같은 값이다.
+ * 행 번호(index)는 재수집마다 바뀌므로 다른 파일이 참조하면 안 된다 —
+ * 파일럿 초안이 source_row로 참조했다가 이 문제를 겪었다.
+ */
+export const rowId = (url, revid, text) =>
+  createHash("sha1").update(`${url}|${revid}|${text}`).digest("hex").slice(0, 12);
 
 const CONTACT = process.env.MVMT_CONTACT ?? "contact-not-set";
 const UA = `history-timeline-collector/0.1 (research; ${CONTACT})`;
@@ -92,6 +101,16 @@ function bodyLinks(html) {
 function parseYear(text) {
   const t = text.replace(/,/g, "").trim();
   let m;
+  // 세기 규칙이 먼저다 — 아래 BC 규칙이 "BC.4세기"의 "BC.4"를 연도 4로 먹어 버린다(파일럿 #8).
+  // 세기: BC.4세기경 / 15세기 → 세기 중앙값, precision century. "BC 4세기"는 BC 400~301이므로 중앙 BC 350
+  if ((m = t.match(/^(?:기원전|BC\.?)\s*(\d{1,2})\s*세기/i))) {
+    const c = Number(m[1]);
+    return { year: 1 - (c * 100 - 50), precision: "century", approximate: true, era: "bc" };
+  }
+  if ((m = t.match(/^(\d{1,2})\s*세기/))) {
+    const c = Number(m[1]);
+    return { year: (c - 1) * 100 + 50, precision: "century", approximate: true, era: "ad" };
+  }
   // 한국어: BC.70만 / 기원전 500년 / 1592년
   if ((m = t.match(/^(?:기원전|BC\.?)\s*(\d+)\s*(만|천)?\s*년?/i))) {
     const mult = m[2] === "만" ? 10000 : m[2] === "천" ? 1000 : 1;
@@ -131,9 +150,23 @@ const isDayMonth = (text) =>
 const looksLikePeriod = (text) =>
   text.length <= 24 && /(시대|시기|Period|Age|Era)\s*$/i.test(text.trim());
 
+/**
+ * 연도 표기의 시작 위치. 접두(기원전·BC.)를 포함해 잡는다 — 접두를 빼고 자르면
+ * "BC.238년경"이 "238년경"이 되어 기원전 표시를 잃는다(파일럿 #8).
+ */
+const YEAR_MARK = /(?<![\d~–-])(?:기원전\s*|BC\.?\s*)?\d{1,4}\s*(?:년(?![\d대])|세기)/g;
+
+/** 문장 어디에 있든 첫 연도 표기를 읽는다. 표 행 머리가 본문과 무관할 때의 대안. */
+function firstYearIn(text) {
+  const m = text.match(YEAR_MARK);
+  if (!m) return null;
+  const idx = text.indexOf(m[0]);
+  return parseYear(text.slice(idx));
+}
+
 /** 한 칸에 여러 해가 뭉쳐 있으면 연도 경계로 쪼갠다. */
 function splitByYear(text) {
-  const marks = [...text.matchAll(/(?<![\d~–-])(\d{1,4})년(?![\d대])/g)];
+  const marks = [...text.matchAll(YEAR_MARK)];
   if (marks.length < 2) return [text];
   const out = [];
   for (let i = 0; i < marks.length; i++) {
@@ -145,41 +178,18 @@ function splitByYear(text) {
   return out.length ? out : [text];
 }
 
+const LI_RE = /<li\b[^>]*>([\s\S]*?)(?=<li\b|<\/ul>|<\/ol>)/g;
+const TABLE_RE = /<table[^>]*class="[^"]*wikitable[^"]*"[\s\S]*?<\/table>/g;
+
 /**
- * 문서 HTML → 후보 항목. 표 행과 목록 항목을 모두 본다.
- *
- * 목록은 **문서 순서대로** 훑으며 마지막으로 본 연도를 물려준다. 중첩 목록의
- * 자식이 날짜만 갖는 구조(en 연표)를 이렇게 복원한다.
+ * 조각 안의 <li>들을 후보 항목으로 뽑는다. 문서 순서대로 훑으며 마지막으로 본
+ * 연도를 물려준다(en 연표: "1994" 부모 → "21 October. …" 자식).
+ * 표 셀 안의 목록과 본문 목록이 같은 함수를 쓴다 — 두 번 세지 않으려면
+ * 호출하는 쪽에서 어느 HTML을 넘길지만 가르면 된다.
+ * @returns 이어서 쓸 carriedYear
  */
-function extract(html) {
-  const items = [];
-
-  for (const table of html.match(/<table[^>]*class="[^"]*wikitable[^"]*"[\s\S]*?<\/table>/g) ?? []) {
-    for (const tr of table.split(/<tr[^>]*>/).slice(1)) {
-      const cells = tr.split(/<t[dh][^>]*>/).slice(1);
-      if (cells.length < 2) continue;
-      const first = strip(cells[0] ?? "");
-      const headDate = parseYear(first);
-      if (!headDate || isDayMonth(first)) continue;
-      const body = cells.slice(1).map(strip).filter(Boolean).join(" — ");
-      const links = bodyLinks(tr);
-      // 한 칸에 여러 해가 들어 있으면 쪼갠다. 쪼갠 조각의 연도를 다시 읽는다.
-      for (const seg of splitByYear(body)) {
-        const date = (isDayMonth(seg) ? null : parseYear(seg)) ?? headDate;
-        items.push({
-          shape: "table",
-          yearText: seg === body ? first : seg.slice(0, 24),
-          text: seg,
-          links,
-          date,
-          kind: looksLikePeriod(seg) ? "period?" : "event",
-        });
-      }
-    }
-  }
-
-  let carriedYear = null;
-  for (const m of html.matchAll(/<li\b[^>]*>([\s\S]*?)(?=<li\b|<\/ul>|<\/ol>)/g)) {
+function scanListItems(fragment, items, shape, carriedYear) {
+  for (const m of fragment.matchAll(LI_RE)) {
     const li = m[0];
     const text = strip(li);
     if (!text) continue;
@@ -192,7 +202,7 @@ function extract(html) {
 
     for (const seg of splitByYear(text)) {
       items.push({
-        shape: "list",
+        shape,
         yearText: seg.slice(0, 24),
         text: seg,
         links: bodyLinks(li),
@@ -201,6 +211,65 @@ function extract(html) {
       });
     }
   }
+  return carriedYear;
+}
+
+/**
+ * 문서 HTML → 후보 항목. 표와 목록을 모두 본다.
+ *
+ * 표 행은 두 모양이다(ko:한국사 연표, 2026-09-05 확인).
+ *   ① [연도 | 본문] — 머리 연도 + 본문. 본문에 여러 해가 뭉쳐 있으면 쪼갠다.
+ *   ② [<ul><li>…</li></ul>] 한 칸 — 근현대 구간. 머리 연도가 없고 항목마다 연도가 있다.
+ * ②를 "셀 2개 미만"으로 건너뛰고 표 안 목록을 본문 목록 분기에서도 제외하면
+ * 근현대가 통째로 사라진다(1945년 이후 360 → 205건으로 줄었던 원인).
+ */
+function extract(html) {
+  const items = [];
+
+  for (const table of html.match(TABLE_RE) ?? []) {
+    let carried = null;
+    for (const tr of table.split(/<tr[^>]*>/).slice(1)) {
+      const cells = tr.split(/<t[dh][^>]*>/).slice(1);
+      if (cells.length === 0) continue;
+      const first = strip(cells[0] ?? "");
+      const headDate = cells.length >= 2 && !isDayMonth(first) ? parseYear(first) : null;
+
+      if (!headDate) {
+        // ② 머리 연도 없음 — 셀 안의 목록 항목을 각각 읽는다
+        if (/<li\b/.test(tr)) {
+          carried = scanListItems(tr, items, "table", carried);
+          continue;
+        }
+        // 목록도 없으면 셀 전체를 본문으로 보고 연도 표기로 쪼갠다
+        const body = cells.map(strip).filter(Boolean).join(" — ");
+        for (const seg of splitByYear(body)) {
+          const date = (isDayMonth(seg) ? null : parseYear(seg)) ?? firstYearIn(seg);
+          if (!date || seg.length < 12) continue;
+          items.push({ shape: "table", yearText: seg.slice(0, 24), text: seg, links: bodyLinks(tr), date, kind: looksLikePeriod(seg) ? "period?" : "event" });
+        }
+        continue;
+      }
+
+      // ① 머리 연도 + 본문. 행 머리 연도는 마지막 대안이다 — 시대 행은 머리가 "250"인데
+      // 본문은 BC 4세기·BC 238이었다(파일럿 #8). 본문에 연도가 있으면 그것을 믿는다.
+      const body = cells.slice(1).map(strip).filter(Boolean).join(" — ");
+      const links = bodyLinks(tr);
+      for (const seg of splitByYear(body)) {
+        const date = (isDayMonth(seg) ? null : parseYear(seg)) ?? firstYearIn(seg) ?? headDate;
+        items.push({
+          shape: "table",
+          yearText: seg === body ? first : seg.slice(0, 24),
+          text: seg,
+          links,
+          date,
+          kind: looksLikePeriod(seg) ? "period?" : "event",
+        });
+      }
+    }
+  }
+
+  // 표 밖의 목록만 — 표 안 목록은 위에서 이미 읽었다(같은 사건을 두 번 세지 않는다)
+  scanListItems(html.replace(TABLE_RE, ""), items, "list", null);
   return items;
 }
 
@@ -285,6 +354,7 @@ async function main() {
       const hit = it.links.map((t) => qidMap.get(t)).find(Boolean);
       if (hit) funnel.withQid++;
       all.push({
+        id: rowId(`https://${host}/wiki/${encodeURIComponent(resolved)}`, revid, it.text),
         status: "draft",
         region,
         kind: it.kind,
