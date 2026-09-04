@@ -51,6 +51,42 @@ const historicityOf = (region, year) => (year < (TRADITIONAL_BEFORE[region] ?? -
 
 const LICENSE_WIKI = "CC BY-SA 4.0";
 const LICENSE_NIKH = "KOGL 제1유형(이용허락범위 제한 없음)";
+/** 열의 자국어판. 같은 사건이 두 언어판에 있으면 이쪽 줄이 대표가 된다. */
+const REGION_LANG = { kr: "ko", cn: "zh", jp: "ja", us: "en" };
+
+/**
+ * 같은 열·같은 해·같은 QID(링크 앵커가 줄에 있는 유효 QID)면 같은 사건이다(data-model §4-2 [정규화]).
+ * 자국어판 줄을 대표로 두고, 다른 언어판 줄은 status=merged로 접되 그 원문·출처는 대표의
+ * sources에 남긴다 — 상세 패널이 "다른 언어판 연표 원문"으로 보여 준다. QID가 없는 줄은
+ * 합치지 않는다(인물 QID가 서로 다른 사건에 붙는 문제, §5-1).
+ */
+function mergeDuplicates(recs, region) {
+  const groups = new Map();
+  for (const r of recs) {
+    if (r.status !== "published" || !r.qid) continue;
+    const k = `${r.date.year}|${r.qid}`;
+    (groups.get(k) ?? groups.set(k, []).get(k)).push(r);
+  }
+  let merged = 0;
+  for (const g of groups.values()) {
+    if (g.length < 2) continue;
+    g.sort((a, b) => (a.lang === REGION_LANG[region] ? 0 : 1) - (b.lang === REGION_LANG[region] ? 0 : 1) || b.text.length - a.text.length);
+    const [primary, ...rest] = g;
+    for (const r of rest) {
+      // 같은 언어판 안의 두 줄은 다른 사건이다 — ja "7月 ポツダム宣言発表"와 "8月14日 ポツダム宣言受諾"이
+      // 같은 QID(선언 문서)를 갖는다. 언어판을 건너는 중복만 합친다
+      if (r.lang === primary.lang) continue;
+      for (const s of r.sources) {
+        if (s.kind === "wikipedia") primary.sources.push({ ...s, lang: r.lang, text: r.text, alt: true });
+        else if (!primary.sources.some((p) => p.kind === s.kind && p.id === s.id)) primary.sources.push(s);
+      }
+      r.status = "merged";
+      r.merged_into = primary.source_id;
+      merged++;
+    }
+  }
+  return merged;
+}
 
 /** 사건이 아닌 줄 — 연도 범위 머리글("2010–present"), 날짜만("September 11"), 글자 없는 줄. */
 function rejectReason(raw, title) {
@@ -137,11 +173,13 @@ for (const region of regions) {
     if (qidValid) stat.qid++;
   }
 
+  stat.merged = mergeDuplicates(out, region);
+  stat.published -= stat.merged;
   assignImportance(out.filter((r) => r.status === "published"));
   for (const r of out) { r.importance_auto ??= 2; if (r.status === "published") stat.byImp[r.importance_auto] = (stat.byImp[r.importance_auto] ?? 0) + 1; }
 
   const dst = path.join("curation/events", `${region}.jsonl`);
   writeFileSync(dst, out.map((r) => JSON.stringify(r)).join("\n") + "\n");
-  console.log(`${region}: ${raws.length}행 → published ${stat.published} · rejected ${Object.entries(stat.rejected).map(([k, v]) => `${k} ${v}`).join(", ") || 0}
+  console.log(`${region}: ${raws.length}행 → published ${stat.published} · merged ${stat.merged} · rejected ${Object.entries(stat.rejected).map(([k, v]) => `${k} ${v}`).join(", ") || 0}
     QID 유효 ${stat.qid} · 중요도 ${[5, 4, 3, 2, 1].map((i) => `${i}:${stat.byImp[i] ?? 0}`).join(" ")}${nikhByYear && region === "kr" ? `\n    국사편찬위 매칭 ${stat.matched}행 · 공식 항목 ${stat.official}건` : ""}`);
 }

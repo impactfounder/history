@@ -66,6 +66,8 @@ interface Detail {
   year: number;
   license: string;
   official: (OfficialEntry & { license: string })[];
+  /** 같은 사건의 다른 언어판 연표 원문(병합됨). */
+  alt: { lang: string; text: string; url: string }[];
   src: { url: string; revid: number; accessedAt: string; license: string }[];
 }
 /** official/kr/{연도}.json — 이 해의 공식 연표. */
@@ -376,6 +378,12 @@ export function TimelineGrid() {
                 ))}
                 <p className="mb-1 text-[11px] text-neutral-500">위키백과 연표 원문{selected.detail.lang !== "ko" && <span> ({selected.detail.lang}) · 한글 옮김은 아직</span>}</p>
                 <p className="mb-3 leading-relaxed [text-wrap:pretty] [word-break:keep-all]">{selected.detail.text}</p>
+                {selected.detail.alt?.map((a) => (
+                  <div key={a.url + a.lang} className="mb-3">
+                    <p className="mb-1 text-[11px] text-neutral-500">같은 사건 · {a.lang} 위키백과 연표 원문</p>
+                    <p className="leading-relaxed text-neutral-700 [text-wrap:pretty] [word-break:keep-all]">{a.text}</p>
+                  </div>
+                ))}
                 {/* 이 사건을 부르는 이름 (§5-9) — 사이트링크 원문 */}
                 {COLUMNS.some((c) => selected.ev.names[c.id]?.nat) && (
                   <table className="mb-3 w-full text-[12px]">

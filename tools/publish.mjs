@@ -87,6 +87,8 @@ function toDetail(r, id) {
     official: r.sources
       .filter((s) => s.kind === "nikh")
       .map((s) => ({ id: s.id, db: s.db, series: s.series, date_ko: formatNikhDate(s.date), text: s.text, url: s.url, license: s.license })),
+    // 병합된 다른 언어판 줄의 원문(derive.mjs mergeDuplicates)
+    alt: r.sources.filter((s) => s.kind === "wikipedia" && s.alt).map((s) => ({ lang: s.lang, text: s.text, url: s.url })),
     src: r.sources.filter((s) => s.kind === "wikipedia").map((s) => ({ url: s.url, revid: s.revid, accessedAt: s.accessedAt, license: s.license })),
   };
 }

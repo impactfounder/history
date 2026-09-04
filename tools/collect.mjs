@@ -35,8 +35,14 @@ const SOURCES = {
     { wiki: "ko", title: "한국사 연표", slug: "ko-korean-timeline" },
     { wiki: "en", title: "Timeline of Korean history", slug: "en-korean-timeline" },
   ],
-  cn: [{ wiki: "en", title: "Timeline of Chinese history", slug: "en-chinese-timeline" }],
-  jp: [{ wiki: "en", title: "Timeline of Japanese history", slug: "en-japanese-timeline" }],
+  cn: [
+    { wiki: "zh", title: "中国历史年表", slug: "zh-chinese-timeline" },
+    { wiki: "en", title: "Timeline of Chinese history", slug: "en-chinese-timeline" },
+  ],
+  jp: [
+    { wiki: "ja", title: "日本史の出来事一覧", slug: "ja-japanese-timeline" },
+    { wiki: "en", title: "Timeline of Japanese history", slug: "en-japanese-timeline" },
+  ],
   us: [
     { wiki: "en", title: "Timeline of pre–United States history", slug: "en-us-pre" },
     ...["1790–1819", "1820–1859", "1860–1899", "1900–1929", "1930–1949",
@@ -85,11 +91,21 @@ const strip = (html) =>
 const SKIP_NS = /^(파일|File|Help|도움말|Special|특수|Category|분류|Portal|위키백과|Wikipedia|Template|틀):/;
 
 /** 본문 위키 링크의 문서 제목들. 네임스페이스·앵커·중복 제거. */
+/**
+ * 연도·연대·날짜 문서로 가는 링크. 첫 링크가 QID가 되는데(main), ja·zh 연표는 항목마다
+ * "743年"·"前202年"을 링크하므로 이걸 두면 사건의 QID가 연도 문서(언어판 200개)가 되어
+ * 중요도 5를 받고 관점 명칭이 "743년"이 된다(2026-09-05 jp·cn 재수집에서 확인).
+ */
+const YEARISH_TITLE =
+  /^(?:紀元前|前|公元前|西元前|기원전\s*)?\d{1,4}\s*(?:年代?|년대?|s)?$|^\d{1,4}\s*(?:BCE?|CE|AD)$|^AD\s*\d{1,4}$|^\d{1,2}月\d{1,2}日$|^\d{1,2}월\s*\d{1,2}일$|^(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}$|^\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)$/;
+/** ja 연표의 원호 괄호 "（元和元年）" — 안의 링크는 원호 문서라 사건이 아니다. */
+const ERA_PAREN = /（(?:<[^>]+>|[^（）])*?年）/g;
+
 function bodyLinks(html) {
   const out = new Set();
-  for (const m of html.matchAll(/<a[^>]+href="\/wiki\/([^"#]+)(?:#[^"]*)?"/g)) {
+  for (const m of html.replace(ERA_PAREN, "").matchAll(/<a[^>]+href="\/wiki\/([^"#]+)(?:#[^"]*)?"/g)) {
     const title = decodeURIComponent(m[1]).replace(/_/g, " ");
-    if (!SKIP_NS.test(title)) out.add(title);
+    if (!SKIP_NS.test(title) && !YEARISH_TITLE.test(title)) out.add(title);
   }
   return [...out];
 }
@@ -101,6 +117,24 @@ function bodyLinks(html) {
 function parseYear(text) {
   const t = text.replace(/,/g, "").trim();
   let m;
+  // 한자권(ja·zh, 2026-09-05 C-12): 前386年 / 紀元前2万年頃 / 約前1747年 / 607年 / 1159年（平治元年） / 前3世紀
+  if ((m = t.match(/^(?:約|约|およそ)?\s*(紀元前|公元前|西元前|前)\s*(\d{1,2})\s*(?:世紀|世纪)/))) {
+    const c = Number(m[2]);
+    return { year: 1 - (c * 100 - 50), precision: "century", approximate: true, era: "bc" };
+  }
+  if ((m = t.match(/^(?:約|约|およそ)?\s*(\d{1,2})\s*(?:世紀|世纪)/))) {
+    const c = Number(m[1]);
+    return { year: (c - 1) * 100 + 50, precision: "century", approximate: true, era: "ad" };
+  }
+  if ((m = t.match(/^(約|约|およそ)?\s*(紀元前|公元前|西元前|前)\s*(\d+)\s*(万|萬)?\s*年?\s*(頃|ごろ|左右|前後)?/))) {
+    const mult = m[4] ? 10000 : 1;
+    return { year: 1 - Number(m[3]) * mult, precision: mult > 1 ? "millennium" : "year", era: "bc", ...(m[1] || m[5] ? { approximate: true } : {}) };
+  }
+  if ((m = t.match(/^(約|约|およそ)?\s*(\d{1,4})\s*年(?!代)\s*(頃|ごろ|左右|前後)?/))) {
+    return { year: Number(m[2]), precision: "year", era: "ad", ...(m[1] || m[3] ? { approximate: true } : {}) };
+  }
+  // 1960年代 — 십년 단위 항목. 그대로 두면 아래 영어 규칙이 1960을 연도로 읽는다
+  if ((m = t.match(/^(\d{3,4})\s*年代/))) return { year: Number(m[1]) + 5, precision: "decade", approximate: true, era: "ad" };
   // 세기 규칙이 먼저다 — 아래 BC 규칙이 "BC.4세기"의 "BC.4"를 연도 4로 먹어 버린다(파일럿 #8).
   // 세기: BC.4세기경 / 15세기 → 세기 중앙값, precision century. "BC 4세기"는 BC 400~301이므로 중앙 BC 350
   if ((m = t.match(/^(?:기원전|BC\.?)\s*(\d{1,2})\s*세기/i))) {
@@ -144,17 +178,20 @@ const MONTHS =
 const isDayMonth = (text) =>
   new RegExp(`^\\d{1,2}(st|nd|rd|th)?\\s+(${MONTHS})\\b`, "i").test(text.trim()) ||
   new RegExp(`^(${MONTHS})\\s+\\d{1,2}\\b`, "i").test(text.trim()) ||
-  /^\d{1,2}\s*월/.test(text.trim());
+  /^\d{1,2}\s*(월|月)/.test(text.trim());
 
 /** 사건이 아니라 시대 구분으로 보이는가(editorial-policy §3-6 → polities). */
 const looksLikePeriod = (text) =>
-  text.length <= 24 && /(시대|시기|Period|Age|Era)\s*$/i.test(text.trim());
+  text.length <= 24 && /(시대|시기|時代|时代|時期|时期|Period|Age|Era)\s*$/i.test(text.trim());
 
 /**
  * 연도 표기의 시작 위치. 접두(기원전·BC.)를 포함해 잡는다 — 접두를 빼고 자르면
  * "BC.238년경"이 "238년경"이 되어 기원전 표시를 잃는다(파일럿 #8).
  */
-const YEAR_MARK = /(?<![\d~–-])(?:기원전\s*|BC\.?\s*)?\d{1,4}\s*(?:년(?![\d대])|세기)/g;
+// 한자권 표기(年·世紀)는 한자·가나·여는 괄호 뒤에서는 연도 표기로 보지 않는다 — ja 목록의
+// "1633年（寛永10年）"에서 원호 연수 "10年"에 걸려 잘리면 안 된다. "1960年代"도 연도가 아니다.
+const YEAR_MARK =
+  /(?<![\d~–-])(?:기원전\s*|BC\.?\s*)?\d{1,4}\s*(?:년(?![\d대])|세기)|(?<![\d~–\-\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}（(])(?:紀元前|公元前|西元前|前)?\d{1,4}\s*(?:年(?!代)|世紀|世纪)/gu;
 
 /** 문장 어디에 있든 첫 연도 표기를 읽는다. 표 행 머리가 본문과 무관할 때의 대안. */
 function firstYearIn(text) {

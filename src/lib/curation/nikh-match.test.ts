@@ -12,6 +12,13 @@ describe("stripYear / parseWikiDate / segments", () => {
     expect(stripYear("BC.238년경 고조선 성립")).toBe("고조선 성립");
     expect(stripYear("1882: Imo Incident: Mutiny")).toBe("Imo Incident: Mutiny");
   });
+  it("한자권 연도 표기도 뗀다 — 원호 괄호·約·前·年代", () => {
+    expect(stripYear("1600年（慶長5年） 関ヶ原の戦い")).toBe("関ヶ原の戦い");
+    expect(stripYear("前386年：周安王正式冊命田和")).toBe("周安王正式冊命田和");
+    expect(stripYear("約前1747年：不降西征。")).toBe("不降西征。");
+    expect(stripYear("紀元前2万年頃 現生人類が入植する。")).toBe("現生人類が入植する。");
+    expect(stripYear("1960年代 高度成長")).toBe("高度成長");
+  });
   it("행 안의 월·일을 읽는다", () => {
     expect(parseWikiDate("1983년 6월 30일 KBS 이산가족 찾기")).toEqual({ m: 6, d: 30 });
     expect(parseWikiDate("2009년 5월 노무현 전 대통령 서거")).toEqual({ m: 5 });
