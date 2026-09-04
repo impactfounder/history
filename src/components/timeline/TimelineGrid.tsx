@@ -5,6 +5,7 @@ import {
   AXIS_SPAN_YEARS,
   AXIS_YEAR_START,
   anchorYearAt,
+  bucketStart,
   centerYear,
   chunkKeyFor,
   clampScale,
@@ -23,18 +24,46 @@ import {
   type Level,
 } from "@/lib/timeline/axis";
 
-/** 기본 4열 (PRD §5-2). 데이터는 M1에서 붙는다. */
+/** 기본 4열 (PRD §5-2). */
 const COLUMNS = [
   { id: "kr", label: "한국" },
   { id: "cn", label: "중국" },
   { id: "jp", label: "일본" },
   { id: "us", label: "미국" },
 ] as const;
+type RegionId = (typeof COLUMNS)[number]["id"];
 
+/** 셀당 최대 칩 수(PRD §5-3). 넘치면 `+N`. */
+const MAX_PER_CELL: Record<Level, number> = { century: 3, decade: 5, year: 8, month: 8 };
 /** 뷰포트 밖으로 더 그리는 행 수. 관성 스크롤의 지연을 흡수한다. */
 const OVERSCAN_ROWS = 3;
 /** 제스처가 끝났다고 보는 유휴 시간(ms). 이후 앵커 연도를 새로 잡는다. */
 const GESTURE_IDLE_MS = 180;
+
+// ── 발행 포맷 (data-model §6-2) ──────────────────────────────────────────────
+interface PublishedEvent {
+  id: string;
+  y0: number;
+  approx: boolean;
+  hist: "historical" | "traditional";
+  title: string;
+  names: Partial<Record<RegionId, { ko?: string; nat?: string; lang?: string }>>;
+  cat: string;
+  regions: { r: RegionId; imp: number; role: string }[];
+  date_ko: string;
+}
+interface Chunk { events: PublishedEvent[] }
+interface Detail {
+  id: string;
+  title: string;
+  summary: string | null;
+  review_note?: string;
+  status: string;
+  src: { url: string; revid: number; accessedAt: string; license: string }[];
+}
+interface Manifest { stage: "published" | "preview"; counts: { events: number } }
+
+const DATA = "/data/v1";
 
 export function TimelineGrid() {
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -56,6 +85,36 @@ export function TimelineGrid() {
   const axisRef = useRef(axis);
   axisRef.current = axis;
 
+  // ── 데이터: 청크 캐시 ─────────────────────────────────────────────────────
+  // 보이는 행에서 청크 키가 나오고(§5-5A), 키마다 한 번만 받는다. 캐시는 ref에 두고
+  // 도착할 때만 카운터로 다시 그린다 — 스크롤마다 state를 만지지 않기 위해서다.
+  const chunks = useRef(new Map<string, PublishedEvent[] | null>());
+  const inflight = useRef(new Set<string>());
+  const [, bump] = useState(0);
+  const [manifest, setManifest] = useState<Manifest | null>(null);
+  const [selected, setSelected] = useState<{ ev: PublishedEvent; detail: Detail | null } | null>(null);
+
+  useEffect(() => {
+    fetch(`${DATA}/manifest.json`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setManifest)
+      .catch(() => setManifest(null));
+  }, []);
+
+  const ensureChunk = useCallback((region: RegionId, key: string) => {
+    const path = `${DATA}/events/${region}/${key}.json`;
+    if (chunks.current.has(path) || inflight.current.has(path)) return;
+    inflight.current.add(path);
+    fetch(path)
+      .then((r) => (r.ok ? (r.json() as Promise<Chunk>) : null))
+      .then((c) => chunks.current.set(path, c?.events ?? null)) // 404도 기록 — 빈 구간은 다시 묻지 않는다
+      .catch(() => chunks.current.set(path, null))
+      .finally(() => {
+        inflight.current.delete(path);
+        bump((n) => n + 1);
+      });
+  }, []);
+
   // ── 뷰포트 높이 추적 ──────────────────────────────────────────────────────
   useLayoutEffect(() => {
     const el = scrollerRef.current;
@@ -69,7 +128,6 @@ export function TimelineGrid() {
     const ro = new ResizeObserver(sync);
     ro.observe(el);
     sync();
-    if (railRef.current) setRailH(railRef.current.clientHeight);
     return () => ro.disconnect();
   }, []);
 
@@ -79,8 +137,7 @@ export function TimelineGrid() {
     if (!el || pendingTop.current === null) return;
     el.scrollTop = pendingTop.current;
     pendingTop.current = null;
-    // 읽어 오는 값은 브라우저가 반올림한 결과다(§11 C-11)
-    setScrollTop(el.scrollTop);
+    setScrollTop(el.scrollTop); // 읽어 오는 값은 기기 픽셀 격자에 스냅된 결과다(§11 C-11)
   });
 
   // ── 스크롤 추적 (rAF 코얼레싱, DOM 쓰기 없음) ────────────────────────────
@@ -97,31 +154,24 @@ export function TimelineGrid() {
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
-
     const onWheel = (e: WheelEvent) => {
       if (!e.ctrlKey) return; // 시간 이동은 네이티브 스크롤
       e.preventDefault(); // 브라우저 페이지 줌 차단
-
       const rect = el.getBoundingClientRect();
       const offsetY = e.clientY - rect.top;
       const now = performance.now();
-
       const cur = axisRef.current;
       let g = gesture.current;
       if (!g || now > g.until || Math.abs(g.offsetY - offsetY) > 24) {
-        // 제스처 시작 — 앵커 연도를 여기서 한 번만 정한다
-        g = { year: anchorYearAt(el.scrollTop, offsetY, cur), offsetY, until: 0 };
+        g = { year: anchorYearAt(el.scrollTop, offsetY, cur), offsetY, until: 0 }; // 제스처 시작 — 앵커 연도를 한 번만
       }
       g.until = now + GESTURE_IDLE_MS;
       gesture.current = g;
-
       const sNext = clampScale(cur.s * Math.exp(-e.deltaY * 0.002), cur.viewportH);
       if (sNext === cur.s) return;
-
       pendingTop.current = zoomToYear(g.year, g.offsetY, sNext, cur.viewportH);
       setAxis((a) => ({ ...a, s: sNext }));
     };
-
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
@@ -135,8 +185,7 @@ export function TimelineGrid() {
       const cur = axisRef.current;
       const mid = cur.viewportH / 2;
       const year = anchorYearAt(el.scrollTop, mid, cur);
-      const sNext =
-        e.key === "0" ? 8 : clampScale(cur.s * (e.key === "-" ? 1 / 1.6 : 1.6), cur.viewportH);
+      const sNext = e.key === "0" ? 8 : clampScale(cur.s * (e.key === "-" ? 1 / 1.6 : 1.6), cur.viewportH);
       pendingTop.current = zoomToYear(year, mid, sNext, cur.viewportH);
       setAxis((a) => ({ ...a, s: sNext }));
     };
@@ -160,14 +209,34 @@ export function TimelineGrid() {
   const bounds = scaleBounds(axis.viewportH);
   const chunkKeys = Array.from(new Set(buckets.map((b) => chunkKeyFor(b, rows.level))));
 
+  // 보이는 청크를 받아 둔다(프리페치는 오버스캔 행 몫). 렌더 중 fetch 시작은 effect에서.
+  useEffect(() => {
+    for (const region of COLUMNS) for (const key of chunkKeys) ensureChunk(region.id, key);
+  }, [chunkKeys.join("|"), ensureChunk]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** (열, 행 버킷) → 그 칸의 사건. 발행 시 정렬돼 있으므로 다시 정렬하지 않는다(§6-2). */
+  const cellEvents = (region: RegionId, b: number): PublishedEvent[] => {
+    const evs = chunks.current.get(`${DATA}/events/${region}/${chunkKeyFor(b, rows.level)}.json`);
+    if (!evs) return [];
+    return evs.filter((e) => bucketStart(e.y0, rows.unit) === b);
+  };
+  const loadedChunks = Array.from(chunks.current.values()).filter(Boolean).length;
+
+  const openDetail = (ev: PublishedEvent) => {
+    setSelected({ ev, detail: null });
+    fetch(`${DATA}/events/detail/${ev.id}.json`)
+      .then((r) => (r.ok ? (r.json() as Promise<Detail>) : null))
+      .then((detail) => setSelected((s) => (s && s.ev.id === ev.id ? { ev, detail } : s)))
+      .catch(() => {});
+  };
+
   const jumpFromRail = (clientY: number) => {
     const rail = railRef.current;
     const el = scrollerRef.current;
     if (!rail || !el) return;
     const r = rail.getBoundingClientRect();
     const ratio = Math.min(Math.max((clientY - r.top) / r.height, 0), 1);
-    const year = AXIS_YEAR_START + ratio * AXIS_SPAN_YEARS;
-    el.scrollTop = scrollTopForYear(year, axis);
+    el.scrollTop = scrollTopForYear(AXIS_YEAR_START + ratio * AXIS_SPAN_YEARS, axis);
     setScrollTop(el.scrollTop);
   };
 
@@ -176,7 +245,11 @@ export function TimelineGrid() {
       {/* 상단바 — PRD §5-10, 56px */}
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-neutral-200 px-4">
         <span className="font-semibold tracking-tight">history</span>
-        <span className="text-neutral-400">M2 스켈레톤 · 데이터는 M1 대기</span>
+        {manifest?.stage === "preview" ? (
+          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-800">미리보기 · 미검토 데이터 {manifest.counts.events}건</span>
+        ) : (
+          <span className="text-neutral-400">{manifest ? `${manifest.counts.events}건` : "데이터 없음"}</span>
+        )}
         <span className="ml-auto text-neutral-500">
           시간 이동은 스크롤 · 확대는 <kbd className="rounded border px-1">Ctrl</kbd>+휠 또는{" "}
           <kbd className="rounded border px-1">+</kbd>/<kbd className="rounded border px-1">−</kbd>
@@ -191,10 +264,7 @@ export function TimelineGrid() {
           className="relative w-16 shrink-0 cursor-grab border-r border-neutral-200 bg-neutral-50 select-none"
           title="시대 레일 — 클릭하면 그 시대로 점프"
         >
-          <div
-            className="absolute inset-x-1 rounded bg-neutral-400/70"
-            style={{ top: win.top, height: win.height }}
-          />
+          <div className="absolute inset-x-1 rounded bg-neutral-400/70" style={{ top: win.top, height: win.height }} />
         </div>
 
         {/* 스크롤 컨테이너 = 시간축 그 자체 (§5-5A) */}
@@ -204,29 +274,108 @@ export function TimelineGrid() {
           className="relative min-w-0 flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           style={{ overflowAnchor: "none", overscrollBehaviorY: "contain", touchAction: "pan-y" }}
         >
+          {/* 정치체 스티키 헤더 자리 — 밴드 데이터(M1 수작업) 전까지 열 이름만 */}
+          <div className="sticky top-0 z-10 flex border-b border-neutral-200 bg-white/95 text-[11px] font-medium text-neutral-600 backdrop-blur">
+            <div className="w-12 shrink-0 border-r border-neutral-200" />
+            {COLUMNS.map((c) => (
+              <div key={c.id} className="min-w-0 flex-1 border-r border-neutral-100 px-2 py-1">{c.label}</div>
+            ))}
+          </div>
+
           {/* 스페이서 */}
           <div className="relative w-full" style={{ height: contentHeight(axis) }}>
             {buckets.map((b) => {
               const top = yearToY(b, axis);
               const h = rows.unit * axis.s;
+              const max = MAX_PER_CELL[rows.level];
               return (
-                <div
-                  key={b}
-                  className="absolute inset-x-0 flex border-t border-neutral-200"
-                  style={{ top, height: h }}
-                >
+                <div key={b} className="absolute inset-x-0 flex border-t border-neutral-200" style={{ top, height: h }}>
                   {/* 연도 거터 (§5-10) */}
                   <div className="w-12 shrink-0 border-r border-neutral-200 px-1 text-[11px] text-neutral-500 tabular-nums">
                     {formatRowLabel(b, rows.level)}
                   </div>
-                  {COLUMNS.map((c) => (
-                    <div key={c.id} className="min-w-0 flex-1 border-r border-neutral-100" />
-                  ))}
+                  {COLUMNS.map((c) => {
+                    const evs = cellEvents(c.id, b);
+                    const shown = evs.slice(0, max);
+                    return (
+                      {/* 칩은 가로로 흐른다(§5-10 목업 "칩 칩 +2"). 세로로 쌓으면 s가 작을 때 행 높이를 넘겨 잘린다. */}
+                      <div key={c.id} className="flex min-w-0 flex-1 flex-wrap content-start gap-1 overflow-hidden border-r border-neutral-100 px-1 py-0.5">
+                        {shown.map((ev) => {
+                          // 시각 위계(§5-10): 중요도 5 굵게 > 4 > 3 기본. 전승은 기울임.
+                          const imp = ev.regions[0]?.imp ?? 3;
+                          const tone =
+                            imp >= 5
+                              ? "border-neutral-800 bg-neutral-900 font-semibold text-white"
+                              : imp === 4
+                                ? "border-neutral-400 bg-neutral-100 font-medium text-neutral-900"
+                                : "border-neutral-200 bg-white text-neutral-700";
+                          return (
+                            <button
+                              key={ev.id}
+                              type="button"
+                              onClick={() => openDetail(ev)}
+                              title={ev.date_ko}
+                              className={`max-w-full truncate rounded border px-1.5 py-0.5 text-left leading-tight ${tone}${ev.hist === "traditional" ? " italic" : ""}`}
+                            >
+                              {ev.names[c.id]?.ko ?? ev.title}
+                              {ev.hist === "traditional" && <span className="text-neutral-400"> (전승)</span>}
+                            </button>
+                          );
+                        })}
+                        {evs.length > max && (
+                          <span className="inline-block rounded px-1 text-[11px] text-neutral-500">+{evs.length - max}</span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })}
           </div>
         </div>
+
+        {/* 상세 패널 — §5-10. 지금은 push 한 모드만(폭 사다리는 다음) */}
+        {selected && (
+          <aside className="w-[400px] shrink-0 overflow-y-auto border-l border-neutral-200 bg-white p-4" style={{ overscrollBehavior: "contain" }}>
+            <div className="mb-2 flex items-start justify-between gap-2">
+              <h2 className="text-base font-semibold leading-snug">{selected.ev.title}</h2>
+              <button type="button" onClick={() => setSelected(null)} className="rounded px-2 text-neutral-500 hover:bg-neutral-100" aria-label="닫기">×</button>
+            </div>
+            <div className="mb-3 text-[12px] text-neutral-500">{selected.ev.date_ko} · 중요도 {selected.ev.regions[0]?.imp}</div>
+            {selected.detail ? (
+              <>
+                {selected.detail.status !== "published" && (
+                  <div className="mb-2 rounded bg-amber-50 px-2 py-1 text-[11px] text-amber-800">{selected.detail.status} — 검토 전 초안</div>
+                )}
+                <p className="mb-3 leading-relaxed">{selected.detail.summary ?? <span className="text-neutral-400">요약 없음</span>}</p>
+                {selected.detail.review_note && (
+                  <p className="mb-3 rounded border border-dashed border-neutral-300 px-2 py-1 text-[12px] text-neutral-600">검토 메모: {selected.detail.review_note}</p>
+                )}
+                {/* 이 사건을 부르는 이름 (§5-9) */}
+                <table className="mb-3 w-full text-[12px]">
+                  <tbody>
+                    {COLUMNS.filter((c) => selected.ev.names[c.id]).map((c) => {
+                      const n = selected.ev.names[c.id]!;
+                      return (
+                        <tr key={c.id} className="border-t border-neutral-100">
+                          <td className="py-1 pr-2 text-neutral-500">{c.label}</td>
+                          <td className="py-1">{n.ko ?? <span className="text-neutral-400">한글 옮김 전</span>}{n.nat && <span className="text-neutral-500"> ({n.nat})</span>}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                <div className="text-[11px] text-neutral-500">
+                  출처 {selected.detail.src.map((s) => (
+                    <a key={s.url} href={s.url} target="_blank" rel="noreferrer" className="underline">{new URL(s.url).hostname}</a>
+                  ))} · {selected.detail.src[0]?.license}
+                </div>
+              </>
+            ) : (
+              <p className="text-neutral-400">불러오는 중…</p>
+            )}
+          </aside>
+        )}
       </div>
 
       {/* 하단 줌 바 자리 + 계측 HUD */}
@@ -235,21 +384,13 @@ export function TimelineGrid() {
           <span>
             레벨 <b className="text-neutral-900">{rows.level}</b>
             {levelOf(axis.s) !== rows.level && <span className="text-amber-700"> (이력 유지)</span>} · s{" "}
-            <b className="text-neutral-900">{axis.s.toFixed(2)}</b> px/년 (
-            {bounds.min.toFixed(2)}–{bounds.max})
+            <b className="text-neutral-900">{axis.s.toFixed(2)}</b> px/년 ({bounds.min.toFixed(2)}–{bounds.max})
           </span>
-          <span>
-            스페이서 <b className="text-neutral-900">{Math.round(contentHeight(axis)).toLocaleString("ko-KR")}</b> px
-          </span>
+          <span>스페이서 <b className="text-neutral-900">{Math.round(contentHeight(axis)).toLocaleString("ko-KR")}</b> px</span>
           <span>scrollTop {Math.round(scrollTop).toLocaleString("ko-KR")}</span>
-          <span>
-            중앙 <b className="text-neutral-900">{formatYear(Math.round(centerYear(scrollTop, axis)))}</b>
-          </span>
-          <span>
-            보이는 행 {buckets.length}개 ({formatRowLabel(rows.from, rows.level)} ~{" "}
-            {formatRowLabel(rows.to, rows.level)})
-          </span>
-          <span>청크 {chunkKeys.length}개: {chunkKeys.slice(0, 4).join(", ")}</span>
+          <span>중앙 <b className="text-neutral-900">{formatYear(Math.round(centerYear(scrollTop, axis)))}</b></span>
+          <span>보이는 행 {buckets.length}개 ({formatRowLabel(rows.from, rows.level)} ~ {formatRowLabel(rows.to, rows.level)})</span>
+          <span>청크 {chunkKeys.length}키 · 캐시 {loadedChunks}</span>
           <span>뷰포트 {axis.viewportH}px</span>
         </div>
       </footer>
