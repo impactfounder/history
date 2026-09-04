@@ -228,6 +228,10 @@ function extract(html) {
 
   for (const table of html.match(TABLE_RE) ?? []) {
     let carried = null;
+    // rowspan으로 합쳐진 연도 셀: 두 번째 행부터는 사건 셀 하나뿐이다. 직전 행의 머리
+    // 연도를 물려주지 않으면 그 행들이 전부 버려진다 — en:Timeline of Japanese history가
+    // 545행 중 335행만 남았던 원인(2026-09-05). 중국 연표도 같은 구조다.
+    let carriedHead = null;
     for (const tr of table.split(/<tr[^>]*>/).slice(1)) {
       const cells = tr.split(/<t[dh][^>]*>/).slice(1);
       if (cells.length === 0) continue;
@@ -243,13 +247,15 @@ function extract(html) {
         // 목록도 없으면 셀 전체를 본문으로 보고 연도 표기로 쪼갠다
         const body = cells.map(strip).filter(Boolean).join(" — ");
         for (const seg of splitByYear(body)) {
-          const date = (isDayMonth(seg) ? null : parseYear(seg)) ?? firstYearIn(seg);
+          // 셀에 연도가 없으면 rowspan으로 합쳐진 직전 머리 연도를 쓴다
+          const date = (isDayMonth(seg) ? null : parseYear(seg)) ?? firstYearIn(seg) ?? carriedHead;
           if (!date || seg.length < 12) continue;
           items.push({ shape: "table", yearText: seg.slice(0, 24), text: seg, links: bodyLinks(tr), date, kind: looksLikePeriod(seg) ? "period?" : "event" });
         }
         continue;
       }
 
+      carriedHead = headDate; // 다음 행이 rowspan 이어짐이면 이 연도를 물려받는다
       // ① 머리 연도 + 본문. 행 머리 연도는 마지막 대안이다 — 시대 행은 머리가 "250"인데
       // 본문은 BC 4세기·BC 238이었다(파일럿 #8). 본문에 연도가 있으면 그것을 믿는다.
       const body = cells.slice(1).map(strip).filter(Boolean).join(" — ");
