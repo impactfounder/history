@@ -120,7 +120,7 @@ anchorYear = (t + a − p) / s + AXIS_YEAR_START
 t′         = (t + a − p) × (s′ / s) + p − a          -- viewportH 불변이면 p′ = p
 ```
 
-결과를 `[0, contentHeight(s′) − viewportH]`로 clamp한다. **스페이서 height를 쓴 뒤 같은 레이아웃 패스 안에서 `scrollTop`을 대입해야** 한 프레임도 튀지 않는다(`useLayoutEffect`). 사내 선례: friday.ceo `apps/web/src/components/calendar/WeekView.tsx:199-208`이 같은 기법을 쓴다(고정 스케일이라 코드는 재사용 불가).
+결과를 `[0, contentHeight(s′) − viewportH]`로 clamp한다. **스페이서 height를 쓴 뒤 같은 레이아웃 패스 안에서 `scrollTop`을 대입해야** 한 프레임도 튀지 않는다(`useLayoutEffect`). 선례: 시간→px 선형 변환을 쓰는 캘린더 주간 뷰가 같은 기법을 쓴다(고정 스케일이라 코드는 재사용 불가).
 
 `overflow-anchor: none`이 필요하다 — 브라우저의 스크롤 앵커링이 스페이서 높이 변경에 반응해 우리의 `scrollTop` 대입과 싸운다. 실제 필요 여부는 M2에서 A/B로 확인한다.
 

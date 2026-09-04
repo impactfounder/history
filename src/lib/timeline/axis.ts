@@ -210,7 +210,6 @@ export function visibleRows(
 
 // 호출부 공통 주의: 스페이서 height를 쓴 **뒤 같은 레이아웃 패스 안에서**
 // 결과를 scrollTop에 대입해야 한 프레임도 튀지 않는다(useLayoutEffect).
-// 사내 선례는 friday.ceo apps/web/src/components/calendar/WeekView.tsx:199-208.
 
 /**
  * 앵커가 가리키는 연도. 제스처가 시작될 때 한 번 구해 두고 끝까지 들고 다닌다.
