@@ -524,23 +524,25 @@ export function TimelineGrid() {
     <div className="flex h-full flex-col text-[13px]">
       {/* 상단바 — PRD §5-10, 56px */}
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-neutral-200 px-4">
-        <span className="font-semibold tracking-tight">history</span>
-        {manifest?.stage === "preview" ? (
-          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-800">{t.badgePreview(manifest.counts.events)}</span>
-        ) : (
-          <span className="text-neutral-400">{manifest ? t.badge(manifest.counts.events) : t.noData}</span>
-        )}
+        {/* 자리 고정(대표 지시 2026-09-05): 언어를 바꿔도 문구 길이가 달라지는 것은 배지·안내문뿐이고,
+            추천 연도 칩과 오른쪽 언어·출처는 늘 같은 자리다. 배지는 truncate, 안내문은 고정 폭 상자 */}
+        <span className="shrink-0 font-semibold tracking-tight">history</span>
         {/* 추천 연도 칩(§11 C-1) — 네 열이 동시에 촘촘한 해. 조작을 배우기 전에 제품의 답을 먼저 보여준다 */}
-        <nav className="flex gap-1 text-[11px]" aria-label={t.recommended}>
+        <nav className="flex shrink-0 gap-1 text-[11px]" aria-label={t.recommended}>
           {[1592, 1882, 1945].map((y) => (
-            <button key={y} type="button" onClick={() => goTo(y)} className="rounded-full border border-neutral-300 px-2 py-0.5 text-neutral-600 hover:bg-neutral-100">
+            <button key={y} type="button" onClick={() => goTo(y)} className="w-[62px] rounded-full border border-neutral-300 px-2 py-0.5 text-center text-neutral-600 tabular-nums hover:bg-neutral-100">
               {formatYearL(y, locale)}
             </button>
           ))}
         </nav>
-        <span className="ml-auto hidden text-neutral-500 lg:inline">{t.siteHint}</span>
+        {manifest?.stage === "preview" ? (
+          <span className="min-w-0 truncate rounded bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-800">{t.badgePreview(manifest.counts.events)}</span>
+        ) : (
+          <span className="min-w-0 truncate text-neutral-400">{manifest ? t.badge(manifest.counts.events) : t.noData}</span>
+        )}
+        <span className="ml-auto hidden w-[330px] shrink-0 truncate text-right text-neutral-500 lg:inline">{t.siteHint}</span>
         {/* 언어(대표 지시 2026-09-05): 한국어 기본, URL ?lang=. 사건 이름은 위키데이터 4개 언어판 표제어에서 */}
-        <nav className="flex gap-0.5 text-[11px]" aria-label={t.language}>
+        <nav className="flex shrink-0 gap-0.5 text-[11px]" aria-label={t.language}>
           {LOCALES.map((l) => (
             <button
               key={l}
@@ -548,13 +550,14 @@ export function TimelineGrid() {
               onClick={() => setLocale(l)}
               aria-pressed={locale === l}
               title={LOCALE_LABEL[l]}
-              className={`rounded px-1.5 py-0.5 uppercase ${locale === l ? "bg-neutral-900 text-white" : "text-neutral-500 hover:bg-neutral-100"}`}
+              className={`w-7 rounded py-0.5 text-center uppercase ${locale === l ? "bg-neutral-900 text-white" : "text-neutral-500 hover:bg-neutral-100"}`}
             >
               {l}
             </button>
           ))}
         </nav>
-        <a href="/sources" className="text-[11px] text-neutral-500 underline">{t.sources}</a>
+        {/* 언어마다 길이가 다른 마지막 조각(출처/Sources/出典/来源)도 고정 폭 — 아니면 왼쪽 언어 버튼이 밀린다 */}
+        <a href="/sources" className="w-14 shrink-0 truncate text-right text-[11px] text-neutral-500 underline">{t.sources}</a>
       </header>
 
       <div className="relative flex min-h-0 flex-1">
