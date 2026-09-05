@@ -26,6 +26,7 @@ import {
   type Axis,
   type Level,
 } from "@/lib/timeline/axis";
+import { LOCALES, LOCALE_LABEL, LOCALE_REGION, REGION_LABEL, T, eventLabel, formatRowLabelL, formatYearL, isEventName, isLocale, nameIn, type Locale } from "@/lib/i18n";
 
 /** 기본 4열 (PRD §5-2). */
 const COLUMNS = [
@@ -165,9 +166,10 @@ const LANDING_S = 8;
 const URL_IDLE_MS = 300;
 
 /** `/?y=1882&s=40` → 중앙 연도·스케일. 없거나 망가졌으면 null. */
-function readUrlState(): { y: number | null; s: number | null; r: RegionId[] | null } {
-  if (typeof location === "undefined") return { y: null, s: null, r: null };
+function readUrlState(): { y: number | null; s: number | null; r: RegionId[] | null; lang: Locale | null } {
+  if (typeof location === "undefined") return { y: null, s: null, r: null, lang: null };
   const q = new URLSearchParams(location.search);
+  const lang = q.get("lang");
   const y = Number(q.get("y"));
   const s = Number(q.get("s"));
   // ?r=kr,jp — 열 조합·순서(§5-8). 모르는 id는 버리고, 하나도 안 남으면 기본 4열
@@ -177,28 +179,16 @@ function readUrlState(): { y: number | null; s: number | null; r: RegionId[] | n
     y: q.has("y") && Number.isFinite(y) && y >= AXIS_YEAR_START && y <= AXIS_YEAR_END ? Math.round(y) : null,
     s: q.has("s") && Number.isFinite(s) && s > 0 ? s : null,
     r: r.length ? r : null,
+    lang: isLocale(lang) ? lang : null,
   };
 }
 
-/** 사건의 한국어 이름(ko 사이트링크 표제어, 괄호 구분자 제거) — 칩 라벨의 1순위. */
-const koNameOf = (ev: PublishedEvent): string | undefined => ev.names.kr?.nat?.replace(/\s*\([^)]*\)$/, "") || undefined;
-
 /**
- * 한국어 원문 줄의 짧은 라벨. ko 「한국사 연표」 표 행은 한 줄에 여러 사건이 쉼표로 묶여 있다 —
- * "조미수호조규 체결, 임오군란 일어남, …" → "조미수호조규 체결 외 3". 나머지는 상세에.
+ * 열 색(대표 지시 2026-09-05: "나라가 한눈에 구분돼야"). 칩·본문은 흑백 그대로, 열 헤더의 나라 이름과
+ * 윗선에만 쓴다. 브랜드 팔레트(A-3)는 미정이라 나라 구분용 4색만 — 흔한 연상(한국 파랑·중국 빨강)을 따르고
+ * 일본·미국은 겹치지 않는 보라·초록.
  */
-const shortKo = (title: string): string => {
-  const segs = title.split(/,\s+/).filter((s) => s.trim());
-  return segs.length > 1 ? `${segs[0]} 외 ${segs.length - 1}` : title;
-};
-
-/**
- * 한국어 이름이 **사건**을 가리키는가. QID는 인물·왕조일 때가 많아(이시진, 도요토미 히데요시, 청나라)
- * 그 이름만 칩에 쓰면 무슨 일인지 사라진다. 사건 이름 꼴(…전쟁·조약·사건·혁명·즉위…)일 때만 이름만으로 충분.
- */
-const EVENT_LIKE =
-  /(전쟁|전투|대첩|사건|조약|협정|협약|조규|장정|혁명|운동|반란|봉기|난|군란|민란|내란|동란|병란|사변|양요|왜란|호란|옥사|사화|환국|반정|정난|의거|항쟁|정변|쿠데타|개혁|유신|선언|조인|건국|멸망|즉위|퇴위|설립|창설|창건|창립|개통|준공|천도|회담|회의|칙령|헌법|독립|해방|점령|침공|침략|정벌|원정|학살|폭동|시위|파업|선거|취임|암살|탄생|개교|창간|출간|발명|발견|탐험|상륙|항해|동맹|연합|분할|통일|합병|병합|폐지|제정|반포|공포|시행|편찬|간행|완성|건립|축조|화재|지진|홍수|기근|역병|참사|사고|폭발|붕괴|공습|폭격|포격|해전|공방전|포위|함락|항복|휴전|종전|개전|법령|법|령|제도|정책|계획|박람회|올림픽|대회|재판|판결|처형|유배|망명|귀국|파견|사절|통신사|수신사|개항|개국|쇄국|금지령|해금|폐번|치현|과거|칙서)$/;
-const isEventName = (ko: string) => EVENT_LIKE.test(ko);
+const REGION_COLOR: Record<RegionId, string> = { kr: "#1d4ed8", cn: "#b91c1c", jp: "#7e22ce", us: "#15803d" };
 
 /** 그 해 그 열의 정치체. 밴드는 약 40개라 선형 탐색으로 충분하다. */
 const polityAt = (list: Polity[] | undefined, year: number): Polity | undefined =>
@@ -238,6 +228,26 @@ export function TimelineGrid() {
   const [sheetFull, setSheetFull] = useState(false);
 
   const [polities, setPolities] = useState<Polities>({});
+  /** UI 언어(대표 지시 2026-09-05). 한국어 기본, URL ?lang=로 왕복. 사건 라벨·열 이름·연도 표기·문구가 바뀐다. */
+  const [locale, setLocale] = useState<Locale>("ko");
+  const t = T[locale];
+  useEffect(() => { document.documentElement.lang = locale; }, [locale]);
+  /** 정치체 라벨 — ko는 발행 라벨 그대로, 다른 언어는 그 언어판 이름 + 연도. */
+  const shortYear = (y: number) => formatYearL(y, locale).replace(/[년年]$/, "");
+  const polityLabel = (p: Polity) => (locale === "ko" ? p.label : `${p.names[locale] ?? p.name} ${shortYear(p.y0)}–${p.y1 == null ? "" : shortYear(p.y1)}`);
+  const polityName = (p: Polity) => (locale === "ko" ? p.name : p.names[locale] ?? p.name);
+  const regionLabel = (id: RegionId) => REGION_LABEL[locale][id];
+  const yearLabel = (ev: PublishedEvent) => (locale === "ko" ? ev.date_ko : `${ev.approx ? "c. " : ""}${formatYearL(ev.y0, locale)}`);
+  /** 드래그로 열 순서 바꾸기(HTML5 DnD). ◂ ▸ 버튼은 키보드·모바일용으로 남긴다. */
+  const dragCol = useRef<RegionId | null>(null);
+  const moveColTo = (from: RegionId, to: RegionId) =>
+    setCols((cs) => {
+      const i = cs.indexOf(from), j = cs.indexOf(to);
+      if (i < 0 || j < 0 || i === j) return cs;
+      const next = cs.filter((x) => x !== from);
+      next.splice(j, 0, from);
+      return next;
+    });
   /** 보이는 열과 순서(PRD §4-1 열 추가·삭제·순서). URL ?r=로 왕복. 첫 열이 홈 열(시대 레일). */
   const [cols, setCols] = useState<RegionId[]>(() => COLUMNS.map((c) => c.id));
   const shown = cols.map((id) => COLUMNS.find((c) => c.id === id)!);
@@ -310,6 +320,7 @@ export function TimelineGrid() {
         // 아직 s=8 높이인 스페이서에 s=40용 scrollTop을 넣고 끝난다(1882 요청이 45년에 착지했다)
         landing.current = { y: url.y ?? LANDING_YEAR, s, vh };
         if (url.r) setCols(url.r);
+        if (url.lang) setLocale(url.lang);
         setAxis({ s, viewportH: vh });
       } else {
         // 창이 줄면 s도 함께 눌러야 한 행이 뷰포트를 넘지 않는다(§5-5A S_MAX)
@@ -328,11 +339,11 @@ export function TimelineGrid() {
     if (!landed.current || landing.current) return; // 착지 전의 scrollTop 0을 URL에 쓰지 않는다
     const t = setTimeout(() => {
       const y = Math.round(centerYear(scrollTop, axis));
-      const url = `${location.pathname}?r=${cols.join(",")}&y=${y}&s=${Number(axis.s.toFixed(2))}`;
+      const url = `${location.pathname}?r=${cols.join(",")}&y=${y}&s=${Number(axis.s.toFixed(2))}${locale === "ko" ? "" : `&lang=${locale}`}`;
       if (location.search !== url.slice(location.pathname.length)) history.replaceState(null, "", url);
     }, URL_IDLE_MS);
     return () => clearTimeout(t);
-  }, [scrollTop, axis, cols]);
+  }, [scrollTop, axis, cols, locale]);
 
   // ── 줌 결과 반영: 스페이서 height가 쓰인 뒤 같은 레이아웃 패스에서 ────────
   useLayoutEffect(() => {
@@ -513,23 +524,35 @@ export function TimelineGrid() {
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-neutral-200 px-4">
         <span className="font-semibold tracking-tight">history</span>
         {manifest?.stage === "preview" ? (
-          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-800">미리보기 · {manifest.counts.events}건 · 원문 그대로 · 2025년까지</span>
+          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-800">{t.badgePreview(manifest.counts.events)}</span>
         ) : (
-          <span className="text-neutral-400">{manifest ? `${manifest.counts.events}건 · 2025년까지 수록` : "데이터 없음"}</span>
+          <span className="text-neutral-400">{manifest ? t.badge(manifest.counts.events) : t.noData}</span>
         )}
         {/* 추천 연도 칩(§11 C-1) — 네 열이 동시에 촘촘한 해. 조작을 배우기 전에 제품의 답을 먼저 보여준다 */}
-        <nav className="flex gap-1 text-[11px]" aria-label="추천 연도">
+        <nav className="flex gap-1 text-[11px]" aria-label={t.recommended}>
           {[1592, 1882, 1945].map((y) => (
             <button key={y} type="button" onClick={() => goTo(y)} className="rounded-full border border-neutral-300 px-2 py-0.5 text-neutral-600 hover:bg-neutral-100">
-              {y}년
+              {formatYearL(y, locale)}
             </button>
           ))}
         </nav>
-        <span className="ml-auto text-neutral-500">
-          시간 이동은 스크롤 · 확대는 <kbd className="rounded border px-1">Ctrl</kbd>+휠 또는{" "}
-          <kbd className="rounded border px-1">+</kbd>/<kbd className="rounded border px-1">−</kbd>
-        </span>
-        <a href="/sources" className="text-[11px] text-neutral-500 underline">출처</a>
+        <span className="ml-auto hidden text-neutral-500 lg:inline">{t.siteHint}</span>
+        {/* 언어(대표 지시 2026-09-05): 한국어 기본, URL ?lang=. 사건 이름은 위키데이터 4개 언어판 표제어에서 */}
+        <nav className="flex gap-0.5 text-[11px]" aria-label={t.language}>
+          {LOCALES.map((l) => (
+            <button
+              key={l}
+              type="button"
+              onClick={() => setLocale(l)}
+              aria-pressed={locale === l}
+              title={LOCALE_LABEL[l]}
+              className={`rounded px-1.5 py-0.5 uppercase ${locale === l ? "bg-neutral-900 text-white" : "text-neutral-500 hover:bg-neutral-100"}`}
+            >
+              {l}
+            </button>
+          ))}
+        </nav>
+        <a href="/sources" className="text-[11px] text-neutral-500 underline">{t.sources}</a>
       </header>
 
       <div className="relative flex min-h-0 flex-1">
@@ -539,7 +562,7 @@ export function TimelineGrid() {
           onPointerDown={(e) => jumpFromRail(e.clientY)}
           // 폭 사다리: <768 숨김(모바일 스크러버는 다음) · ~1440 40px · >1440 64px
           className="relative hidden w-10 shrink-0 cursor-grab border-r border-neutral-200 bg-neutral-50 select-none md:block wide:w-16"
-          title="시대 레일 — 클릭하면 그 시대로 점프"
+          title={t.railTitle}
         >
           {/* 홈 열(첫 열) 정치체 색 띠 — 연도 도메인으로 매핑한다(§5-5A: 스크롤 비율이 아니다) */}
           {(polities[cols[0] ?? "kr"] ?? []).map((p, i) => {
@@ -549,8 +572,8 @@ export function TimelineGrid() {
             const top = railY(y0, railH);
             const h = railY(y1, railH) - top;
             return (
-              <div key={p.id} className={`absolute inset-x-0 overflow-hidden ${i % 2 ? "bg-neutral-200/60" : ""}`} style={{ top, height: h }} title={p.label}>
-                {h >= 14 && <div className="truncate px-1 text-[10px] leading-[14px] text-neutral-500">{p.name}</div>}
+              <div key={p.id} className={`absolute inset-x-0 overflow-hidden ${i % 2 ? "bg-neutral-200/60" : ""}`} style={{ top, height: h }} title={polityLabel(p)}>
+                {h >= 14 && <div className="truncate px-1 text-[10px] leading-[14px] text-neutral-500">{polityName(p)}</div>}
               </div>
             );
           })}
@@ -564,7 +587,7 @@ export function TimelineGrid() {
           onKeyDown={onGridKey}
           tabIndex={0}
           role="region"
-          aria-label="시간축. 위아래 화살표로 이동, 칩에서 좌우 화살표로 옆 열, Enter로 상세, Esc로 닫기"
+          aria-label={t.timelineAria}
           className="relative min-w-0 flex-1 overflow-y-auto outline-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           style={{ overflowAnchor: "none", overscrollBehaviorY: "contain", touchAction: "pan-y" }}
         >
@@ -575,15 +598,26 @@ export function TimelineGrid() {
             {shown.map((c, i) => {
               const p = polityAt(polities[c.id], yToYear(scrollTop + COLUMN_HEADER_H, axis));
               const btn = "rounded px-1 leading-none text-neutral-400 hover:bg-neutral-200 hover:text-neutral-800 disabled:invisible";
+              const label = regionLabel(c.id);
               return (
-                <div key={c.id} className="group flex min-w-0 flex-1 items-center gap-1.5 border-r border-neutral-100 px-2">
-                  <span className="shrink-0">{c.label}</span>
-                  {p && <span className="min-w-0 truncate font-normal text-neutral-500">{p.label}</span>}
+                // 나라 구분(대표 지시): 윗선과 이름에 열 색. 드래그로 순서 바꾸기(HTML5 DnD) — 놓는 열의 자리로 옮긴다
+                <div
+                  key={c.id}
+                  draggable
+                  onDragStart={(e) => { dragCol.current = c.id; e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", c.id); }}
+                  onDragOver={(e) => { if (dragCol.current && dragCol.current !== c.id) { e.preventDefault(); e.dataTransfer.dropEffect = "move"; } }}
+                  onDrop={(e) => { e.preventDefault(); if (dragCol.current) moveColTo(dragCol.current, c.id); dragCol.current = null; }}
+                  onDragEnd={() => { dragCol.current = null; }}
+                  className="group flex min-w-0 flex-1 cursor-grab items-center gap-1.5 border-r border-neutral-100 px-2 active:cursor-grabbing"
+                  style={{ boxShadow: `inset 0 3px 0 ${REGION_COLOR[c.id]}` }}
+                >
+                  <span className="shrink-0 text-[12px] font-semibold" style={{ color: REGION_COLOR[c.id] }}>{label}</span>
+                  {p && <span className="min-w-0 truncate font-normal text-neutral-500">{polityLabel(p)}</span>}
                   {/* 열 조작(§4-1): 순서 ◂ ▸, 빼기 ×. 마우스를 올렸을 때만. 마지막 한 열은 뺄 수 없다 */}
                   <span className="ml-auto flex shrink-0 gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100">
-                    <button type="button" className={btn} disabled={i === 0} onClick={() => moveCol(c.id, -1)} aria-label={`${c.label} 열 왼쪽으로`}>◂</button>
-                    <button type="button" className={btn} disabled={i === shown.length - 1} onClick={() => moveCol(c.id, 1)} aria-label={`${c.label} 열 오른쪽으로`}>▸</button>
-                    <button type="button" className={btn} disabled={shown.length === 1} onClick={() => removeCol(c.id)} aria-label={`${c.label} 열 빼기`}>×</button>
+                    <button type="button" className={btn} disabled={i === 0} onClick={() => moveCol(c.id, -1)} aria-label={t.colLeft(label)}>◂</button>
+                    <button type="button" className={btn} disabled={i === shown.length - 1} onClick={() => moveCol(c.id, 1)} aria-label={t.colRight(label)}>▸</button>
+                    <button type="button" className={btn} disabled={shown.length === 1} onClick={() => removeCol(c.id)} aria-label={t.colRemove(label)}>×</button>
                   </span>
                 </div>
               );
@@ -591,16 +625,17 @@ export function TimelineGrid() {
             {/* 열 넣기 — 행과 폭을 맞추기 위해 헤더 오른쪽 끝에 얹는다(셀을 추가하면 열 폭이 어긋난다) */}
             {hiddenCols.length > 0 && (
               <details className="absolute right-1 top-0.5 z-20 text-[11px]">
-                <summary className="cursor-pointer list-none rounded border border-neutral-300 bg-white px-1.5 leading-[18px] text-neutral-600 hover:bg-neutral-100">+ 열</summary>
+                <summary className="cursor-pointer list-none rounded border border-neutral-300 bg-white px-1.5 leading-[18px] text-neutral-600 hover:bg-neutral-100">{t.addColumn}</summary>
                 <div className="absolute right-0 mt-1 flex flex-col rounded border border-neutral-200 bg-white py-1 shadow">
                   {hiddenCols.map((c) => (
                     <button
                       key={c.id}
                       type="button"
                       className="px-3 py-1 text-left hover:bg-neutral-100"
+                      style={{ color: REGION_COLOR[c.id] }}
                       onClick={(e) => { addCol(c.id); (e.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open"); }}
                     >
-                      {c.label}
+                      {regionLabel(c.id)}
                     </button>
                   ))}
                 </div>
@@ -667,11 +702,11 @@ export function TimelineGrid() {
                 <div key={b} className="absolute inset-x-0 flex border-t border-neutral-200" style={{ top, height: h }}>
                   {/* 연도 거터 (§5-10). 행이 높으면 보조선 눈금(연·월)도 */}
                   <div className="relative w-10 shrink-0 wide:w-12 border-r border-neutral-200 px-1 text-[11px] text-neutral-500 tabular-nums">
-                    {formatRowLabel(b, rows.level)}
+                    {formatRowLabelL(b, rows.level, locale)}
                     {sub > 0 &&
                       Array.from({ length: sub - 1 }, (_, i) => (
                         <span key={i} className="absolute left-1 text-[10px] text-neutral-300" style={{ top: ((i + 1) / sub) * h - 6 }}>
-                          {rows.level === "decade" ? b + i + 1 : `${i + 2}월`}
+                          {rows.level === "decade" ? b + i + 1 : locale === "ko" ? `${i + 2}월` : locale === "en" ? ["Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][i] : `${i + 2}月`}
                         </span>
                       ))}
                   </div>
@@ -700,7 +735,7 @@ export function TimelineGrid() {
                               // 같은 칩을 다시 누르면 닫는다(토글, 대표 지시 2026-09-05). 다른 칩이면 바꿔 연다
                               onClick={(e) => { lastChip.current = e.currentTarget; if (selected?.ev.id === ev.id) setSelected(null); else openDetail(ev); }}
                               aria-pressed={selected?.ev.id === ev.id}
-                              title={ev.desc ? `${ev.date_ko} · ${ev.desc}` : ev.date_ko}
+                              title={ev.desc && locale === "ko" ? `${yearLabel(ev)} · ${ev.desc}` : yearLabel(ev)}
                               data-col={c.id}
                               data-b={b}
                               data-i={idx}
@@ -708,26 +743,25 @@ export function TimelineGrid() {
                               className={`absolute left-1 right-1 flex items-center rounded border bg-white px-1.5 text-left focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 ${tone}${ev.hist === "traditional" ? " italic" : ""}${selected?.ev.id === ev.id ? " ring-2 ring-neutral-800 ring-offset-1" : ""}`}
                             >
                               <span className="min-w-0 truncate">
-                                {/* 칩은 짧게(대표 지시 2026-09-05): 한국어 이름(ko 사이트링크)이 있으면 그것만, 원문은 상세에.
-                                    같은 셀에 같은 이름이 둘 이상이면(도요토미 히데요시 ×3) 구분을 위해 원문을 덧붙인다 */}
+                                {/* 칩은 짧게(대표 지시 2026-09-05): UI 언어의 사건 이름(사이트링크)이 있으면 그것만, 원문은 상세에.
+                                    같은 셀에 같은 이름이 둘 이상이면(도요토미 히데요시 ×3) 구분을 위해 원문을 덧붙인다 — i18n.eventLabel */}
                                 {(() => {
-                                  const ko = koNameOf(ev);
-                                  const dup = ko !== undefined && placed.filter((p) => koNameOf(p.ev) === ko).length > 1;
-                                  if (ko && !dup && isEventName(ko)) return ko; // 사건 이름이면 그것만 — 원문은 상세에
-                                  if (ev.lang === "ko") return shortKo(ev.title); // 한국어 원문: 묶인 줄은 첫 사건 + "외 N"
-                                  if (ev.title_ko) return ev.title_ko;
-                                  return ko ? (
+                                  const seen = new Map<string, number>();
+                                  for (const p of placed) { const n = nameIn(p.ev, locale); if (n) seen.set(n, (seen.get(n) ?? 0) + 1); }
+                                  const dup = new Set([...seen].filter(([, k]) => k > 1).map(([n]) => n));
+                                  const l = eventLabel(ev, locale, dup);
+                                  return l.name && l.text ? (
                                     <>
-                                      <span className="font-medium">{ko}</span>
+                                      <span className="font-medium">{l.name}</span>
                                       <span className="opacity-50"> · </span>
-                                      {ev.title}
+                                      {l.text}
                                     </>
                                   ) : (
-                                    ev.title
+                                    l.name ?? l.text
                                   );
                                 })()}
-                                {ev.hist === "traditional" && <span className="text-neutral-400"> (전승)</span>}
-                                {ev.official ? <span className="text-neutral-400" title="국사편찬위원회 연표에 있는 사건"> ◆</span> : null}
+                                {ev.hist === "traditional" && <span className="text-neutral-400"> {t.traditional}</span>}
+                                {ev.official ? <span className="text-neutral-400" title={t.officialMark}> ◆</span> : null}
                               </span>
                             </button>
                           );
@@ -756,7 +790,7 @@ export function TimelineGrid() {
                       // 라벨은 오른쪽에 붙인다 — 칩은 왼쪽에서 흐르므로 첫 행과 덜 겹친다
                       <div key={p.id} className="absolute inset-x-0 flex items-start justify-end" style={{ top: yearToY(y0, axis), height: h }}>
                         <div className="sticky max-w-[70%] truncate rounded-full border border-neutral-300 bg-white/90 px-2 text-[11px] leading-[18px] text-neutral-500 backdrop-blur" style={{ top: COLUMN_HEADER_H + 3, margin: "3px 4px 0 0", height: BAND_LABEL_H - 2 }}>
-                          {p.hist === "traditional" ? <i>{p.label}</i> : p.label}
+                          {p.hist === "traditional" ? <i>{polityLabel(p)}</i> : polityLabel(p)}
                         </div>
                       </div>
                     );
@@ -774,50 +808,53 @@ export function TimelineGrid() {
             className={`fixed inset-x-0 bottom-0 z-30 ${sheetFull ? "h-[100dvh]" : "h-[50svh]"} min-h-[176px] overflow-y-auto rounded-t-xl border-t border-neutral-200 bg-white p-4 shadow-[0_-8px_24px_rgba(0,0,0,.08)] lg:absolute lg:inset-x-auto lg:right-0 lg:top-0 lg:bottom-0 lg:h-auto lg:w-[400px] lg:rounded-none lg:border-l lg:border-t-0 lg:shadow-xl wide:static wide:w-[clamp(320px,32vw,400px)] wide:shrink-0 wide:shadow-none`}
             style={{ overscrollBehavior: "contain" }}
             role="complementary"
-            aria-label="사건 상세"
+            aria-label={t.detailAria}
           >
-            <button type="button" onClick={() => setSheetFull((f) => !f)} className="mx-auto mb-2 block h-1.5 w-10 rounded-full bg-neutral-300 lg:hidden" aria-label={sheetFull ? "시트 줄이기" : "시트 늘리기"} />
+            <button type="button" onClick={() => setSheetFull((f) => !f)} className="mx-auto mb-2 block h-1.5 w-10 rounded-full bg-neutral-300 lg:hidden" aria-label={sheetFull ? t.sheetCollapse : t.sheetExpand} />
             <div className="mb-2 flex items-start justify-between gap-2">
-              <h2 className="text-base font-semibold leading-snug">{selected.ev.title}</h2>
-              <button type="button" onClick={() => { setSelected(null); lastChip.current?.focus({ preventScroll: true }); }} className="rounded px-2 text-neutral-500 hover:bg-neutral-100" aria-label="닫기">×</button>
+              {/* 제목: UI 언어의 사건 이름이 있으면 그것, 없으면 칩과 같은 라벨. 원문은 아래 본문에 */}
+              <h2 className="text-base font-semibold leading-snug">
+                {(() => { const l = eventLabel(selected.ev, locale); return l.name ?? l.text; })()}
+              </h2>
+              <button type="button" onClick={() => { setSelected(null); lastChip.current?.focus({ preventScroll: true }); }} className="rounded px-2 text-neutral-500 hover:bg-neutral-100" aria-label={t.close}>×</button>
             </div>
-            <div className="mb-3 text-[12px] text-neutral-500">{selected.ev.date_ko} · 중요도 {selected.ev.regions[0]?.imp}</div>
+            <div className="mb-3 text-[12px] text-neutral-500">{yearLabel(selected.ev)} · {t.importance} {selected.ev.regions[0]?.imp}</div>
             {selected.detail ? (
               <>
                 {/* 공식 연표가 맞춰진 사건은 그쪽 본문이 앞에 선다(editorial-policy §1-7) */}
                 {selected.detail.official.map((o) => (
                   <div key={o.id} className="mb-3 rounded border border-neutral-200 bg-neutral-50 px-3 py-2">
-                    <div className="mb-1 text-[11px] text-neutral-500">국사편찬위원회 · {o.db.replace(/^주제별연표_/, "")}{o.series ? ` (${o.series})` : ""} · {o.date_ko}</div>
-                    <p className="leading-relaxed [text-wrap:pretty] [word-break:keep-all]">{o.text}</p>
+                    <div className="mb-1 text-[11px] text-neutral-500">{t.nikh} · {o.db.replace(/^주제별연표_/, "")}{o.series ? ` (${o.series})` : ""} · {o.date_ko}</div>
+                    <p lang="ko" className="leading-relaxed [text-wrap:pretty] [word-break:keep-all]">{o.text}</p>
                     {o.url && (
-                      <a href={o.url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-[11px] text-neutral-500 underline">한국사데이터베이스에서 보기</a>
+                      <a href={o.url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-[11px] text-neutral-500 underline">{t.viewInDb}</a>
                     )}
                   </div>
                 ))}
                 {selected.detail.text_ko && (
                   <>
-                    <p className="mb-1 text-[11px] text-neutral-500">한국어 · 기계 번역{selected.detail.mt && <span className="text-neutral-400"> ({selected.detail.mt.model})</span>}</p>
-                    <p className="mb-3 leading-relaxed [text-wrap:pretty] [word-break:keep-all]">{selected.detail.text_ko}</p>
+                    <p className="mb-1 text-[11px] text-neutral-500">{t.mt}{selected.detail.mt && <span className="text-neutral-400"> ({selected.detail.mt.model})</span>}</p>
+                    <p lang="ko" className="mb-3 leading-relaxed [text-wrap:pretty] [word-break:keep-all]">{selected.detail.text_ko}</p>
                   </>
                 )}
                 <p className="mb-1 text-[11px] text-neutral-500">
-                  위키백과 연표 원문{selected.detail.lang !== "ko" && <span> ({selected.detail.lang}){!selected.detail.text_ko && " · 한글 옮김은 아직"}</span>}
+                  {t.wikiOriginal}{selected.detail.lang !== locale && <span> ({selected.detail.lang}){locale === "ko" && !selected.detail.text_ko && ` · ${t.notTranslated}`}</span>}
                 </p>
-                <p className={`mb-3 leading-relaxed [text-wrap:pretty] [word-break:keep-all]${selected.detail.text_ko ? " text-neutral-600" : ""}`}>{selected.detail.text}</p>
+                <p lang={selected.detail.lang} className={`mb-3 leading-relaxed [text-wrap:pretty] [word-break:keep-all]${selected.detail.text_ko ? " text-neutral-600" : ""}`}>{selected.detail.text}</p>
                 {selected.detail.alt?.map((a) => (
                   <div key={a.url + a.lang} className="mb-3">
-                    <p className="mb-1 text-[11px] text-neutral-500">같은 사건 · {a.lang} 위키백과 연표 원문</p>
-                    <p className="leading-relaxed text-neutral-700 [text-wrap:pretty] [word-break:keep-all]">{a.text}</p>
+                    <p className="mb-1 text-[11px] text-neutral-500">{t.sameEvent(a.lang)}</p>
+                    <p lang={a.lang} className="leading-relaxed text-neutral-700 [text-wrap:pretty] [word-break:keep-all]">{a.text}</p>
                   </div>
                 ))}
                 {/* 설명 — 연결 문서의 한국어 위키백과 첫 문단. 표제어가 인물·왕조면 그 설명이라 "관련 문서"라 부른다 */}
                 {selected.detail.about && (
                   <div className="mb-3 rounded border border-neutral-200 px-3 py-2">
                     <div className="mb-1 text-[11px] text-neutral-500">
-                      {isEventName(selected.detail.about.title.replace(/\s*\([^)]*\)$/, "")) ? "설명" : "관련 문서"} · 한국어 위키백과 「{selected.detail.about.title}」
+                      {isEventName(selected.detail.about.title, "ko") ? t.description : t.related} · {LOCALE_LABEL.ko} Wikipedia 「{selected.detail.about.title}」
                     </div>
-                    <p className="leading-relaxed [text-wrap:pretty] [word-break:keep-all]">{selected.detail.about.text}</p>
-                    <a href={selected.detail.about.url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-[11px] text-neutral-500 underline">문서 보기 ({selected.detail.about.license})</a>
+                    <p lang="ko" className="leading-relaxed [text-wrap:pretty] [word-break:keep-all]">{selected.detail.about.text}</p>
+                    <a href={selected.detail.about.url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-[11px] text-neutral-500 underline">{t.viewDoc} ({selected.detail.about.license})</a>
                   </div>
                 )}
                 {/* 이 사건을 부르는 이름 (§5-9) — 사이트링크 원문 */}
@@ -826,8 +863,8 @@ export function TimelineGrid() {
                     <tbody>
                       {COLUMNS.filter((c) => selected.ev.names[c.id]?.nat).map((c) => (
                         <tr key={c.id} className="border-t border-neutral-100">
-                          <td className="py-1 pr-2 text-neutral-500">{c.label}</td>
-                          <td className="py-1">{selected.ev.names[c.id]!.nat}</td>
+                          <td className="py-1 pr-2 text-neutral-500" style={{ color: REGION_COLOR[c.id] }}>{regionLabel(c.id)}</td>
+                          <td className="py-1" lang={selected.ev.names[c.id]!.lang}>{selected.ev.names[c.id]!.nat}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -838,13 +875,13 @@ export function TimelineGrid() {
                     {officialYear ? (
                       <div className="rounded border border-neutral-200">
                         <div className="border-b border-neutral-200 px-2 py-1 text-[11px] text-neutral-500">
-                          {officialYear.year <= 0 ? `기원전 ${1 - officialYear.year}년` : `${officialYear.year}년`}의 국사편찬위원회 연표 {officialYear.count}건
-                          {officialYear.count > officialYear.shown && ` 중 ${officialYear.shown}건`}
+                          {t.officialYear(formatYearL(officialYear.year, locale), officialYear.count)}
+                          {officialYear.count > officialYear.shown && t.officialShown(officialYear.shown)}
                         </div>
-                        <ul className="max-h-72 overflow-y-auto text-[12px]" style={{ overscrollBehavior: "contain" }}>
+                        <ul lang="ko" className="max-h-72 overflow-y-auto text-[12px]" style={{ overscrollBehavior: "contain" }}>
                           {officialYear.entries.map((o) => (
                             <li key={o.id} className="border-t border-neutral-100 px-2 py-1 [word-break:keep-all]">
-                              <span className="text-neutral-500">{o.date_ko.replace(/^.*?년\s*/, "") || "날짜 미상"}</span> {o.text}
+                              <span className="text-neutral-500">{o.date_ko.replace(/^.*?년\s*/, "") || t.unknownDate}</span> {o.text}
                               {o.url && <a href={o.url} target="_blank" rel="noreferrer" className="ml-1 text-neutral-400 underline">↗</a>}
                             </li>
                           ))}
@@ -852,17 +889,17 @@ export function TimelineGrid() {
                       </div>
                     ) : (
                       <button type="button" onClick={() => openOfficialYear(selected.detail!.year)} className="rounded border border-neutral-300 px-2 py-1 text-[12px] hover:bg-neutral-50">
-                        이 해의 공식 연표 더 보기
+                        {t.officialMore}
                       </button>
                     )}
                   </div>
                 )}
                 <div className="text-[11px] leading-relaxed text-neutral-500">
-                  출처 {selected.detail.official.length > 0 && <span>국사편찬위원회 연표(공공누리 · 제한 없음) · </span>}
+                  {t.sourceLine} {selected.detail.official.length > 0 && <span>{t.nikhLicense} · </span>}
                   {selected.detail.src.map((s) => (
                     <a key={s.url} href={s.url} target="_blank" rel="noreferrer" className="underline">{new URL(s.url).hostname}</a>
-                  ))} ({selected.detail.license}) · <a href="/sources" className="underline">출처와 라이선스</a> ·{" "}
-                  <a href={`/y/${selected.detail.year}`} className="underline">{selected.ev.date_ko.replace(/경$/, "")} 페이지</a> ·{" "}
+                  ))} ({selected.detail.license}) · <a href="/sources" className="underline">{t.licensePage}</a> ·{" "}
+                  <a href={`/y/${selected.detail.year}`} className="underline">{t.yearPage(formatYearL(selected.ev.y0, locale))}</a> ·{" "}
                   {/* 오류 신고(§11 C-8): 원문을 그대로 싣는 구조라 고칠 것은 "어느 줄을 어느 해·어느 열에"와 국사편찬위 대응뿐 */}
                   <a
                     href={`https://github.com/impactfounder/history/issues/new?${new URLSearchParams({
@@ -873,12 +910,12 @@ export function TimelineGrid() {
                     rel="noreferrer"
                     className="underline"
                   >
-                    오류 신고
+                    {t.report}
                   </a>
                 </div>
               </>
             ) : (
-              <p className="text-neutral-400">불러오는 중…</p>
+              <p className="text-neutral-400">{t.loading}</p>
             )}
           </aside>
         )}
@@ -887,8 +924,8 @@ export function TimelineGrid() {
       {/* 하단 줌 바 자리 + 계측 HUD */}
       {/* 하단 줌 바(§5-10 40px): 뷰포트 중앙 기준 −/+, 레벨 정류장, 중앙 연도. 계측은 개발 모드에서만 */}
       <footer className="flex h-10 shrink-0 items-center gap-3 border-t border-neutral-200 bg-white px-3 text-[12px] text-neutral-700">
-        <div className="flex items-center gap-0.5" role="group" aria-label="확대·축소">
-          <button type="button" onClick={() => zoomCenterTo(axisRef.current.s / 1.6)} disabled={axis.s <= bounds.min} className="h-7 w-7 rounded border border-neutral-300 leading-none hover:bg-neutral-100 disabled:opacity-30" aria-label="축소">−</button>
+        <div className="flex items-center gap-0.5" role="group" aria-label={t.zoomGroup}>
+          <button type="button" onClick={() => zoomCenterTo(axisRef.current.s / 1.6)} disabled={axis.s <= bounds.min} className="h-7 w-7 rounded border border-neutral-300 leading-none hover:bg-neutral-100 disabled:opacity-30" aria-label={t.zoomOut}>−</button>
           {LEVEL_STOPS.map((st) => (
             <button
               key={st.level}
@@ -897,15 +934,15 @@ export function TimelineGrid() {
               aria-pressed={rows.level === st.level}
               className={`h-7 rounded px-2 ${rows.level === st.level ? "bg-neutral-900 text-white" : "text-neutral-600 hover:bg-neutral-100"}`}
             >
-              {st.label}
+              {t.level[st.level as Exclude<Level, "month">]}
             </button>
           ))}
-          <button type="button" onClick={() => zoomCenterTo(axisRef.current.s * 1.6)} disabled={axis.s >= bounds.max} className="h-7 w-7 rounded border border-neutral-300 leading-none hover:bg-neutral-100 disabled:opacity-30" aria-label="확대">+</button>
+          <button type="button" onClick={() => zoomCenterTo(axisRef.current.s * 1.6)} disabled={axis.s >= bounds.max} className="h-7 w-7 rounded border border-neutral-300 leading-none hover:bg-neutral-100 disabled:opacity-30" aria-label={t.zoomIn}>+</button>
         </div>
         <span className="text-neutral-500">
-          중앙 <b className="text-neutral-900">{formatYear(Math.round(centerYear(scrollTop, axis)))}</b>
+          {t.center} <b className="text-neutral-900">{formatYearL(Math.round(centerYear(scrollTop, axis)), locale)}</b>
         </span>
-        <span className="hidden text-neutral-400 sm:inline">{formatRowLabel(rows.from, rows.level)} ~ {formatRowLabel(rows.to, rows.level)}</span>
+        <span className="hidden text-neutral-400 sm:inline">{formatRowLabelL(rows.from, rows.level, locale)} ~ {formatRowLabelL(rows.to, rows.level, locale)}</span>
         {process.env.NODE_ENV === "development" && (
           <details className="ml-auto font-mono text-[11px] text-neutral-500">
             <summary className="cursor-pointer select-none">계측</summary>
