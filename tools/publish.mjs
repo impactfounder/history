@@ -85,15 +85,17 @@ function toRecord(r) {
 }
 
 function toDetail(r, id) {
+  // 국사편찬위가 1차 출처인 줄(tools/nikh-events.mjs)은 본문이 official[]에 그대로 있다 — 두 번 싣지 않는다
+  const nikhPrimary = r.sources[0]?.kind === "nikh" && r.sources[0]?.primary;
   return {
     id,
     title: r.title,
-    text: r.text,
+    ...(nikhPrimary ? {} : { text: r.text }),
     // 기계 번역(tools/translate.mjs). 원문이 진본이고 번역은 파생물 — UI가 "기계 번역"이라 표시한다
     ...(r.title_ko ? { text_ko: r.title_ko, mt: r.mt } : {}),
     lang: r.lang,
     year: r.date.year,
-    license: "CC BY-SA 4.0", // text의 라이선스(위키백과)
+    license: nikhPrimary ? "KOGL 제1유형(이용허락범위 제한 없음)" : "CC BY-SA 4.0", // 본문의 라이선스
     official: r.sources
       .filter((s) => s.kind === "nikh")
       .map((s) => ({ id: s.id, db: s.db, series: s.series, date_ko: formatNikhDate(s.date), text: s.text, url: s.url, license: s.license })),

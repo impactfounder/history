@@ -34,10 +34,14 @@ const SOURCES = {
   kr: [
     { wiki: "ko", title: "한국사 연표", slug: "ko-korean-timeline" },
     { wiki: "en", title: "Timeline of Korean history", slug: "en-korean-timeline" },
+    { wiki: "en", title: "Timeline of the Kwangmu Reform", slug: "en-kwangmu" }, // 대한제국 1897~1907
   ],
   cn: [
     { wiki: "zh", title: "中国历史年表", slug: "zh-chinese-timeline" },
     { wiki: "en", title: "Timeline of Chinese history", slug: "en-chinese-timeline" },
+    // 왕조별 연표(2026-09-05). 전근대가 왕조 문서에만 촘촘하다 — 한 문서로는 한 왕조가 몇 줄에 그친다
+    ...["Han", "Tang", "Song", "Ming", "Qing"].map((d) => ({ wiki: "en", title: `Timeline of the ${d} dynasty`, slug: `en-cn-${d.toLowerCase()}` })),
+    { wiki: "zh", title: "中华人民共和国历史年表", slug: "zh-prc-timeline" }, // 1949~
   ],
   jp: [
     { wiki: "ja", title: "日本史の出来事一覧", slug: "ja-japanese-timeline" },

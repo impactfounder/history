@@ -122,8 +122,8 @@ interface OfficialEntry { id: string; db: string; series: string | null; date_ko
 interface Detail {
   id: string;
   title: string;
-  /** 위키백과 연표 원문 줄. editorial-policy §1-6 — 우리가 쓴 문장은 없다. */
-  text: string;
+  /** 위키백과 연표 원문 줄. editorial-policy §1-6 — 우리가 쓴 문장은 없다. 국사편찬위가 1차 출처면 official[]에만 있다. */
+  text?: string;
   /** 기계 번역과 그 출처(모델·시각). 원문이 진본. */
   text_ko?: string;
   mt?: { model: string; at: string };
@@ -849,10 +849,14 @@ export function TimelineGrid() {
                     <p lang="ko" className="mb-3 leading-relaxed [text-wrap:pretty] [word-break:keep-all]">{selected.detail.text_ko}</p>
                   </>
                 )}
-                <p className="mb-1 text-[11px] text-neutral-500">
-                  {t.wikiOriginal}{selected.detail.lang !== locale && <span> ({selected.detail.lang}){locale === "ko" && !selected.detail.text_ko && ` · ${t.notTranslated}`}</span>}
-                </p>
-                <p lang={selected.detail.lang} className={`mb-3 leading-relaxed [text-wrap:pretty] [word-break:keep-all]${selected.detail.text_ko ? " text-neutral-600" : ""}`}>{selected.detail.text}</p>
+                {selected.detail.text && (
+                  <>
+                    <p className="mb-1 text-[11px] text-neutral-500">
+                      {t.wikiOriginal}{selected.detail.lang !== locale && <span> ({selected.detail.lang}){locale === "ko" && !selected.detail.text_ko && ` · ${t.notTranslated}`}</span>}
+                    </p>
+                    <p lang={selected.detail.lang} className={`mb-3 leading-relaxed [text-wrap:pretty] [word-break:keep-all]${selected.detail.text_ko ? " text-neutral-600" : ""}`}>{selected.detail.text}</p>
+                  </>
+                )}
                 {selected.detail.alt?.map((a) => (
                   <div key={a.url + a.lang} className="mb-3">
                     <p className="mb-1 text-[11px] text-neutral-500">{t.sameEvent(a.lang)}</p>
@@ -907,16 +911,17 @@ export function TimelineGrid() {
                   </div>
                 )}
                 <div className="text-[11px] leading-relaxed text-neutral-500">
-                  {t.sourceLine} {selected.detail.official.length > 0 && <span>{t.nikhLicense} · </span>}
+                  {t.sourceLine} {selected.detail.official.length > 0 && <span>{t.nikhLicense}{selected.detail.src.length > 0 ? " · " : ""}</span>}
                   {selected.detail.src.map((s) => (
                     <a key={s.url} href={s.url} target="_blank" rel="noreferrer" className="underline">{new URL(s.url).hostname}</a>
-                  ))} ({selected.detail.license}) · <a href="/sources" className="underline">{t.licensePage}</a> ·{" "}
+                  ))}
+                  {selected.detail.src.length > 0 && ` (${selected.detail.license})`} · <a href="/sources" className="underline">{t.licensePage}</a> ·{" "}
                   <a href={`/y/${selected.detail.year}`} className="underline">{t.yearPage(formatYearL(selected.ev.y0, locale))}</a> ·{" "}
                   {/* 오류 신고(§11 C-8): 원문을 그대로 싣는 구조라 고칠 것은 "어느 줄을 어느 해·어느 열에"와 국사편찬위 대응뿐 */}
                   <a
                     href={`https://github.com/impactfounder/history/issues/new?${new URLSearchParams({
                       title: `[사건 오류] ${selected.ev.date_ko} · ${selected.ev.title.slice(0, 40)}`,
-                      body: `사건 id: ${selected.ev.id}\n연도·열: ${selected.ev.date_ko} · ${selected.ev.regions[0]?.r}\n원문: ${selected.detail.text}\n출처: ${selected.detail.src.map((s) => s.url).join(", ")}\n\n무엇이 틀렸나요? (연도 / 열 귀속 / 국사편찬위 대응 / 그 밖에)\n`,
+                      body: `사건 id: ${selected.ev.id}\n연도·열: ${selected.ev.date_ko} · ${selected.ev.regions[0]?.r}\n원문: ${selected.detail.text ?? selected.detail.official[0]?.text ?? ""}\n출처: ${[...selected.detail.src.map((s) => s.url), ...selected.detail.official.map((o) => o.url ?? o.id)].join(", ")}\n\n무엇이 틀렸나요? (연도 / 열 귀속 / 국사편찬위 대응 / 그 밖에)\n`,
                     })}`}
                     target="_blank"
                     rel="noreferrer"
