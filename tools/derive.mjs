@@ -20,6 +20,7 @@
  * 사용:  node tools/derive.mjs [kr cn jp us]
  */
 
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { bestMatches, stripYear } from "../src/lib/curation/nikh-match.mjs";
@@ -107,6 +108,13 @@ function rejectReason(raw, title) {
 
 // ── 입력 ────────────────────────────────────────────────────────────────────
 const sitelinks = existsSync("curation/raw/_qid-sitelinks.json") ? JSON.parse(readFileSync("curation/raw/_qid-sitelinks.json", "utf8")).counts : {};
+/** 한글 옮김 캐시(tools/translate.mjs). 키 sha1(lang|title) — 같은 줄은 한 번만 번역한다. */
+const translations = new Map(
+  existsSync("curation/translations/ko.jsonl")
+    ? readFileSync("curation/translations/ko.jsonl", "utf8").split("\n").filter(Boolean).map((l) => { const t = JSON.parse(l); return [t.h, t]; })
+    : [],
+);
+const hashOf = (lang, text) => createHash("sha1").update(`${lang}|${text}`).digest("hex").slice(0, 16);
 if (!Object.keys(sitelinks).length) console.warn("⚠ _qid-sitelinks.json 없음 — 중요도가 전부 2가 된다. tools/enrich.mjs를 먼저 돌려라.");
 
 let nikhByYear = null;
@@ -154,6 +162,10 @@ for (const region of regions) {
       lang,
       title,
       text: raw.text,
+      // 한글 옮김이 캐시에 있으면 붙인다(기계 번역 — UI가 그렇게 표시한다). 원문이 한국어면 없음
+      ...(lang !== "ko" && translations.has(hashOf(lang, title))
+        ? { title_ko: translations.get(hashOf(lang, title)).ko, mt: { model: translations.get(hashOf(lang, title)).model, at: translations.get(hashOf(lang, title)).at } }
+        : {}),
       ...(qidValid ? { qid: raw.qid, names_native: raw.names_native, sitelinks: n } : {}),
       importance_auto: undefined, // 열 전체를 본 뒤 assignImportance가 채운다
       sources: [],

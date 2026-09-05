@@ -55,6 +55,8 @@ interface PublishedEvent {
   approx: boolean;
   hist: "historical" | "traditional";
   title: string;
+  /** 기계 번역(tools/translate.mjs). 있으면 칩에 이것을 보인다. */
+  title_ko?: string;
   lang: string;
   names: Partial<Record<RegionId, { nat?: string; lang?: string }>>;
   regions: { r: RegionId; imp: number; role: string }[];
@@ -70,6 +72,9 @@ interface Detail {
   title: string;
   /** 위키백과 연표 원문 줄. editorial-policy §1-6 — 우리가 쓴 문장은 없다. */
   text: string;
+  /** 기계 번역과 그 출처(모델·시각). 원문이 진본. */
+  text_ko?: string;
+  mt?: { model: string; at: string };
   lang: string;
   year: number;
   license: string;
@@ -541,13 +546,19 @@ export function TimelineGrid() {
                               className={`${evs.length > max ? "max-w-[calc(100%-2.25rem)]" : "max-w-full"} truncate rounded border px-1.5 py-0.5 text-left leading-tight ${tone}${ev.hist === "traditional" ? " italic" : ""}`}
                             >
                               {/* 한국어 이름이 있으면 앞에(ko 사이트링크 표제어) — 번역 전의 절반짜리 한국어. 원문이 한국어면 중복이라 뺀다 */}
-                              {ev.lang !== "ko" && ev.names.kr?.nat && (
+                              {ev.title_ko ? (
+                                ev.title_ko
+                              ) : (
                                 <>
-                                  <span className="font-medium">{ev.names.kr.nat.replace(/\s*\([^)]*\)$/, "")}</span>
-                                  <span className="opacity-50"> · </span>
+                                  {ev.lang !== "ko" && ev.names.kr?.nat && (
+                                    <>
+                                      <span className="font-medium">{ev.names.kr.nat.replace(/\s*\([^)]*\)$/, "")}</span>
+                                      <span className="opacity-50"> · </span>
+                                    </>
+                                  )}
+                                  {ev.title}
                                 </>
                               )}
-                              {ev.title}
                               {ev.hist === "traditional" && <span className="text-neutral-400"> (전승)</span>}
                               {ev.official ? <span className="text-neutral-400" title="국사편찬위원회 연표에 있는 사건"> ◆</span> : null}
                             </button>
@@ -608,8 +619,16 @@ export function TimelineGrid() {
                     )}
                   </div>
                 ))}
-                <p className="mb-1 text-[11px] text-neutral-500">위키백과 연표 원문{selected.detail.lang !== "ko" && <span> ({selected.detail.lang}) · 한글 옮김은 아직</span>}</p>
-                <p className="mb-3 leading-relaxed [text-wrap:pretty] [word-break:keep-all]">{selected.detail.text}</p>
+                {selected.detail.text_ko && (
+                  <>
+                    <p className="mb-1 text-[11px] text-neutral-500">한국어 · 기계 번역{selected.detail.mt && <span className="text-neutral-400"> ({selected.detail.mt.model})</span>}</p>
+                    <p className="mb-3 leading-relaxed [text-wrap:pretty] [word-break:keep-all]">{selected.detail.text_ko}</p>
+                  </>
+                )}
+                <p className="mb-1 text-[11px] text-neutral-500">
+                  위키백과 연표 원문{selected.detail.lang !== "ko" && <span> ({selected.detail.lang}){!selected.detail.text_ko && " · 한글 옮김은 아직"}</span>}
+                </p>
+                <p className={`mb-3 leading-relaxed [text-wrap:pretty] [word-break:keep-all]${selected.detail.text_ko ? " text-neutral-600" : ""}`}>{selected.detail.text}</p>
                 {selected.detail.alt?.map((a) => (
                   <div key={a.url + a.lang} className="mb-3">
                     <p className="mb-1 text-[11px] text-neutral-500">같은 사건 · {a.lang} 위키백과 연표 원문</p>

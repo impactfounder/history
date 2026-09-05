@@ -68,6 +68,7 @@ function toRecord(r) {
     approx: Boolean(r.date.approximate),
     hist: r.historicity ?? "historical",
     title: r.title,
+    ...(r.title_ko ? { title_ko: r.title_ko } : {}),
     lang: r.lang,
     names,
     regions: [{ r: r.region, imp: r.importance_auto, role: "primary" }],
@@ -81,6 +82,8 @@ function toDetail(r, id) {
     id,
     title: r.title,
     text: r.text,
+    // 기계 번역(tools/translate.mjs). 원문이 진본이고 번역은 파생물 — UI가 "기계 번역"이라 표시한다
+    ...(r.title_ko ? { text_ko: r.title_ko, mt: r.mt } : {}),
     lang: r.lang,
     year: r.date.year,
     license: "CC BY-SA 4.0", // text의 라이선스(위키백과)
