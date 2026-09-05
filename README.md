@@ -38,6 +38,7 @@ npm run publish                      # → public/data/v1/ (정적 JSON 청크)
 
 ## 문서
 
+- **`docs/status.md` — 진행 상황. 이어서 작업할 때 여기부터**
 - `docs/PRD.md` — 제품 정의와 결정 기록(부록 A)
 - `docs/data-model.md` — 스키마·파이프라인·발행 포맷
 - `docs/editorial-policy.md` — 열 귀속·관점별 명칭·원문 사용 원칙
