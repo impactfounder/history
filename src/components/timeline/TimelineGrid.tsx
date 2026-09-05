@@ -157,7 +157,7 @@ const DATA = "/data/v1";
 /** 정치체 스티키 헤더 라벨 높이(px). 밴드가 이보다 얕으면 라벨 없이 색 띠만(PRD §5-10 조건 ④). */
 const BAND_LABEL_H = 22;
 /** 스크롤 컨테이너 상단의 열 헤더 높이(px). 밴드 라벨은 그 아래에 붙는다. */
-const COLUMN_HEADER_H = 26;
+const COLUMN_HEADER_H = 34;
 
 /** 착지(§5-7, C-1 권고안): 십년 레벨로 최근 수십 년. 1980을 중앙에 두면 766px 뷰포트에 1930년대~현재가 든다. */
 const LANDING_YEAR = 1980;
@@ -188,7 +188,9 @@ function readUrlState(): { y: number | null; s: number | null; r: RegionId[] | n
  * 윗선에만 쓴다. 브랜드 팔레트(A-3)는 미정이라 나라 구분용 4색만 — 흔한 연상(한국 파랑·중국 빨강)을 따르고
  * 일본·미국은 겹치지 않는 보라·초록.
  */
-const REGION_COLOR: Record<RegionId, string> = { kr: "#1d4ed8", cn: "#b91c1c", jp: "#7e22ce", us: "#15803d" };
+const REGION_COLOR: Record<RegionId, string> = { kr: "#0047A0", cn: "#C8102E", jp: "#6D28D9", us: "#1F6E43" };
+/** 국기(public/flags, 위키미디어 공용의 공유 저작물). 윈도우는 국기 이모지를 못 그려서 SVG로. */
+const FLAG: Record<RegionId, string> = { kr: "/flags/kr.svg", cn: "/flags/cn.svg", jp: "/flags/jp.svg", us: "/flags/us.svg" };
 
 /** 그 해 그 열의 정치체. 밴드는 약 40개라 선형 탐색으로 충분하다. */
 const polityAt = (list: Polity[] | undefined, year: number): Polity | undefined =>
@@ -597,7 +599,7 @@ export function TimelineGrid() {
             <div className="w-10 shrink-0 wide:w-12 border-r border-neutral-200" />
             {shown.map((c, i) => {
               const p = polityAt(polities[c.id], yToYear(scrollTop + COLUMN_HEADER_H, axis));
-              const btn = "rounded px-1 leading-none text-neutral-400 hover:bg-neutral-200 hover:text-neutral-800 disabled:invisible";
+              const btn = "rounded px-1 leading-none text-white/70 hover:bg-white/25 hover:text-white disabled:invisible";
               const label = regionLabel(c.id);
               return (
                 // 나라 구분(대표 지시): 윗선과 이름에 열 색. 드래그로 순서 바꾸기(HTML5 DnD) — 놓는 열의 자리로 옮긴다
@@ -608,11 +610,13 @@ export function TimelineGrid() {
                   onDragOver={(e) => { if (dragCol.current && dragCol.current !== c.id) { e.preventDefault(); e.dataTransfer.dropEffect = "move"; } }}
                   onDrop={(e) => { e.preventDefault(); if (dragCol.current) moveColTo(dragCol.current, c.id); dragCol.current = null; }}
                   onDragEnd={() => { dragCol.current = null; }}
-                  className="group flex min-w-0 flex-1 cursor-grab items-center gap-1.5 border-r border-neutral-100 px-2 active:cursor-grabbing"
-                  style={{ boxShadow: `inset 0 3px 0 ${REGION_COLOR[c.id]}` }}
+                  // 나라 헤더는 본문보다 크고 진하게(대표 지시): 나라 색 바탕 + 국기 + 흰 글씨. 열이 어느 나라인지 한눈에
+                  className="group flex min-w-0 flex-1 cursor-grab items-center gap-2 border-r border-white/40 px-2 text-white active:cursor-grabbing"
+                  style={{ background: REGION_COLOR[c.id] }}
                 >
-                  <span className="shrink-0 text-[12px] font-semibold" style={{ color: REGION_COLOR[c.id] }}>{label}</span>
-                  {p && <span className="min-w-0 truncate font-normal text-neutral-500">{polityLabel(p)}</span>}
+                  <img src={FLAG[c.id]} alt="" width={24} height={16} className="h-4 w-6 shrink-0 rounded-[2px] object-cover shadow-sm" draggable={false} />
+                  <span className="shrink-0 text-[14px] font-bold tracking-tight">{label}</span>
+                  {p && <span className="min-w-0 truncate text-[12px] font-normal text-white/85">{polityLabel(p)}</span>}
                   {/* 열 조작(§4-1): 순서 ◂ ▸, 빼기 ×. 마우스를 올렸을 때만. 마지막 한 열은 뺄 수 없다 */}
                   <span className="ml-auto flex shrink-0 gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100">
                     <button type="button" className={btn} disabled={i === 0} onClick={() => moveCol(c.id, -1)} aria-label={t.colLeft(label)}>◂</button>
