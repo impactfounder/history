@@ -315,13 +315,9 @@ export function formatRowLabelL(bucket: number, level: Level, locale: Locale): s
  * 그 언어의 표제어가 **사건**을 가리키는가. QID는 인물·왕조·지명일 때가 많아(이시진, 도요토미 히데요시,
  * 청나라, 콜로라도주) 그 이름만 칩에 쓰면 무슨 일인지 사라진다. 사건 이름 꼴일 때만 이름만으로 충분.
  */
-const EVENT_NAME: Record<Locale, RegExp> = {
-  ko: /(전쟁|전투|대첩|사건|조약|협정|협약|조규|장정|혁명|운동|반란|봉기|난|군란|민란|내란|동란|병란|사변|양요|왜란|호란|옥사|사화|환국|반정|정난|의거|항쟁|정변|쿠데타|개혁|유신|선언|조인|건국|멸망|즉위|퇴위|설립|창설|창건|창립|개통|준공|천도|회담|회의|칙령|헌법|독립|해방|점령|침공|침략|정벌|원정|학살|폭동|시위|파업|선거|취임|암살|탄생|개교|창간|출간|발명|발견|탐험|상륙|항해|동맹|연합|분할|통일|합병|병합|폐지|제정|반포|공포|시행|편찬|간행|완성|건립|축조|화재|지진|홍수|기근|역병|참사|사고|폭발|붕괴|공습|폭격|포격|해전|공방전|포위|함락|항복|휴전|종전|개전|법령|법|령|제도|정책|계획|박람회|올림픽|대회|재판|판결|처형|유배|망명|귀국|파견|사절|통신사|수신사|개항|개국|쇄국|금지령|해금|폐번|치현|과거|칙서)$/,
-  en: /\b(War|Wars|Battle|Battles|Treaty|Revolution|Rebellion|Incident|Uprising|Act|Massacre|Siege|Conference|Convention|Expedition|Crisis|Coup|Strike|Riot|Riots|Famine|Earthquake|Fire|Flood|Epidemic|Plague|Election|Purge|Reform|Reforms|Restoration|Campaign|Invasion|Invasions|Conquest|Raid|Mutiny|Revolt|Insurrection|Declaration|Agreement|Accord|Pact|Armistice|Ceasefire|Independence|Unification|Partition|Annexation|Occupation|Exhibition|Exposition|Olympics|Games|Trial|Scandal|Affair|Disaster|Accident|Explosion|Bombing|Attack|Assassination|Founding|Establishment|Opening|Completion|Protocol|Compromise|Purchase|Proclamation|Amendment|Constitution|Charter|Edict|Ordinance|Reformation|Renaissance|Crusade|Plot|Conspiracy|Movement|Protest|Protests|March|Boycott|Embargo|Blockade|Landing|Voyage|Flight|Launch|Expedition)\b/i,
-  ja: /(戦争|の戦い|合戦|の役|条約|事件|の乱|の変|革命|一揆|改革|維新|条例|会議|宣言|独立|統一|併合|占領|侵攻|遠征|大火|地震|飢饉|流行|選挙|反乱|蜂起|暴動|クーデター|開戦|終戦|休戦|講和|博覧会|オリンピック|裁判|事変|征伐|遷都|開港|鎖国|開国|建国|即位|退位|崩御|創立|設立|開通|完成|制定|発布|施行|廃止|廃藩置県|大政奉還|新政|令|法|憲法|海戦|攻防戦|包囲|陥落|降伏|上陸|来航|渡来|伝来|開山|落成|竣工|創業|開業|開校|創刊|発見|発明)$/,
-  zh: /(战争|戰爭|战役|戰役|之战|之戰|条约|條約|事件|之乱|之亂|起义|起義|革命|变法|變法|改革|维新|維新|新政|运动|運動|会议|會議|宣言|独立|獨立|统一|統一|占领|佔領|入侵|远征|遠征|大火|地震|饥荒|饑荒|瘟疫|选举|選舉|叛乱|叛亂|兵变|兵變|政变|政變|之役|之盟|会盟|會盟|会战|會戰|建国|建國|即位|退位|迁都|遷都|开港|開港|通商|博览会|博覽會|奥运会|奧運會|之变|之變|之难|之難|之祸|之禍|之狱|之獄|之盛|之治|之乱|海战|海戰|围城|圍城|陷落|投降|登陆|登陸|开国|開國|定都|称帝|稱帝|禅让|禪讓|颁布|頒布|废除|廢除|成立|建立|创立|創立|开通|開通|落成|竣工|通车|通車|发现|發現|发明|發明)$/,
-};
-export const isEventName = (name: string, locale: Locale) => EVENT_NAME[locale].test(name.replace(/\s*\([^)]*\)$/, ""));
+// 사건 이름 판정은 src/lib/event-name.mjs — 중요도 순위(tools/derive.mjs)와 같은 규칙을 쓴다
+import { isEventName as isEventNameJs } from "./event-name.mjs";
+export const isEventName = (name: string, locale: Locale): boolean => isEventNameJs(name, locale);
 
 /** 발행 사건 레코드에서 라벨을 고르는 데 필요한 부분. */
 export interface LabelSource {
@@ -349,12 +345,12 @@ const shortKo = (title: string): string => {
 };
 
 /**
- * 칩 라벨(짧게 — 대표 지시 2026-09-05). 순서:
- *  1) UI 언어 표제어가 사건 꼴이고 셀 안에 같은 이름이 하나뿐이면 그것만
- *  2) 원문이 UI 언어면 원문(ko는 묶인 줄을 "첫 사건 외 N"으로)
- *  3) ko UI에 기계 번역이 있으면 그것
- *  4) 표제어가 있으면 "표제어 · 원문", 없으면 원문
- * @param dupNames 같은 셀에서 둘 이상 나오는 표제어(구분을 위해 원문을 덧붙인다)
+ * 칩 라벨(짧게 — 대표 지시 2026-09-05). 형식은 둘뿐이다:
+ *  1) UI 언어 표제어가 **사건 꼴**이고 셀 안에 같은 이름이 하나뿐이면 그 이름만
+ *  2) 아니면 원문(ko UI면 기계 번역 우선, ko 원문의 묶인 줄은 "첫 사건 외 N")
+ * 지명·인물·기관 표제어("기이반도", "이시진")는 붙이지 않는다 — "기이반도 · March — According to…"처럼
+ * 정보가 안 되고 형식만 섞인다(2026-09-05). 그 이름들은 상세의 관점별 명칭 표에 있다.
+ * @param dupNames 같은 셀에서 둘 이상 나오는 표제어 — 그 경우 원문으로
  */
 export function eventLabel(ev: LabelSource, locale: Locale, dupNames?: ReadonlySet<string>): { name?: string; text?: string } {
   const name = nameIn(ev, locale);
@@ -362,5 +358,5 @@ export function eventLabel(ev: LabelSource, locale: Locale, dupNames?: ReadonlyS
   if (name && !dup && isEventName(name, locale)) return { name };
   if (ev.lang === SAME_LANG[locale]) return { text: locale === "ko" ? shortKo(ev.title) : ev.title };
   if (locale === "ko" && ev.title_ko) return { text: ev.title_ko };
-  return name ? { name, text: ev.title } : { text: ev.title };
+  return { text: ev.title };
 }

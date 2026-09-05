@@ -727,9 +727,14 @@ export function TimelineGrid() {
                         {placed.map(({ ev, top: chipTop, h: ch }, idx) => {
                           // 시각 위계(§5-10)는 크기로: 5 크고 굵게 > 4 중간 > 3 이하 작게. 전승은 기울임.
                           const imp = ev.regions[0]?.imp ?? 3;
-                          // 테두리 없는 흰 칩 + 왼쪽 열 색 선(2px). 격자 안에 상자가 또 있으면 도표처럼 보인다
-                          const tone = imp >= 5 ? "text-[14px] font-semibold text-neutral-900" : imp === 4 ? "text-[13px] font-medium text-neutral-800" : "text-[12px] text-neutral-600";
-                          const lift = imp >= 5 ? "0 1px 3px rgba(0,0,0,.12)" : imp === 4 ? "0 1px 2px rgba(0,0,0,.08)" : "0 1px 2px rgba(0,0,0,.05)";
+                          // 위계는 세 층(대표 지적 2026-09-05 "사건 간 구분이 있어야"): 5 = 굵은 카드, 4 = 얇은 카드,
+                          // 3 이하 = 상자 없는 글줄. 카드가 전부면 도표가 되고, 글줄이 전부면 위계가 사라진다
+                          const tone =
+                            imp >= 5
+                              ? "rounded-md border border-neutral-300 bg-white px-2 text-[14px] font-semibold text-neutral-900 shadow-[0_1px_3px_rgba(0,0,0,.10)]"
+                              : imp === 4
+                                ? "rounded-md border border-neutral-200 bg-white px-2 text-[13px] font-medium text-neutral-800"
+                                : "px-1 text-[12px] text-neutral-600 hover:bg-neutral-100/70";
                           return (
                             <button
                               key={ev.id}
@@ -741,10 +746,10 @@ export function TimelineGrid() {
                               data-col={c.id}
                               data-b={b}
                               data-i={idx}
-                              // 왼쪽 열 색 선은 진짜 border로 — inset 그림자는 둥근 모서리에서 괄호처럼 휘어 보였다
-                              style={{ top: chipTop, height: ch, borderLeft: `3px solid ${REGION_COLOR[c.id]}`, boxShadow: lift }}
-                              className={`absolute left-1.5 right-1.5 flex items-center rounded-md bg-white pl-2 pr-2 text-left hover:bg-neutral-50 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 ${tone}${ev.hist === "traditional" ? " italic" : ""}${selected?.ev.id === ev.id ? " ring-2 ring-neutral-800 ring-offset-1" : ""}`}
+                              style={{ top: chipTop, height: ch }}
+                              className={`absolute left-1.5 right-1.5 flex items-center rounded-md text-left focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 ${tone}${ev.hist === "traditional" ? " italic" : ""}${selected?.ev.id === ev.id ? " ring-2 ring-neutral-800 ring-offset-1" : ""}`}
                             >
+                              {imp <= 3 && <span className="mr-1.5 shrink-0 text-neutral-300" aria-hidden>•</span>}
                               <span className="min-w-0 truncate">
                                 {/* 칩은 짧게(대표 지시 2026-09-05): UI 언어의 사건 이름(사이트링크)이 있으면 그것만, 원문은 상세에.
                                     같은 셀에 같은 이름이 둘 이상이면(도요토미 히데요시 ×3) 구분을 위해 원문을 덧붙인다 — i18n.eventLabel */}

@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { notFound } from "next/navigation";
 import { AXIS_YEAR_END, AXIS_YEAR_START, formatYear } from "@/lib/timeline/axis";
+import { isEventName } from "@/lib/i18n";
 
 /**
  * 연도 랜딩 — PRD §5-8 `/y/{year}`. 서버 렌더 HTML 표: 그 해 모든 열의 사건 + 앞뒤 2년 문맥.
@@ -29,9 +30,9 @@ interface Region { id: string; label_ko: string; coverage_from?: number }
 interface Ev { id: string; y0: number; title: string; title_ko?: string; lang: string; hist: string; names?: Partial<Record<string, { nat?: string | null }>>; regions: { r: string; imp: number }[]; official?: number }
 interface Polity { name: string; label: string; y0: number; y1: number | null }
 
-/** 칩과 같은 라벨 규칙: 번역 > ko 표제어 접두 + 원문 > 원문. */
-const koName = (e: Ev) => (e.lang !== "ko" ? e.names?.kr?.nat?.replace(/\s*\([^)]*\)$/, "") : undefined);
-const labelOf = (e: Ev) => e.title_ko ?? (koName(e) ? `${koName(e)} · ${e.title}` : e.title);
+/** 칩과 같은 라벨 규칙(i18n.eventLabel): 한국어 사건 이름이 있으면 그것, 없으면 번역 > 원문. 지명·인물 이름은 붙이지 않는다. */
+const koName = (e: Ev) => e.names?.kr?.nat?.replace(/\s*\([^)]*\)$/, "");
+const labelOf = (e: Ev) => { const n = koName(e); return n && isEventName(n, "ko") ? n : (e.title_ko ?? e.title); };
 
 interface YearData { regions: Region[]; polities: Record<string, Polity[]>; byRegion: Record<string, Ev[]>; total: number }
 
@@ -153,8 +154,7 @@ export default async function YearPage({ params }: { params: Promise<{ year: str
                         return (
                           <li key={e.id} className={focus ? (imp >= 5 ? "font-semibold" : imp === 4 ? "font-medium" : "") : "text-[12px] text-neutral-400"}>
                             {!focus && <span className="mr-1 tabular-nums">{e.y0 <= 0 ? `BC${1 - e.y0}` : e.y0}</span>}
-                            {!e.title_ko && koName(e) && <span className="font-medium">{koName(e)}<span className="opacity-50"> · </span></span>}
-                            <span lang={e.title_ko ? "ko" : e.lang} className={e.hist === "traditional" ? "italic" : ""}>{e.title_ko ?? e.title}</span>
+                            <span lang={labelOf(e) === e.title ? e.lang : "ko"} className={e.hist === "traditional" ? "italic" : ""}>{labelOf(e)}</span>
                             {e.hist === "traditional" && <span className="text-neutral-400"> (전승)</span>}
                             {e.official ? <span className="text-neutral-400" title="국사편찬위원회 연표에 있는 사건"> ◆</span> : null}
                           </li>

@@ -78,8 +78,9 @@ for (let i = 0; i < todo.length; i += 50) {
     cache.counts[qid] = ent.missing !== undefined ? 0 : Object.keys(ent.sitelinks ?? {}).filter(isLangWiki).length;
     if (ent.missing !== undefined) continue;
     const start = timeOf(ent.claims, "P580"), end = timeOf(ent.claims, "P582"), point = timeOf(ent.claims, "P585");
-    const human = (ent.claims?.P31 ?? []).some((c) => c.mainsnak?.datavalue?.value?.id === "Q5");
-    if (start || end || point || human) cache.facts[qid] = { ...(start ? { start } : {}), ...(end ? { end } : {}), ...(point ? { point } : {}), ...(human ? { human: true } : {}) };
+    const types = (ent.claims?.P31 ?? []).map((c) => c.mainsnak?.datavalue?.value?.id).filter(Boolean);
+    const human = types.includes("Q5");
+    if (start || end || point || types.length) cache.facts[qid] = { ...(start ? { start } : {}), ...(end ? { end } : {}), ...(point ? { point } : {}), ...(human ? { human: true } : {}), ...(types.length ? { types } : {}) };
   }
   cache.fetchedAt = new Date().toISOString();
   writeFileSync(OUT, JSON.stringify(cache));

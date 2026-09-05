@@ -24,6 +24,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { bestMatches, parseWikiDate, stripYear } from "../src/lib/curation/nikh-match.mjs";
+import { isEventNameAny } from "../src/lib/event-name.mjs";
 
 const REGIONS = process.argv.slice(2).filter((a) => /^[a-z]{2}$/.test(a));
 const regions = REGIONS.length ? REGIONS : ["kr", "cn", "jp", "us"];
@@ -37,14 +38,39 @@ const regions = REGIONS.length ? REGIONS : ["kr", "cn", "jp", "us"];
  * 언어판 수 분포(2026-09-05, n=2,742): p50 25 · p75 53 · p90 95 · p97 187.
  */
 const SHARES = [[5, 0.08], [4, 0.17], [3, 0.25]];
+/**
+ * 작품류(위키데이터 P31) — TV 시리즈·영화·앨범·노래·게임·책·문학 작품. 언어판 수는 많아도(겨울연가 30여 개)
+ * 세기·십년 레벨에 오를 "그 해 그 나라의 일"은 아니다(2026-09-05 대표 지적). 중요도 3 이하로 묶는다.
+ */
+const WORK_TYPES = new Set(["Q5398426", "Q15416", "Q11424", "Q482994", "Q7366", "Q7889", "Q1107", "Q21191270"]); // 책·신문은 아님 — 고사기 편찬·독립신문 창간은 사건이다
+const isWork = (r) => (facts[r.qid]?.types ?? []).some((t) => WORK_TYPES.has(t));
+/**
+ * 순위 점수 = 언어판 수 × 가중치. QID가 **사건**이면 1, 인물·나라·도시·기관·정당·대학이면 0.2, 그 밖(왕조·
+ * 건물·작품 아닌 것)은 0.5. 2026-09-05: 인물 QID(김정은 144)와 나라·기관 QID(유엔 297, 일본 333)가 붙은 줄이
+ * 그 실체의 언어판 수로 세기 대표가 됐다. 사건 여부는 표제어 꼴(event-name.mjs)로 판정한다
+ */
+const NON_EVENT_TYPES = new Set([
+  "Q5", "Q6256", "Q3624078", "Q515", "Q1549591", "Q1637706", "Q486972", "Q532", "Q43229", "Q4830453", "Q484652", "Q5107",
+  "Q7278", "Q3918", "Q1093829", "Q7930989", "Q23442", "Q82794", "Q56061", "Q10864048", "Q35657", "Q6465", "Q15284", "Q3024240",
+  "Q41710", "Q11446", "Q4022", "Q8502", "Q34442", "Q46970", "Q3957", "Q1364",
+  "Q9430", "Q165", "Q23397", "Q46831", "Q33837", "Q34763", "Q39816", "Q1970725", // 바다·호수·산맥·군도·반도·계곡·삼림 — 지리
+]);
+const score = (r) => {
+  const f = facts[r.qid];
+  const w = isEventNameAny(r.names_native) ? 1 : (f?.human || (f?.types ?? []).some((t) => NON_EVENT_TYPES.has(t))) ? 0.2 : 0.5;
+  return (r.sitelinks ?? 0) * w;
+};
 function assignImportance(recs) {
-  const ranked = recs.filter((r) => r.sitelinks > 2).sort((a, b) => b.sitelinks - a.sitelinks);
+  const ranked = recs.filter((r) => r.sitelinks > 2 && !isWork(r)).sort((a, b) => score(b) - score(a));
   let i = 0;
   for (const [imp, share] of SHARES) {
     const end = Math.min(ranked.length, i + Math.ceil(recs.length * share));
     for (; i < end; i++) ranked[i].importance_auto = imp;
   }
-  for (const r of recs) r.importance_auto ??= r.sitelinks != null && r.sitelinks <= 2 ? 1 : 2;
+  for (const r of recs) {
+    if (r.importance_auto === undefined) r.importance_auto = r.sitelinks != null && r.sitelinks <= 2 ? 1 : isWork(r) && r.sitelinks > 10 ? 3 : 2;
+    r.rank_score = Math.round(score(r)); // 발행 정렬 키(같은 중요도 안의 순서)
+  }
 }
 
 const TRADITIONAL_BEFORE = { kr: -1000, cn: -1600, jp: -300 };

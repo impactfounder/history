@@ -51,12 +51,14 @@ describe("eventLabel", () => {
     const plain: LabelSource = { title: "Ohio becomes the 17th state", lang: "en", names: { us: { nat: "Ohio", lang: "en" } } };
     expect(eventLabel(plain, "en")).toEqual({ text: "Ohio becomes the 17th state" }); // 지명 표제어 + 원문이 영어 → 원문만
   });
-  it("인물 표제어면 '이름 · 원문'", () => {
+  it("인물·지명 표제어는 붙이지 않는다 — 원문만", () => {
     const person: LabelSource = { title: "Li Shizhen published the Compendium of Materia Medica.", lang: "en", names: { kr: { nat: "이시진", lang: "ko" }, us: { nat: "Li Shizhen", lang: "en" } } };
-    expect(eventLabel(person, "ko")).toEqual({ name: "이시진", text: person.title });
+    expect(eventLabel(person, "ko")).toEqual({ text: person.title });
+    const place: LabelSource = { title: "March — According to the Japan Forestry Research…", lang: "en", names: { kr: { nat: "기이반도", lang: "ko" } } };
+    expect(eventLabel(place, "ko")).toEqual({ text: place.title });
   });
-  it("같은 셀에 같은 이름이 둘이면 원문을 덧붙인다", () => {
-    expect(eventLabel(ev, "ko", new Set(["임진왜란"]))).toEqual({ name: "임진왜란", text: ev.title });
+  it("같은 셀에 같은 이름이 둘이면 원문으로", () => {
+    expect(eventLabel(ev, "ko", new Set(["임진왜란"]))).toEqual({ text: ev.title });
   });
   it("한국어 원문의 묶인 줄은 '첫 사건 외 N'", () => {
     const bundled: LabelSource = { title: "조미수호조규 체결, 임오군란 일어남, 일본과 제물포조약 체결", lang: "ko", names: {} };

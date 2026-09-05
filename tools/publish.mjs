@@ -77,6 +77,8 @@ function toRecord(r) {
     lang: r.lang,
     names,
     regions: [{ r: r.region, imp: r.importance_auto, role: "primary" }],
+    // 같은 중요도 안의 순서(언어판 수). 셀이 좁을 때 어느 것을 먼저 보일지 — 연도순이면 "겨울연가"가 세기 대표가 된다
+    ...(r.rank_score ? { sl: r.rank_score } : {}),
     date_ko: formatYear(r.date.year, r.date.approximate),
     ...(official ? { official } : {}),
   };
@@ -151,7 +153,8 @@ for (const region of REGIONS.map((x) => x.id)) {
   const rs = all.filter((r) => r.region === region);
   if (!rs.length) continue;
   const recs = rs.map(toRecord);
-  const sortKey = (a, b) => b.regions[0].imp - a.regions[0].imp || a.y0 - b.y0 || (a.id < b.id ? -1 : 1);
+  // §6-2: imp desc → 언어판 수 desc → y0 asc → id. 클라이언트는 재정렬하지 않고 앞에서부터 셀 높이만큼 보인다
+  const sortKey = (a, b) => b.regions[0].imp - a.regions[0].imp || (b.sl ?? 0) - (a.sl ?? 0) || a.y0 - b.y0 || (a.id < b.id ? -1 : 1);
 
   const groups = {
     century: { all: recs.filter((e) => e.regions[0].imp >= 5) },
