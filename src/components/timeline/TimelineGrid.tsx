@@ -102,14 +102,18 @@ const LANDING_S = 8;
 const URL_IDLE_MS = 300;
 
 /** `/?y=1882&s=40` → 중앙 연도·스케일. 없거나 망가졌으면 null. */
-function readUrlState(): { y: number | null; s: number | null } {
-  if (typeof location === "undefined") return { y: null, s: null };
+function readUrlState(): { y: number | null; s: number | null; r: RegionId[] | null } {
+  if (typeof location === "undefined") return { y: null, s: null, r: null };
   const q = new URLSearchParams(location.search);
   const y = Number(q.get("y"));
   const s = Number(q.get("s"));
+  // ?r=kr,jp — 열 조합·순서(§5-8). 모르는 id는 버리고, 하나도 안 남으면 기본 4열
+  const ids = (q.get("r") ?? "").split(",").filter((id): id is RegionId => COLUMNS.some((c) => c.id === id));
+  const r = [...new Set(ids)];
   return {
     y: q.has("y") && Number.isFinite(y) && y >= AXIS_YEAR_START && y <= AXIS_YEAR_END ? Math.round(y) : null,
     s: q.has("s") && Number.isFinite(s) && s > 0 ? s : null,
+    r: r.length ? r : null,
   };
 }
 
@@ -149,6 +153,20 @@ export function TimelineGrid() {
   const [officialYear, setOfficialYear] = useState<OfficialYear | null>(null);
 
   const [polities, setPolities] = useState<Polities>({});
+  /** 보이는 열과 순서(PRD §4-1 열 추가·삭제·순서). URL ?r=로 왕복. 첫 열이 홈 열(시대 레일). */
+  const [cols, setCols] = useState<RegionId[]>(() => COLUMNS.map((c) => c.id));
+  const shown = cols.map((id) => COLUMNS.find((c) => c.id === id)!);
+  const hiddenCols = COLUMNS.filter((c) => !cols.includes(c.id));
+  const removeCol = (id: RegionId) => setCols((cs) => (cs.length > 1 ? cs.filter((x) => x !== id) : cs));
+  const addCol = (id: RegionId) => setCols((cs) => (cs.includes(id) ? cs : [...cs, id]));
+  const moveCol = (id: RegionId, dir: -1 | 1) =>
+    setCols((cs) => {
+      const i = cs.indexOf(id), j = i + dir;
+      if (i < 0 || j < 0 || j >= cs.length) return cs;
+      const next = [...cs];
+      [next[i], next[j]] = [next[j]!, next[i]!];
+      return next;
+    });
 
   useEffect(() => {
     fetch(`${DATA}/manifest.json`)
@@ -194,6 +212,7 @@ export function TimelineGrid() {
         // pendingTop을 여기서 쓰면 안 된다 — 이 효과와 같은 커밋에서 아래 적용 효과가 먼저 소비해 버려
         // 아직 s=8 높이인 스페이서에 s=40용 scrollTop을 넣고 끝난다(1882 요청이 45년에 착지했다)
         landing.current = { y: url.y ?? LANDING_YEAR, s, vh };
+        if (url.r) setCols(url.r);
         setAxis({ s, viewportH: vh });
       } else {
         // 창이 줄면 s도 함께 눌러야 한 행이 뷰포트를 넘지 않는다(§5-5A S_MAX)
@@ -212,11 +231,11 @@ export function TimelineGrid() {
     if (!landed.current || landing.current) return; // 착지 전의 scrollTop 0을 URL에 쓰지 않는다
     const t = setTimeout(() => {
       const y = Math.round(centerYear(scrollTop, axis));
-      const url = `${location.pathname}?y=${y}&s=${Number(axis.s.toFixed(2))}`;
+      const url = `${location.pathname}?r=${cols.join(",")}&y=${y}&s=${Number(axis.s.toFixed(2))}`;
       if (location.search !== url.slice(location.pathname.length)) history.replaceState(null, "", url);
     }, URL_IDLE_MS);
     return () => clearTimeout(t);
-  }, [scrollTop, axis]);
+  }, [scrollTop, axis, cols]);
 
   // ── 줌 결과 반영: 스페이서 height가 쓰인 뒤 같은 레이아웃 패스에서 ────────
   useLayoutEffect(() => {
@@ -308,8 +327,8 @@ export function TimelineGrid() {
 
   // 보이는 청크를 받아 둔다(프리페치는 오버스캔 행 몫). 렌더 중 fetch 시작은 effect에서.
   useEffect(() => {
-    for (const region of COLUMNS) for (const key of chunkKeys) ensureChunk(region.id, key);
-  }, [chunkKeys.join("|"), ensureChunk]); // eslint-disable-line react-hooks/exhaustive-deps
+    for (const id of cols) for (const key of chunkKeys) ensureChunk(id, key);
+  }, [chunkKeys.join("|"), cols.join(","), ensureChunk]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** (열, 행 버킷) → 그 칸의 사건. 발행 시 정렬돼 있으므로 다시 정렬하지 않는다(§6-2). */
   const cellEvents = (region: RegionId, b: number): PublishedEvent[] => {
@@ -385,8 +404,8 @@ export function TimelineGrid() {
           className="relative w-16 shrink-0 cursor-grab border-r border-neutral-200 bg-neutral-50 select-none"
           title="시대 레일 — 클릭하면 그 시대로 점프"
         >
-          {/* 홈 열(한국) 정치체 색 띠 — 연도 도메인으로 매핑한다(§5-5A: 스크롤 비율이 아니다) */}
-          {(polities.kr ?? []).map((p, i) => {
+          {/* 홈 열(첫 열) 정치체 색 띠 — 연도 도메인으로 매핑한다(§5-5A: 스크롤 비율이 아니다) */}
+          {(polities[cols[0] ?? "kr"] ?? []).map((p, i) => {
             const y0 = Math.max(p.y0, AXIS_YEAR_START);
             const y1 = Math.min(p.y1 ?? AXIS_YEAR_END + 1, AXIS_YEAR_END + 1);
             if (y1 <= y0) return null;
@@ -412,15 +431,40 @@ export function TimelineGrid() {
               숨는 구간에서도 어느 시대인지 안다(PRD §5-10 조건 ④의 보완) */}
           <div className="sticky top-0 z-10 flex border-b border-neutral-200 bg-white/95 text-[11px] font-medium text-neutral-600 backdrop-blur" style={{ height: COLUMN_HEADER_H }}>
             <div className="w-12 shrink-0 border-r border-neutral-200" />
-            {COLUMNS.map((c) => {
+            {shown.map((c, i) => {
               const p = polityAt(polities[c.id], yToYear(scrollTop + COLUMN_HEADER_H, axis));
+              const btn = "rounded px-1 leading-none text-neutral-400 hover:bg-neutral-200 hover:text-neutral-800 disabled:invisible";
               return (
-                <div key={c.id} className="flex min-w-0 flex-1 items-center gap-1.5 truncate border-r border-neutral-100 px-2">
-                  <span>{c.label}</span>
-                  {p && <span className="truncate font-normal text-neutral-500">{p.label}</span>}
+                <div key={c.id} className="group flex min-w-0 flex-1 items-center gap-1.5 border-r border-neutral-100 px-2">
+                  <span className="shrink-0">{c.label}</span>
+                  {p && <span className="min-w-0 truncate font-normal text-neutral-500">{p.label}</span>}
+                  {/* 열 조작(§4-1): 순서 ◂ ▸, 빼기 ×. 마우스를 올렸을 때만. 마지막 한 열은 뺄 수 없다 */}
+                  <span className="ml-auto flex shrink-0 gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100">
+                    <button type="button" className={btn} disabled={i === 0} onClick={() => moveCol(c.id, -1)} aria-label={`${c.label} 열 왼쪽으로`}>◂</button>
+                    <button type="button" className={btn} disabled={i === shown.length - 1} onClick={() => moveCol(c.id, 1)} aria-label={`${c.label} 열 오른쪽으로`}>▸</button>
+                    <button type="button" className={btn} disabled={shown.length === 1} onClick={() => removeCol(c.id)} aria-label={`${c.label} 열 빼기`}>×</button>
+                  </span>
                 </div>
               );
             })}
+            {/* 열 넣기 — 행과 폭을 맞추기 위해 헤더 오른쪽 끝에 얹는다(셀을 추가하면 열 폭이 어긋난다) */}
+            {hiddenCols.length > 0 && (
+              <details className="absolute right-1 top-0.5 z-20 text-[11px]">
+                <summary className="cursor-pointer list-none rounded border border-neutral-300 bg-white px-1.5 leading-[18px] text-neutral-600 hover:bg-neutral-100">+ 열</summary>
+                <div className="absolute right-0 mt-1 flex flex-col rounded border border-neutral-200 bg-white py-1 shadow">
+                  {hiddenCols.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className="px-3 py-1 text-left hover:bg-neutral-100"
+                      onClick={(e) => { addCol(c.id); (e.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open"); }}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </details>
+            )}
           </div>
 
           {/* 스페이서 */}
@@ -428,7 +472,7 @@ export function TimelineGrid() {
             {/* 정치체 밴드 — 색 띠 층. 행 아래에 깔린다. 약 40개라 가상화하지 않는다(§5-5A 레이어, 조건 ⑤) */}
             <div className="pointer-events-none absolute inset-0 flex" aria-hidden>
               <div className="w-12 shrink-0" />
-              {COLUMNS.map((c) => (
+              {shown.map((c) => (
                 <div key={c.id} className="relative min-w-0 flex-1">
                   {(polities[c.id] ?? []).map((p, i) => {
                     const y0 = Math.max(p.y0, AXIS_YEAR_START);
@@ -455,7 +499,7 @@ export function TimelineGrid() {
                   <div className="w-12 shrink-0 border-r border-neutral-200 px-1 text-[11px] text-neutral-500 tabular-nums">
                     {formatRowLabel(b, rows.level)}
                   </div>
-                  {COLUMNS.map((c) => {
+                  {shown.map((c) => {
                     const evs = cellEvents(c.id, b);
                     const shown = evs.slice(0, max);
                     // 칩은 가로로 흐른다(§5-10 목업 "칩 칩 +2"). 세로로 쌓으면 s가 작을 때 행 높이를 넘겨 잘린다.
@@ -497,7 +541,7 @@ export function TimelineGrid() {
                 박스에 overflow 없음(②), 조상에 transform 없음(③), 얕은 밴드는 라벨 생략(④) */}
             <div className="pointer-events-none absolute inset-0 z-[5] flex" aria-hidden>
               <div className="w-12 shrink-0" />
-              {COLUMNS.map((c) => (
+              {shown.map((c) => (
                 <div key={c.id} className="relative min-w-0 flex-1">
                   {(polities[c.id] ?? []).map((p) => {
                     const y0 = Math.max(p.y0, AXIS_YEAR_START);
