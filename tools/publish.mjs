@@ -72,6 +72,8 @@ function toRecord(r) {
     hist: r.historicity ?? "historical",
     title: r.title,
     ...(r.title_ko ? { title_ko: r.title_ko } : {}),
+    // 위키데이터 구조 라벨("accession" 재위 시작) — UI가 언어별 "즉위"를 붙인다
+    ...(r.role ? { role: r.role } : {}),
     // 짧은 설명(한국어 위키백과 description, "일본의 무장" 같은 한 구) — 칩 툴팁용
     ...(r.about?.description ? { desc: r.about.description } : {}),
     lang: r.lang,

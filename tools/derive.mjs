@@ -224,6 +224,7 @@ function wikidataRows(region, seenQids) {
       region,
       kind: "event",
       shape: "wikidata",
+      ...(w.role ? { role: w.role } : {}),
       text: sl.ko ?? sl.en, // 라벨이 곧 본문 — 연표 줄이 없다
       date: w.date,
       qid: w.qid,
@@ -262,6 +263,7 @@ for (const region of regions) {
       ...(reason ? { reject_reason: reason } : {}),
       region,
       kind: raw.kind === "event" ? "event" : "period",
+      ...(raw.role ? { role: raw.role } : {}), // 위키데이터 구조 라벨("accession")
       // 월·일은 원문 표기("June —", "6월 30일", "8月14日")에서 기계로, 없으면 위키데이터 시점(P585/P580)이 그 해면 그것.
       // 연도 안 배치(그리드)에 쓴다. 끝 연도(기간)는 endYearOf
       date: (() => {

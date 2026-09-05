@@ -72,6 +72,8 @@ export interface Strings {
   center: string;
   ariaSheetHandle: string;
   language: string;
+  /** 재위 시작 라벨 — 위키데이터 P39/P580에서 온 줄에 붙인다(구조 라벨, 우리가 쓴 문장이 아니다). */
+  accession: string;
 }
 
 export const T: Record<Locale, Strings> = {
@@ -121,6 +123,7 @@ export const T: Record<Locale, Strings> = {
     center: "중앙",
     ariaSheetHandle: "시트 크기",
     language: "언어",
+    accession: "즉위",
   },
   en: {
     siteHint: "Scroll to move in time · Ctrl+wheel or +/− to zoom",
@@ -168,6 +171,7 @@ export const T: Record<Locale, Strings> = {
     center: "Center",
     ariaSheetHandle: "Sheet size",
     language: "Language",
+    accession: "accession",
   },
   ja: {
     siteHint: "スクロールで移動 · Ctrl+ホイールまたは +/− で拡大",
@@ -215,6 +219,7 @@ export const T: Record<Locale, Strings> = {
     center: "中央",
     ariaSheetHandle: "シートの大きさ",
     language: "言語",
+    accession: "即位",
   },
   zh: {
     siteHint: "滚动移动时间 · Ctrl+滚轮或 +/− 缩放",
@@ -262,6 +267,7 @@ export const T: Record<Locale, Strings> = {
     center: "中心",
     ariaSheetHandle: "面板大小",
     language: "语言",
+    accession: "即位",
   },
 };
 
@@ -327,6 +333,8 @@ export interface LabelSource {
   title_ko?: string;
   lang: string;
   names: Partial<Record<RegionId, { nat?: string; lang?: string }>>;
+  /** 위키데이터에서 온 구조 라벨. "accession" = 재위 시작 — 인물 이름 뒤에 언어별 "즉위"를 붙인다. */
+  role?: string;
 }
 
 /** 그 언어의 표제어(괄호 구분자 제거). 없으면 undefined. */
@@ -356,6 +364,11 @@ const shortKo = (title: string): string => {
  */
 export function eventLabel(ev: LabelSource, locale: Locale, dupNames?: ReadonlySet<string>): { name?: string; text?: string } {
   const name = nameIn(ev, locale);
+  // 재위 시작: 인물 이름 + 언어별 "즉위". 이름만으로는 무슨 일인지 알 수 없다
+  if (ev.role === "accession") {
+    const who = name ?? ev.title;
+    return { name: locale === "en" ? `${who}, ${T.en.accession}` : `${who} ${T[locale].accession}` };
+  }
   const dup = name !== undefined && dupNames?.has(name) === true;
   if (name && !dup && isEventName(name, locale)) return { name };
   if (ev.lang === SAME_LANG[locale]) return { text: locale === "ko" ? shortKo(ev.title) : ev.title };

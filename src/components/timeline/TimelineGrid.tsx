@@ -109,6 +109,8 @@ interface PublishedEvent {
   title_ko?: string;
   /** 연결 문서의 짧은 설명("일본의 무장") — 칩 툴팁. */
   desc?: string;
+  /** 위키데이터 구조 라벨. "accession" = 재위 시작 — 라벨에 언어별 "즉위"가 붙는다. */
+  role?: string;
   lang: string;
   names: Partial<Record<RegionId, { nat?: string; lang?: string }>>;
   regions: { r: RegionId; imp: number; role: string }[];

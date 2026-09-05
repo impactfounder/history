@@ -60,6 +60,19 @@ const COUNTRIES = {
 };
 
 /**
+ * 재위 시작(즉위) — 열별 군주·수반 직위 QID(P39의 P580 한정어). 2026-09-05: 일본 3~5세기가 비었는데
+ * 그 시대는 연표 문서도 위키데이터 사건도 없다. 대신 천황 계보에는 즉위 연도가 있다. 한국 열이
+ * ko 연표에서 "신라 아달라 이사금 즉위"를 이미 얻는 것과 같은 것을 다른 열에도 준다.
+ * 라벨은 인물 이름 + UI 언어의 "즉위"(구조 라벨이라 우리가 쓴 문장이 아니다 — role로 넘긴다).
+ */
+const REIGNS = {
+  jp: ["Q208233", "Q131767"], // 천황, 쇼군
+  cn: ["Q268218"], // 중국 황제
+  kr: ["Q22304810", "Q12087706", "Q108544096"], // 조선 국왕, 고구려 왕, 조선 국왕(별 항목)
+  us: [], // 대통령은 en 연표가 이미 선거·취임을 싣는다
+};
+
+/**
  * **유형 하나 × 나라 하나**씩 던진다. 2026-09-05 실측: 27종을 VALUES로 묶으면 59초(일본 한 구간),
  * 하위분류(P279?)까지 얹으면 60초 제한을 넘어 504다. 하나씩이면 0.4~1.5초로 끝난다.
  */
@@ -112,6 +125,36 @@ for (const region of regions.length ? regions : Object.keys(COUNTRIES)) {
     }
     if (done % 20 === 0) console.log(`  ${region} ${done}/${jobs.length} · 누적 ${rows.size}`);
     await sleep(300);
+  }
+
+  // 재위 시작(즉위)
+  for (const post of REIGNS[region] ?? []) {
+    const res = await sparql(`SELECT DISTINCT ?item ?d WHERE {
+  ?item p:P39 ?st . ?st ps:P39 wd:${post} ; pq:P580 ?d .
+}`);
+    if (!res) { failed++; continue; }
+    let added = 0;
+    for (const b of res) {
+      const qid = b.item.value.split("/").pop();
+      const m = /^([+-]?\d+)-(\d\d)-(\d\d)/.exec(b.d.value);
+      if (!m) continue;
+      const y = Number(m[1]);
+      const year = y < 0 ? y + 1 : y;
+      if (year < -499 || year > 2025) continue;
+      const key = `${qid}@${year}`; // 한 인물이 두 번 즉위할 수 있다(중조·복위)
+      if (rows.has(key)) continue;
+      rows.set(key, {
+        id: `wd_${qid.toLowerCase()}_${year}`,
+        qid,
+        region,
+        role: "accession", // UI가 언어별 "즉위"를 붙인다
+        date: { year, precision: "year", era: year <= 0 ? "bc" : "ad", ...(Number(m[2]) ? { month: Number(m[2]) } : {}), ...(Number(m[3]) ? { day: Number(m[3]) } : {}) },
+        source: { kind: "wikidata", url: `https://www.wikidata.org/wiki/${qid}`, license: "CC0 1.0", accessedAt: new Date().toISOString() },
+      });
+      added++;
+    }
+    console.log(`  ${region} 재위 ${post}: ${added}건`);
+    await sleep(500);
   }
   const dir = path.join("curation/raw", region);
   mkdirSync(dir, { recursive: true });
