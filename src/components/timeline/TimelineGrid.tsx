@@ -661,7 +661,7 @@ export function TimelineGrid() {
                     return (
                       <div
                         key={p.id}
-                        className={i % 2 ? "absolute inset-x-0 bg-neutral-100/70" : "absolute inset-x-0 bg-transparent"}
+                        className={i % 2 ? "absolute inset-x-0 bg-neutral-50" : "absolute inset-x-0 bg-transparent"}
                         style={{ top: yearToY(y0, axis), height: (y1 - y0) * axis.s }}
                       />
                     );
@@ -703,7 +703,7 @@ export function TimelineGrid() {
               const h = rows.unit * axis.s;
               const sub = subdivisions(rows.level, h);
               return (
-                <div key={b} className="absolute inset-x-0 flex border-t border-neutral-200" style={{ top, height: h }}>
+                <div key={b} className="absolute inset-x-0 flex border-t border-neutral-200/70" style={{ top, height: h }}>
                   {/* 연도 거터 (§5-10). 행이 높으면 보조선 눈금(연·월)도 */}
                   <div className="relative w-10 shrink-0 wide:w-12 border-r border-neutral-200 px-1 text-[11px] text-neutral-500 tabular-nums">
                     {formatRowLabelL(b, rows.level, locale)}
@@ -744,7 +744,7 @@ export function TimelineGrid() {
                               data-b={b}
                               data-i={idx}
                               style={{ top: chipTop, height: ch }}
-                              className={`absolute left-1 right-1 flex items-center rounded border bg-white px-1.5 text-left focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 ${tone}${ev.hist === "traditional" ? " italic" : ""}${selected?.ev.id === ev.id ? " ring-2 ring-neutral-800 ring-offset-1" : ""}`}
+                              className={`absolute left-1 right-1 flex items-center rounded-md border bg-white px-2 text-left focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 ${tone}${ev.hist === "traditional" ? " italic" : ""}${selected?.ev.id === ev.id ? " ring-2 ring-neutral-800 ring-offset-1" : ""}`}
                             >
                               <span className="min-w-0 truncate">
                                 {/* 칩은 짧게(대표 지시 2026-09-05): UI 언어의 사건 이름(사이트링크)이 있으면 그것만, 원문은 상세에.

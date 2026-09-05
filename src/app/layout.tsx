@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+// Pretendard 가변 서체(대표 지시 2026-09-05). 동적 서브셋 — 한글 11,172자를 글리프 묶음별 @font-face로 나눠 쓰는 만큼만 받는다
+import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 import "./globals.css";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 
