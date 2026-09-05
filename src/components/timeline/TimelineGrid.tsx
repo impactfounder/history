@@ -718,7 +718,8 @@ export function TimelineGrid() {
                     const evs = cellEvents(c.id, b);
                     const { placed, hidden } = layoutCell(evs, h, b, rows.unit);
                     return (
-                      <div key={c.id} className="relative min-w-0 flex-1 overflow-hidden border-r border-neutral-100">
+                      // 세로 구분선은 없앤다 — 가로 격자선·정치체 띠와 겹쳐 어수선했다. 열 사이는 칩 여백으로 구분
+                      <div key={c.id} className="relative min-w-0 flex-1 overflow-hidden">
                         {sub > 0 &&
                           Array.from({ length: sub - 1 }, (_, i) => (
                             <div key={i} className="pointer-events-none absolute inset-x-0 border-t border-neutral-100" style={{ top: ((i + 1) / sub) * h }} aria-hidden />
@@ -726,12 +727,9 @@ export function TimelineGrid() {
                         {placed.map(({ ev, top: chipTop, h: ch }, idx) => {
                           // 시각 위계(§5-10)는 크기로: 5 크고 굵게 > 4 중간 > 3 이하 작게. 전승은 기울임.
                           const imp = ev.regions[0]?.imp ?? 3;
-                          const tone =
-                            imp >= 5
-                              ? "border-neutral-700 text-[14px] font-semibold text-neutral-900"
-                              : imp === 4
-                                ? "border-neutral-400 text-[13px] font-medium text-neutral-900"
-                                : "border-neutral-200 text-[12px] text-neutral-700";
+                          // 테두리 없는 흰 칩 + 왼쪽 열 색 선(2px). 격자 안에 상자가 또 있으면 도표처럼 보인다
+                          const tone = imp >= 5 ? "text-[14px] font-semibold text-neutral-900" : imp === 4 ? "text-[13px] font-medium text-neutral-800" : "text-[12px] text-neutral-600";
+                          const lift = imp >= 5 ? "0 1px 3px rgba(0,0,0,.12)" : imp === 4 ? "0 1px 2px rgba(0,0,0,.08)" : "0 1px 2px rgba(0,0,0,.05)";
                           return (
                             <button
                               key={ev.id}
@@ -743,8 +741,9 @@ export function TimelineGrid() {
                               data-col={c.id}
                               data-b={b}
                               data-i={idx}
-                              style={{ top: chipTop, height: ch }}
-                              className={`absolute left-1 right-1 flex items-center rounded-md border bg-white px-2 text-left focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 ${tone}${ev.hist === "traditional" ? " italic" : ""}${selected?.ev.id === ev.id ? " ring-2 ring-neutral-800 ring-offset-1" : ""}`}
+                              // 왼쪽 열 색 선은 진짜 border로 — inset 그림자는 둥근 모서리에서 괄호처럼 휘어 보였다
+                              style={{ top: chipTop, height: ch, borderLeft: `3px solid ${REGION_COLOR[c.id]}`, boxShadow: lift }}
+                              className={`absolute left-1.5 right-1.5 flex items-center rounded-md bg-white pl-2 pr-2 text-left hover:bg-neutral-50 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 ${tone}${ev.hist === "traditional" ? " italic" : ""}${selected?.ev.id === ev.id ? " ring-2 ring-neutral-800 ring-offset-1" : ""}`}
                             >
                               <span className="min-w-0 truncate">
                                 {/* 칩은 짧게(대표 지시 2026-09-05): UI 언어의 사건 이름(사이트링크)이 있으면 그것만, 원문은 상세에.
