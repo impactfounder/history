@@ -74,6 +74,10 @@ export interface Strings {
   language: string;
   /** 재위 시작 라벨 — 위키데이터 P39/P580에서 온 줄에 붙인다(구조 라벨, 우리가 쓴 문장이 아니다). */
   accession: string;
+  /** 첫 방문 1회 힌트(§5-7 착지) — 폰과 데스크톱 문구가 다르다. */
+  hintTouch: string;
+  hintDesktop: string;
+  hintClose: string;
 }
 
 export const T: Record<Locale, Strings> = {
@@ -124,6 +128,9 @@ export const T: Record<Locale, Strings> = {
     ariaSheetHandle: "시트 크기",
     language: "언어",
     accession: "즉위",
+    hintTouch: "스크롤로 시간 이동 · 두 손가락으로 확대",
+    hintDesktop: "스크롤로 시간 이동 · Ctrl+휠로 확대",
+    hintClose: "닫기",
   },
   en: {
     siteHint: "Scroll to move in time · Ctrl+wheel or +/− to zoom",
@@ -172,6 +179,9 @@ export const T: Record<Locale, Strings> = {
     ariaSheetHandle: "Sheet size",
     language: "Language",
     accession: "accession",
+    hintTouch: "Scroll to move in time · pinch to zoom",
+    hintDesktop: "Scroll to move in time · Ctrl+wheel to zoom",
+    hintClose: "Close",
   },
   ja: {
     siteHint: "スクロールで移動 · Ctrl+ホイールまたは +/− で拡大",
@@ -220,6 +230,9 @@ export const T: Record<Locale, Strings> = {
     ariaSheetHandle: "シートの大きさ",
     language: "言語",
     accession: "即位",
+    hintTouch: "スクロールで移動 · 二本指で拡大",
+    hintDesktop: "スクロールで移動 · Ctrl+ホイールで拡大",
+    hintClose: "閉じる",
   },
   zh: {
     siteHint: "滚动移动时间 · Ctrl+滚轮或 +/− 缩放",
@@ -268,6 +281,9 @@ export const T: Record<Locale, Strings> = {
     ariaSheetHandle: "面板大小",
     language: "语言",
     accession: "即位",
+    hintTouch: "滚动移动时间 · 双指缩放",
+    hintDesktop: "滚动移动时间 · Ctrl+滚轮缩放",
+    hintClose: "关闭",
   },
 };
 

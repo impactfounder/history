@@ -216,6 +216,9 @@ const polityAt = (list: Polity[] | undefined, year: number): Polity | undefined 
 export function TimelineGrid() {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const railRef = useRef<HTMLDivElement>(null);
+  /** 모바일 시대 스크러버(§5-7) — 레일이 숨는 768px 미만에서 오른쪽 16px. */
+  const scrubRef = useRef<HTMLDivElement>(null);
+  const [scrubH, setScrubH] = useState(600);
 
   // s의 초기값은 십년 레벨. 착지 지점은 §11 C-1이 정해지면 바꾼다.
   const [axis, setAxis] = useState<Axis>({ s: 8, viewportH: 800 });
@@ -245,6 +248,18 @@ export function TimelineGrid() {
   const [officialYear, setOfficialYear] = useState<OfficialYear | null>(null);
   /** <1024px 바텀 시트의 반 높이(50svh) ↔ 전체(100dvh) 토글(PRD §5-7 §4-3). */
   const [sheetFull, setSheetFull] = useState(false);
+  /** 첫 방문 1회 힌트(§5-7 착지). 본 적 있으면 안 띄운다 — 브라우저에만 남기는 값이다. */
+  const [hint, setHint] = useState<null | "touch" | "desktop">(null);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("history:hintSeen")) return;
+    } catch { /* 사생활 보호 모드 — 힌트는 띄우되 기억하지 않는다 */ }
+    setHint(matchMedia("(pointer: coarse)").matches ? "touch" : "desktop");
+  }, []);
+  const dismissHint = () => {
+    setHint(null);
+    try { localStorage.setItem("history:hintSeen", "1"); } catch { /* 무시 */ }
+  };
 
   const [polities, setPolities] = useState<Polities>({});
   /** UI 언어(대표 지시 2026-09-05). 한국어 기본, URL ?lang=로 왕복. 사건 라벨·열 이름·연도 표기·문구가 바뀐다. */
@@ -338,7 +353,13 @@ export function TimelineGrid() {
         // pendingTop을 여기서 쓰면 안 된다 — 이 효과와 같은 커밋에서 아래 적용 효과가 먼저 소비해 버려
         // 아직 s=8 높이인 스페이서에 s=40용 scrollTop을 넣고 끝난다(1882 요청이 45년에 착지했다)
         landing.current = { y: url.y ?? LANDING_YEAR, s, vh };
+        // 폰은 열을 줄인다(§5-7): <360px 1열 · <600px 2열. 열당 150px을 지키기 위해서다.
+        // URL에 ?r=이 있으면 그것이 우선 — 사용자가 고른 조합을 화면 크기로 덮지 않는다
         if (url.r) setCols(url.r);
+        else {
+          const w = el.clientWidth;
+          if (w > 0 && w < 600) setCols(COLUMNS.slice(0, w < 360 ? 1 : 2).map((c) => c.id));
+        }
         if (url.lang) setLocale(url.lang);
         setAxis({ s, viewportH: vh });
       } else {
@@ -346,6 +367,7 @@ export function TimelineGrid() {
         setAxis((a) => (a.viewportH === vh ? a : { s: clampScale(a.s, vh), viewportH: vh }));
       }
       if (railRef.current) setRailH(railRef.current.clientHeight);
+      if (scrubRef.current) setScrubH(scrubRef.current.clientHeight);
     };
     const ro = new ResizeObserver(sync);
     ro.observe(el);
@@ -417,7 +439,64 @@ export function TimelineGrid() {
       setAxis((a) => ({ ...a, s: sNext }));
     };
     el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
+
+    /**
+     * 핀치 줌(§5-5 표, 부록 A-10). 두 손가락이 닿는 동안 컨테이너를 overflow:hidden으로 바꿔 네이티브
+     * 팬을 끊고(그러면 iOS가 scrollTop을 건드리지 않는다), 두 손가락 중심의 연도를 고정한 채 s를 바꾼다.
+     * 손가락을 떼면 원래대로 — 그때 scrollTop을 다시 써 준다(끊는 동안 브라우저가 0으로 되돌리는 경우 대비).
+     */
+    const pts = new Map<number, { x: number; y: number }>();
+    let pinch: { dist: number; s0: number; year: number; offsetY: number; top: number } | null = null;
+    const dist = () => {
+      const [a, b] = [...pts.values()];
+      return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0;
+    };
+    const onDown = (e: PointerEvent) => {
+      if (e.pointerType !== "touch") return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pts.size === 2) {
+        const cur = axisRef.current;
+        const rect = el.getBoundingClientRect();
+        const [a, b] = [...pts.values()];
+        const offsetY = (a!.y + b!.y) / 2 - rect.top;
+        pinch = { dist: dist(), s0: cur.s, year: anchorYearAt(el.scrollTop, offsetY, cur), offsetY, top: el.scrollTop };
+        el.style.overflowY = "hidden"; // 네이티브 팬 차단
+      }
+    };
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerType !== "touch" || !pts.has(e.pointerId)) return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (!pinch || pts.size !== 2) return;
+      e.preventDefault();
+      const d = dist();
+      if (!d || !pinch.dist) return;
+      const sNext = clampScale(pinch.s0 * (d / pinch.dist), axisRef.current.viewportH);
+      if (sNext === axisRef.current.s) return;
+      pendingTop.current = zoomToYear(pinch.year, pinch.offsetY, sNext, axisRef.current.viewportH);
+      setAxis((a) => ({ ...a, s: sNext }));
+    };
+    const onUp = (e: PointerEvent) => {
+      if (e.pointerType !== "touch") return;
+      pts.delete(e.pointerId);
+      if (pinch && pts.size < 2) {
+        const top = pendingTop.current ?? el.scrollTop;
+        pinch = null;
+        el.style.overflowY = "";
+        pendingTop.current = top; // overflow를 되돌린 뒤 다시 놓는다(A-10: iOS scrollTop 보존 확인 항목)
+        setAxis((a) => ({ ...a }));
+      }
+    };
+    el.addEventListener("pointerdown", onDown);
+    el.addEventListener("pointermove", onMove, { passive: false });
+    el.addEventListener("pointerup", onUp);
+    el.addEventListener("pointercancel", onUp);
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("pointerdown", onDown);
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerup", onUp);
+      el.removeEventListener("pointercancel", onUp);
+    };
   }, []);
 
   // ── 뷰포트 중앙 기준 줌 — 키보드(+/−/0)와 하단 줌 바가 같이 쓴다(§5-5 표) ──
@@ -527,15 +606,16 @@ export function TimelineGrid() {
       .catch(() => {});
   };
 
-  const jumpFromRail = (clientY: number) => {
-    const rail = railRef.current;
+  const jumpTo = (box: HTMLDivElement | null, clientY: number) => {
     const el = scrollerRef.current;
-    if (!rail || !el) return;
-    const r = rail.getBoundingClientRect();
+    if (!box || !el) return;
+    const r = box.getBoundingClientRect();
     const ratio = Math.min(Math.max((clientY - r.top) / r.height, 0), 1);
     el.scrollTop = scrollTopForYear(AXIS_YEAR_START + ratio * AXIS_SPAN_YEARS, axis);
     setScrollTop(el.scrollTop);
   };
+  const jumpFromRail = (clientY: number) => jumpTo(railRef.current, clientY);
+  const jumpFromScrub = (clientY: number) => jumpTo(scrubRef.current, clientY);
 
   return (
     <div className="flex h-full flex-col text-[13px]">
@@ -829,6 +909,39 @@ export function TimelineGrid() {
             </div>
           </div>
         </div>
+
+        {/* 모바일 시대 스크러버(§5-7): 레일이 숨는 768px 미만에서 오른쪽 16px. 홈 열 정치체 색 띠 +
+            현재 위치. 드래그하면 그 시대로 — iOS 연락처 색인처럼 */}
+        <div
+          ref={scrubRef}
+          onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); jumpFromScrub(e.clientY); }}
+          onPointerMove={(e) => { if (e.buttons || e.pointerType === "touch") jumpFromScrub(e.clientY); }}
+          className="relative w-4 shrink-0 touch-none border-r border-neutral-200 bg-neutral-50 select-none md:hidden"
+          title={t.railTitle}
+        >
+          {(polities[cols[0] ?? "kr"] ?? []).map((p, i) => {
+            const y0 = Math.max(p.y0, AXIS_YEAR_START);
+            const y1 = Math.min(p.y1 ?? AXIS_YEAR_END + 1, AXIS_YEAR_END + 1);
+            if (y1 <= y0) return null;
+            const top = railY(y0, scrubH);
+            return <div key={p.id} className="absolute inset-x-0" style={{ top, height: railY(y1, scrubH) - top, ...bandStyle(cols[0] ?? "kr", i) }} />;
+          })}
+          <div className="absolute inset-x-0.5 rounded bg-neutral-500/70" style={{ top: railY(centerYear(scrollTop, axis), scrubH) - 8, height: 16 }} />
+        </div>
+
+        {/* 첫 방문 힌트(§5-7 착지) — 한 번 보면 다시 안 뜬다 */}
+        {hint && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 flex justify-center px-3">
+            <button
+              type="button"
+              onClick={dismissHint}
+              className="pointer-events-auto flex items-center gap-2 rounded-full bg-neutral-900/90 px-3 py-1.5 text-[12px] text-white shadow-lg backdrop-blur"
+            >
+              {hint === "touch" ? t.hintTouch : t.hintDesktop}
+              <span className="text-white/60" aria-label={t.hintClose}>✕</span>
+            </button>
+          </div>
+        )}
 
         {/* 상세 패널 — §5-10. 지금은 push 한 모드만(폭 사다리는 다음) */}
         {selected && (
