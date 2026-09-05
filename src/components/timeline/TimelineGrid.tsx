@@ -161,6 +161,8 @@ export function TimelineGrid() {
   const [selected, setSelected] = useState<{ ev: PublishedEvent; detail: Detail | null } | null>(null);
   /** 상세 패널 "이 해의 공식 연표" — 눌렀을 때만 받는다(한 해 최대 80건). */
   const [officialYear, setOfficialYear] = useState<OfficialYear | null>(null);
+  /** <1024px 바텀 시트의 반 높이(50svh) ↔ 전체(100dvh) 토글(PRD §5-7 §4-3). */
+  const [sheetFull, setSheetFull] = useState(false);
 
   const [polities, setPolities] = useState<Polities>({});
   /** 보이는 열과 순서(PRD §4-1 열 추가·삭제·순서). URL ?r=로 왕복. 첫 열이 홈 열(시대 레일). */
@@ -418,12 +420,13 @@ export function TimelineGrid() {
         <a href="/sources" className="text-[11px] text-neutral-500 underline">출처</a>
       </header>
 
-      <div className="flex min-h-0 flex-1">
+      <div className="relative flex min-h-0 flex-1">
         {/* 시대 레일 — 네이티브 스크롤바를 대신한다(§5-10) */}
         <div
           ref={railRef}
           onPointerDown={(e) => jumpFromRail(e.clientY)}
-          className="relative w-16 shrink-0 cursor-grab border-r border-neutral-200 bg-neutral-50 select-none"
+          // 폭 사다리: <768 숨김(모바일 스크러버는 다음) · ~1440 40px · >1440 64px
+          className="relative hidden w-10 shrink-0 cursor-grab border-r border-neutral-200 bg-neutral-50 select-none md:block wide:w-16"
           title="시대 레일 — 클릭하면 그 시대로 점프"
         >
           {/* 홈 열(첫 열) 정치체 색 띠 — 연도 도메인으로 매핑한다(§5-5A: 스크롤 비율이 아니다) */}
@@ -452,7 +455,7 @@ export function TimelineGrid() {
           {/* 열 헤더 — 열 이름 + 뷰포트 상단 연도의 정치체(파생 표시). 밴드가 얕아 sticky 라벨이
               숨는 구간에서도 어느 시대인지 안다(PRD §5-10 조건 ④의 보완) */}
           <div className="sticky top-0 z-10 flex border-b border-neutral-200 bg-white/95 text-[11px] font-medium text-neutral-600 backdrop-blur" style={{ height: COLUMN_HEADER_H }}>
-            <div className="w-12 shrink-0 border-r border-neutral-200" />
+            <div className="w-10 shrink-0 wide:w-12 border-r border-neutral-200" />
             {shown.map((c, i) => {
               const p = polityAt(polities[c.id], yToYear(scrollTop + COLUMN_HEADER_H, axis));
               const btn = "rounded px-1 leading-none text-neutral-400 hover:bg-neutral-200 hover:text-neutral-800 disabled:invisible";
@@ -493,7 +496,7 @@ export function TimelineGrid() {
           <div className="relative w-full" style={{ height: contentHeight(axis) }}>
             {/* 정치체 밴드 — 색 띠 층. 행 아래에 깔린다. 약 40개라 가상화하지 않는다(§5-5A 레이어, 조건 ⑤) */}
             <div className="pointer-events-none absolute inset-0 flex" aria-hidden>
-              <div className="w-12 shrink-0" />
+              <div className="w-10 shrink-0 wide:w-12" />
               {shown.map((c) => (
                 <div key={c.id} className="relative min-w-0 flex-1">
                   {(polities[c.id] ?? []).map((p, i) => {
@@ -518,7 +521,7 @@ export function TimelineGrid() {
               return (
                 <div key={b} className="absolute inset-x-0 flex border-t border-neutral-200" style={{ top, height: h }}>
                   {/* 연도 거터 (§5-10) */}
-                  <div className="w-12 shrink-0 border-r border-neutral-200 px-1 text-[11px] text-neutral-500 tabular-nums">
+                  <div className="w-10 shrink-0 wide:w-12 border-r border-neutral-200 px-1 text-[11px] text-neutral-500 tabular-nums">
                     {formatRowLabel(b, rows.level)}
                   </div>
                   {shown.map((c) => {
@@ -576,7 +579,7 @@ export function TimelineGrid() {
             {/* 정치체 스티키 라벨 층 — 행 위에 얹힌다. 밴드 박스(absolute)의 자식이 sticky(조건 ①),
                 박스에 overflow 없음(②), 조상에 transform 없음(③), 얕은 밴드는 라벨 생략(④) */}
             <div className="pointer-events-none absolute inset-0 z-[5] flex" aria-hidden>
-              <div className="w-12 shrink-0" />
+              <div className="w-10 shrink-0 wide:w-12" />
               {shown.map((c) => (
                 <div key={c.id} className="relative min-w-0 flex-1">
                   {(polities[c.id] ?? []).map((p) => {
@@ -601,7 +604,12 @@ export function TimelineGrid() {
 
         {/* 상세 패널 — §5-10. 지금은 push 한 모드만(폭 사다리는 다음) */}
         {selected && (
-          <aside className="w-[400px] shrink-0 overflow-y-auto border-l border-neutral-200 bg-white p-4" style={{ overscrollBehavior: "contain" }}>
+          // 폭 사다리(§5-10): <1024 바텀 시트(fixed) · 1024~1440 그리드 위 overlay(absolute, 열 폭 유지) · >1440 push(static)
+          <aside
+            className={`fixed inset-x-0 bottom-0 z-30 ${sheetFull ? "h-[100dvh]" : "h-[50svh]"} min-h-[176px] overflow-y-auto rounded-t-xl border-t border-neutral-200 bg-white p-4 shadow-[0_-8px_24px_rgba(0,0,0,.08)] lg:absolute lg:inset-x-auto lg:right-0 lg:top-0 lg:bottom-0 lg:h-auto lg:w-[400px] lg:rounded-none lg:border-l lg:border-t-0 lg:shadow-xl wide:static wide:w-[clamp(320px,32vw,400px)] wide:shrink-0 wide:shadow-none`}
+            style={{ overscrollBehavior: "contain" }}
+          >
+            <button type="button" onClick={() => setSheetFull((f) => !f)} className="mx-auto mb-2 block h-1.5 w-10 rounded-full bg-neutral-300 lg:hidden" aria-label={sheetFull ? "시트 줄이기" : "시트 늘리기"} />
             <div className="mb-2 flex items-start justify-between gap-2">
               <h2 className="text-base font-semibold leading-snug">{selected.ev.title}</h2>
               <button type="button" onClick={() => setSelected(null)} className="rounded px-2 text-neutral-500 hover:bg-neutral-100" aria-label="닫기">×</button>

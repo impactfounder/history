@@ -7,6 +7,8 @@
 */
 @theme {
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* 가로 사다리(PRD §5-10): >1440 상세 패널 push · 1024~1440 overlay · <1024 바텀 시트. lg(1024)는 기본값 */
+  --breakpoint-wide: 90rem;
 }
 
 html,
