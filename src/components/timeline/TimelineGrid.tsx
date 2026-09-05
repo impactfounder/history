@@ -278,6 +278,7 @@ export function TimelineGrid() {
       el.scrollTop = scrollTopForYear(l.y, axis);
       setScrollTop(el.scrollTop);
       setLevel(levelOf(axis.s)); // 착지는 이력이 없다 — s=40 경계에 내려도 히스테리시스가 십년 레벨을 붙들지 않게
+      el.focus({ preventScroll: true }); // 화살표·PageUp/Down이 바로 시간축을 움직이게
       return;
     }
     if (pendingTop.current === null) return;
@@ -381,6 +382,37 @@ export function TimelineGrid() {
       .then((o) => setOfficialYear(o))
       .catch(() => setOfficialYear(null));
   };
+  /** 마지막으로 연 칩 — Esc로 상세를 닫을 때 포커스를 돌려준다. */
+  const lastChip = useRef<HTMLButtonElement | null>(null);
+  /**
+   * 키보드(§5-5 표): ↑↓·PageUp/Down·Home/End는 네이티브 스크롤(컨테이너가 포커스를 받는다).
+   * 칩에 포커스가 있을 때 ←→는 옆 열의 같은 행(없으면 가장 가까운 행), ↑↓는 같은 열의 이전·다음 칩.
+   * Enter/Space는 버튼 기본 동작(상세). Esc는 상세 닫기 + 칩으로 포커스 복귀.
+   */
+  const onGridKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Escape") {
+      if (selected) { setSelected(null); lastChip.current?.focus({ preventScroll: true }); }
+      return;
+    }
+    const chip = (e.target as HTMLElement).closest?.("button[data-col]") as HTMLButtonElement | null;
+    if (!chip || !scrollerRef.current) return;
+    const col = chip.dataset.col as RegionId, b = Number(chip.dataset.b);
+    const all = [...scrollerRef.current.querySelectorAll<HTMLButtonElement>("button[data-col]")];
+    let next: HTMLButtonElement | undefined;
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      const target = cols[cols.indexOf(col) + (e.key === "ArrowRight" ? 1 : -1)];
+      if (!target) return;
+      const inCol = all.filter((x) => x.dataset.col === target);
+      next = inCol.find((x) => Number(x.dataset.b) === b) ?? [...inCol].sort((p, q) => Math.abs(Number(p.dataset.b) - b) - Math.abs(Number(q.dataset.b) - b))[0];
+    } else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      const inCol = all.filter((x) => x.dataset.col === col); // DOM 순서 = 위→아래
+      next = inCol[inCol.indexOf(chip) + (e.key === "ArrowDown" ? 1 : -1)];
+    } else return;
+    if (!next) return;
+    e.preventDefault();
+    next.focus({ preventScroll: true });
+    next.scrollIntoView({ block: "nearest" });
+  };
   /** 추천 연도 칩·연도 랜딩: 그 해를 연도 레벨(s=40)로 중앙에. 줌과 같은 경로(pendingTop) — 이벤트 핸들러라 경쟁이 없다 */
   const goTo = (year: number, sTarget = 40) => {
     const s = clampScale(sTarget, axis.viewportH);
@@ -462,7 +494,11 @@ export function TimelineGrid() {
         <div
           ref={scrollerRef}
           onScroll={onScroll}
-          className="relative min-w-0 flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          onKeyDown={onGridKey}
+          tabIndex={0}
+          role="region"
+          aria-label="시간축. 위아래 화살표로 이동, 칩에서 좌우 화살표로 옆 열, Enter로 상세, Esc로 닫기"
+          className="relative min-w-0 flex-1 overflow-y-auto outline-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           style={{ overflowAnchor: "none", overscrollBehaviorY: "contain", touchAction: "pan-y" }}
         >
           {/* 열 헤더 — 열 이름 + 뷰포트 상단 연도의 정치체(파생 표시). 밴드가 얕아 sticky 라벨이
@@ -543,7 +579,7 @@ export function TimelineGrid() {
                     // 칩은 가로로 흐른다(§5-10 목업 "칩 칩 +2"). 세로로 쌓으면 s가 작을 때 행 높이를 넘겨 잘린다.
                     return (
                       <div key={c.id} className="flex min-w-0 flex-1 flex-wrap content-start gap-1 overflow-hidden border-r border-neutral-100 px-1 py-0.5">
-                        {visible.map((ev) => {
+                        {visible.map((ev, idx) => {
                           // 시각 위계(§5-10): 중요도 5 굵게 > 4 > 3 기본. 전승은 기울임.
                           const imp = ev.regions[0]?.imp ?? 3;
                           const tone =
@@ -556,10 +592,13 @@ export function TimelineGrid() {
                             <button
                               key={ev.id}
                               type="button"
-                              onClick={() => openDetail(ev)}
+                              onClick={(e) => { lastChip.current = e.currentTarget; openDetail(ev); }}
                               title={ev.date_ko}
+                              data-col={c.id}
+                              data-b={b}
+                              data-i={idx}
                               // 넘치는 셀에서는 "+N"이 같은 줄에 남도록 칩 폭을 조금 양보한다 — 안 그러면 +N이 둘째 줄로 밀려 잘린다
-                              className={`${evs.length > max ? "max-w-[calc(100%-2.25rem)]" : "max-w-full"} truncate rounded border px-1.5 py-0.5 text-left leading-tight ${tone}${ev.hist === "traditional" ? " italic" : ""}`}
+                              className={`${evs.length > max ? "max-w-[calc(100%-2.25rem)]" : "max-w-full"} truncate rounded border px-1.5 py-0.5 text-left leading-tight focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 ${tone}${ev.hist === "traditional" ? " italic" : ""}`}
                             >
                               {/* 한국어 이름이 있으면 앞에(ko 사이트링크 표제어) — 번역 전의 절반짜리 한국어. 원문이 한국어면 중복이라 뺀다 */}
                               {ev.title_ko ? (
@@ -621,11 +660,13 @@ export function TimelineGrid() {
           <aside
             className={`fixed inset-x-0 bottom-0 z-30 ${sheetFull ? "h-[100dvh]" : "h-[50svh]"} min-h-[176px] overflow-y-auto rounded-t-xl border-t border-neutral-200 bg-white p-4 shadow-[0_-8px_24px_rgba(0,0,0,.08)] lg:absolute lg:inset-x-auto lg:right-0 lg:top-0 lg:bottom-0 lg:h-auto lg:w-[400px] lg:rounded-none lg:border-l lg:border-t-0 lg:shadow-xl wide:static wide:w-[clamp(320px,32vw,400px)] wide:shrink-0 wide:shadow-none`}
             style={{ overscrollBehavior: "contain" }}
+            role="complementary"
+            aria-label="사건 상세"
           >
             <button type="button" onClick={() => setSheetFull((f) => !f)} className="mx-auto mb-2 block h-1.5 w-10 rounded-full bg-neutral-300 lg:hidden" aria-label={sheetFull ? "시트 줄이기" : "시트 늘리기"} />
             <div className="mb-2 flex items-start justify-between gap-2">
               <h2 className="text-base font-semibold leading-snug">{selected.ev.title}</h2>
-              <button type="button" onClick={() => setSelected(null)} className="rounded px-2 text-neutral-500 hover:bg-neutral-100" aria-label="닫기">×</button>
+              <button type="button" onClick={() => { setSelected(null); lastChip.current?.focus({ preventScroll: true }); }} className="rounded px-2 text-neutral-500 hover:bg-neutral-100" aria-label="닫기">×</button>
             </div>
             <div className="mb-3 text-[12px] text-neutral-500">{selected.ev.date_ko} · 중요도 {selected.ev.regions[0]?.imp}</div>
             {selected.detail ? (
