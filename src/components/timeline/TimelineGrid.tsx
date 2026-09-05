@@ -95,6 +95,24 @@ const BAND_LABEL_H = 22;
 /** 스크롤 컨테이너 상단의 열 헤더 높이(px). 밴드 라벨은 그 아래에 붙는다. */
 const COLUMN_HEADER_H = 26;
 
+/** 착지(§5-7, C-1 권고안): 십년 레벨로 최근 수십 년. 1980을 중앙에 두면 766px 뷰포트에 1930년대~현재가 든다. */
+const LANDING_YEAR = 1980;
+const LANDING_S = 8;
+/** 스크롤이 이만큼 멎으면 URL을 갱신한다(ms). */
+const URL_IDLE_MS = 300;
+
+/** `/?y=1882&s=40` → 중앙 연도·스케일. 없거나 망가졌으면 null. */
+function readUrlState(): { y: number | null; s: number | null } {
+  if (typeof location === "undefined") return { y: null, s: null };
+  const q = new URLSearchParams(location.search);
+  const y = Number(q.get("y"));
+  const s = Number(q.get("s"));
+  return {
+    y: q.has("y") && Number.isFinite(y) && y >= AXIS_YEAR_START && y <= AXIS_YEAR_END ? Math.round(y) : null,
+    s: q.has("s") && Number.isFinite(s) && s > 0 ? s : null,
+  };
+}
+
 /** 그 해 그 열의 정치체. 밴드는 약 40개라 선형 탐색으로 충분하다. */
 const polityAt = (list: Polity[] | undefined, year: number): Polity | undefined =>
   list?.find((p) => p.y0 <= year && (p.y1 == null || year < p.y1));
@@ -157,14 +175,30 @@ export function TimelineGrid() {
       });
   }, []);
 
-  // ── 뷰포트 높이 추적 ──────────────────────────────────────────────────────
+  // ── 뷰포트 높이 추적 + 착지 ───────────────────────────────────────────────
+  // 첫 측정에서 URL(?y=&s=)이 있으면 그 자리로, 없으면 최근 수십 년(§5-7 착지, C-1 권고안)으로.
+  // 브라우저 스크롤 복원은 끈다 — 스페이서 높이가 s에 따라 달라 저장된 scrollTop이 다른 해를 가리킨다.
+  const landed = useRef(false);
+  /** 착지 목표. 스페이서가 새 s·viewportH로 그려진 뒤에야 scrollTop을 놓을 수 있어 축 값과 대조해 적용한다. */
+  const landing = useRef<{ y: number; s: number; vh: number } | null>(null);
   useLayoutEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
     const sync = () => {
       const vh = el.clientHeight;
-      // 창이 줄면 s도 함께 눌러야 한 행이 뷰포트를 넘지 않는다(§5-5A S_MAX)
-      setAxis((a) => (a.viewportH === vh ? a : { s: clampScale(a.s, vh), viewportH: vh }));
+      if (!landed.current && vh > 0) {
+        landed.current = true;
+        const url = readUrlState();
+        const s = clampScale(url.s ?? LANDING_S, vh);
+        // pendingTop을 여기서 쓰면 안 된다 — 이 효과와 같은 커밋에서 아래 적용 효과가 먼저 소비해 버려
+        // 아직 s=8 높이인 스페이서에 s=40용 scrollTop을 넣고 끝난다(1882 요청이 45년에 착지했다)
+        landing.current = { y: url.y ?? LANDING_YEAR, s, vh };
+        setAxis({ s, viewportH: vh });
+      } else {
+        // 창이 줄면 s도 함께 눌러야 한 행이 뷰포트를 넘지 않는다(§5-5A S_MAX)
+        setAxis((a) => (a.viewportH === vh ? a : { s: clampScale(a.s, vh), viewportH: vh }));
+      }
       if (railRef.current) setRailH(railRef.current.clientHeight);
     };
     const ro = new ResizeObserver(sync);
@@ -173,10 +207,31 @@ export function TimelineGrid() {
     return () => ro.disconnect();
   }, []);
 
+  // ── URL 왕복 (§5-8 `/?y=&s=`): 중앙 연도는 scrollTop의 파생값, 멈추면 replaceState ─
+  useEffect(() => {
+    if (!landed.current || landing.current) return; // 착지 전의 scrollTop 0을 URL에 쓰지 않는다
+    const t = setTimeout(() => {
+      const y = Math.round(centerYear(scrollTop, axis));
+      const url = `${location.pathname}?y=${y}&s=${Number(axis.s.toFixed(2))}`;
+      if (location.search !== url.slice(location.pathname.length)) history.replaceState(null, "", url);
+    }, URL_IDLE_MS);
+    return () => clearTimeout(t);
+  }, [scrollTop, axis]);
+
   // ── 줌 결과 반영: 스페이서 height가 쓰인 뒤 같은 레이아웃 패스에서 ────────
   useLayoutEffect(() => {
     const el = scrollerRef.current;
-    if (!el || pendingTop.current === null) return;
+    if (!el) return;
+    // 착지: 축이 목표 s·viewportH로 그려진 커밋에서만 놓는다
+    const l = landing.current;
+    if (l && axis.s === l.s && axis.viewportH === l.vh) {
+      landing.current = null;
+      el.scrollTop = scrollTopForYear(l.y, axis);
+      setScrollTop(el.scrollTop);
+      setLevel(levelOf(axis.s)); // 착지는 이력이 없다 — s=40 경계에 내려도 히스테리시스가 십년 레벨을 붙들지 않게
+      return;
+    }
+    if (pendingTop.current === null) return;
     el.scrollTop = pendingTop.current;
     pendingTop.current = null;
     setScrollTop(el.scrollTop); // 읽어 오는 값은 기기 픽셀 격자에 스냅된 결과다(§11 C-11)
@@ -517,7 +572,8 @@ export function TimelineGrid() {
                   출처 {selected.detail.official.length > 0 && <span>국사편찬위원회 연표(공공누리 · 제한 없음) · </span>}
                   {selected.detail.src.map((s) => (
                     <a key={s.url} href={s.url} target="_blank" rel="noreferrer" className="underline">{new URL(s.url).hostname}</a>
-                  ))} ({selected.detail.license}) · <a href="/sources" className="underline">출처와 라이선스</a>
+                  ))} ({selected.detail.license}) · <a href="/sources" className="underline">출처와 라이선스</a> ·{" "}
+                  <a href={`/y/${selected.detail.year}`} className="underline">{selected.ev.date_ko.replace(/경$/, "")} 페이지</a>
                 </div>
               </>
             ) : (
