@@ -180,9 +180,17 @@ function readUrlState(): { y: number | null; s: number | null; r: RegionId[] | n
   };
 }
 
-/** 사건의 한국어 이름(ko 사이트링크 표제어, 괄호 구분자 제거). 원문이 한국어면 없음 — 칩 라벨의 1순위. */
-const koNameOf = (ev: PublishedEvent): string | undefined =>
-  ev.lang !== "ko" ? ev.names.kr?.nat?.replace(/\s*\([^)]*\)$/, "") || undefined : undefined;
+/** 사건의 한국어 이름(ko 사이트링크 표제어, 괄호 구분자 제거) — 칩 라벨의 1순위. */
+const koNameOf = (ev: PublishedEvent): string | undefined => ev.names.kr?.nat?.replace(/\s*\([^)]*\)$/, "") || undefined;
+
+/**
+ * 한국어 원문 줄의 짧은 라벨. ko 「한국사 연표」 표 행은 한 줄에 여러 사건이 쉼표로 묶여 있다 —
+ * "조미수호조규 체결, 임오군란 일어남, …" → "조미수호조규 체결 외 3". 나머지는 상세에.
+ */
+const shortKo = (title: string): string => {
+  const segs = title.split(/,\s+/).filter((s) => s.trim());
+  return segs.length > 1 ? `${segs[0]} 외 ${segs.length - 1}` : title;
+};
 
 /**
  * 한국어 이름이 **사건**을 가리키는가. QID는 인물·왕조일 때가 많아(이시진, 도요토미 히데요시, 청나라)
@@ -706,6 +714,7 @@ export function TimelineGrid() {
                                   const ko = koNameOf(ev);
                                   const dup = ko !== undefined && placed.filter((p) => koNameOf(p.ev) === ko).length > 1;
                                   if (ko && !dup && isEventName(ko)) return ko; // 사건 이름이면 그것만 — 원문은 상세에
+                                  if (ev.lang === "ko") return shortKo(ev.title); // 한국어 원문: 묶인 줄은 첫 사건 + "외 N"
                                   if (ev.title_ko) return ev.title_ko;
                                   return ko ? (
                                     <>
