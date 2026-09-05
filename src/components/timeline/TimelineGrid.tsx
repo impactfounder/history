@@ -38,6 +38,11 @@ type RegionId = (typeof COLUMNS)[number]["id"];
 
 /** 셀당 최대 칩 수(PRD §5-3). 넘치면 `+N`. */
 const MAX_PER_CELL: Record<Level, number> = { century: 3, decade: 5, year: 8, month: 8 };
+/**
+ * 칩 한 줄의 세로 피치(px): 칩 20 + gap 4. 셀에 들어가는 칩 수는 행 높이로 정한다 — 칩은 대개
+ * 문장 하나라 한 줄을 다 차지하므로, 개수만 세면 연도 레벨(행 40px)에서 둘째 줄이 잘린다(2026-09-05 확인).
+ */
+const CHIP_PITCH = 24;
 /** 뷰포트 밖으로 더 그리는 행 수. 관성 스크롤의 지연을 흡수한다. */
 const OVERSCAN_ROWS = 3;
 /** 제스처가 끝났다고 보는 유휴 시간(ms). 이후 앵커 연도를 새로 잡는다. */
@@ -168,22 +173,34 @@ export function TimelineGrid() {
       return next;
     });
 
+  /**
+   * 발행 버전(manifest.publishedAt). 청크·상세 경로는 발행마다 같아서 브라우저가 이전 발행분을
+   * 캐시한다(2026-09-05: C-2로 뺀 2026년 칩이 계속 보였다). manifest만 재검증해 받고, 나머지 요청에
+   * ?v=버전을 붙여 발행이 바뀌면 URL도 바뀌게 한다.
+   */
+  const [dataVersion, setDataVersion] = useState<string | null>(null);
+  const withV = useCallback((path: string) => `${path}?v=${encodeURIComponent(dataVersion ?? "")}`, [dataVersion]);
+
   useEffect(() => {
-    fetch(`${DATA}/manifest.json`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then(setManifest)
-      .catch(() => setManifest(null));
-    fetch(`${DATA}/polities.json`)
-      .then((r) => (r.ok ? (r.json() as Promise<{ regions: Polities }>) : null))
+    fetch(`${DATA}/manifest.json`, { cache: "no-cache" })
+      .then((r) => (r.ok ? (r.json() as Promise<Manifest & { publishedAt?: string }>) : null))
+      .then((m) => {
+        setManifest(m);
+        const v = m?.publishedAt ?? String(Date.now());
+        setDataVersion(v);
+        return fetch(`${DATA}/polities.json?v=${encodeURIComponent(v)}`);
+      })
+      .then((r) => (r?.ok ? (r.json() as Promise<{ regions: Polities }>) : null))
       .then((p) => setPolities(p?.regions ?? {}))
-      .catch(() => setPolities({}));
+      .catch(() => { setManifest(null); setPolities({}); });
   }, []);
 
   const ensureChunk = useCallback((region: RegionId, key: string) => {
+    if (!dataVersion) return; // manifest가 오기 전엔 받지 않는다 — 버전 없는 URL은 이전 발행분 캐시를 부른다
     const path = `${DATA}/events/${region}/${key}.json`;
     if (chunks.current.has(path) || inflight.current.has(path)) return;
     inflight.current.add(path);
-    fetch(path)
+    fetch(withV(path))
       .then((r) => (r.ok ? (r.json() as Promise<Chunk>) : null))
       .then((c) => chunks.current.set(path, c?.events ?? null)) // 404도 기록 — 빈 구간은 다시 묻지 않는다
       .catch(() => chunks.current.set(path, null))
@@ -191,7 +208,7 @@ export function TimelineGrid() {
         inflight.current.delete(path);
         bump((n) => n + 1);
       });
-  }, []);
+  }, [dataVersion, withV]);
 
   // ── 뷰포트 높이 추적 + 착지 ───────────────────────────────────────────────
   // 첫 측정에서 URL(?y=&s=)이 있으면 그 자리로, 없으면 최근 수십 년(§5-7 착지, C-1 권고안)으로.
@@ -339,7 +356,7 @@ export function TimelineGrid() {
   const loadedChunks = Array.from(chunks.current.values()).filter(Boolean).length;
 
   const openOfficialYear = (year: number) => {
-    fetch(`${DATA}/official/kr/${year}.json`)
+    fetch(withV(`${DATA}/official/kr/${year}.json`))
       .then((r) => (r.ok ? (r.json() as Promise<OfficialYear>) : null))
       .then((o) => setOfficialYear(o))
       .catch(() => setOfficialYear(null));
@@ -355,7 +372,7 @@ export function TimelineGrid() {
   const openDetail = (ev: PublishedEvent) => {
     setOfficialYear(null);
     setSelected({ ev, detail: null });
-    fetch(`${DATA}/events/detail/${ev.id}.json`)
+    fetch(withV(`${DATA}/events/detail/${ev.id}.json`))
       .then((r) => (r.ok ? (r.json() as Promise<Detail>) : null))
       .then((detail) => setSelected((s) => (s && s.ev.id === ev.id ? { ev, detail } : s)))
       .catch(() => {});
@@ -492,7 +509,7 @@ export function TimelineGrid() {
             {buckets.map((b) => {
               const top = yearToY(b, axis);
               const h = rows.unit * axis.s;
-              const max = MAX_PER_CELL[rows.level];
+              const max = Math.max(1, Math.min(MAX_PER_CELL[rows.level], Math.floor((h - 4) / CHIP_PITCH)));
               return (
                 <div key={b} className="absolute inset-x-0 flex border-t border-neutral-200" style={{ top, height: h }}>
                   {/* 연도 거터 (§5-10) */}
@@ -501,11 +518,11 @@ export function TimelineGrid() {
                   </div>
                   {shown.map((c) => {
                     const evs = cellEvents(c.id, b);
-                    const shown = evs.slice(0, max);
+                    const visible = evs.slice(0, max);
                     // 칩은 가로로 흐른다(§5-10 목업 "칩 칩 +2"). 세로로 쌓으면 s가 작을 때 행 높이를 넘겨 잘린다.
                     return (
                       <div key={c.id} className="flex min-w-0 flex-1 flex-wrap content-start gap-1 overflow-hidden border-r border-neutral-100 px-1 py-0.5">
-                        {shown.map((ev) => {
+                        {visible.map((ev) => {
                           // 시각 위계(§5-10): 중요도 5 굵게 > 4 > 3 기본. 전승은 기울임.
                           const imp = ev.regions[0]?.imp ?? 3;
                           const tone =
@@ -520,8 +537,16 @@ export function TimelineGrid() {
                               type="button"
                               onClick={() => openDetail(ev)}
                               title={ev.date_ko}
-                              className={`max-w-full truncate rounded border px-1.5 py-0.5 text-left leading-tight ${tone}${ev.hist === "traditional" ? " italic" : ""}`}
+                              // 넘치는 셀에서는 "+N"이 같은 줄에 남도록 칩 폭을 조금 양보한다 — 안 그러면 +N이 둘째 줄로 밀려 잘린다
+                              className={`${evs.length > max ? "max-w-[calc(100%-2.25rem)]" : "max-w-full"} truncate rounded border px-1.5 py-0.5 text-left leading-tight ${tone}${ev.hist === "traditional" ? " italic" : ""}`}
                             >
+                              {/* 한국어 이름이 있으면 앞에(ko 사이트링크 표제어) — 번역 전의 절반짜리 한국어. 원문이 한국어면 중복이라 뺀다 */}
+                              {ev.lang !== "ko" && ev.names.kr?.nat && (
+                                <>
+                                  <span className="font-medium">{ev.names.kr.nat.replace(/\s*\([^)]*\)$/, "")}</span>
+                                  <span className="opacity-50"> · </span>
+                                </>
+                              )}
                               {ev.title}
                               {ev.hist === "traditional" && <span className="text-neutral-400"> (전승)</span>}
                               {ev.official ? <span className="text-neutral-400" title="국사편찬위원회 연표에 있는 사건"> ◆</span> : null}

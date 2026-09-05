@@ -15,7 +15,7 @@ const DATA_DIR = path.join(process.cwd(), "public", "data", "v1");
 const CONTEXT_YEARS = 2;
 
 interface Region { id: string; label_ko: string; coverage_from?: number }
-interface Ev { id: string; y0: number; title: string; lang: string; hist: string; regions: { r: string; imp: number }[]; official?: number }
+interface Ev { id: string; y0: number; title: string; lang: string; hist: string; names?: Partial<Record<string, { nat?: string | null }>>; regions: { r: string; imp: number }[]; official?: number }
 interface Polity { name: string; label: string; y0: number; y1: number | null }
 
 async function readJson<T>(rel: string): Promise<T | null> {
@@ -102,6 +102,7 @@ export default async function YearPage({ params }: { params: Promise<{ year: str
                         return (
                           <li key={e.id} className={focus ? (imp >= 5 ? "font-semibold" : imp === 4 ? "font-medium" : "") : "text-[12px] text-neutral-400"}>
                             {!focus && <span className="mr-1 tabular-nums">{e.y0 <= 0 ? `BC${1 - e.y0}` : e.y0}</span>}
+                            {e.lang !== "ko" && e.names?.kr?.nat && <span className="font-medium">{e.names.kr.nat.replace(/\s*\([^)]*\)$/, "")}<span className="opacity-50"> · </span></span>}
                             <span className={e.hist === "traditional" ? "italic" : ""}>{e.title}</span>
                             {e.hist === "traditional" && <span className="text-neutral-400"> (전승)</span>}
                             {e.official ? <span className="text-neutral-400" title="국사편찬위원회 연표에 있는 사건"> ◆</span> : null}

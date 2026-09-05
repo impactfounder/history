@@ -409,6 +409,8 @@ curation/
 ## 6. 정적 JSON 발행 포맷
 
 ### 6-1. 파일 배치
+경로는 발행마다 같다. 그래서 클라이언트는 `manifest.json`만 재검증(`cache: no-cache`)해 받고, 나머지 요청에 `?v=publishedAt`을 붙인다 — 발행이 바뀌면 URL도 바뀐다(2026-09-05: C-2로 뺀 2026년 칩이 브라우저 캐시에서 계속 보였다). manifest가 오기 전엔 청크를 받지 않는다.
+
 ```
 /data/v1/
   regions.json                       -- 열 메타 전체
