@@ -165,7 +165,7 @@
       "zh": "室町时代"
     },
     "start_year": 1336,
-    "end_year": 1568,
+    "end_year": 1573,
     "start_precision": "year",
     "end_precision": "year",
     "historicity": "historical",
@@ -173,9 +173,7 @@
       "wikidata": "Q334845",
       "start": "P580",
       "end": "P582"
-    },
-    "note": "끝 1573 → 1568(다음 밴드 아즈치모모야마 시대 시작으로 자름)",
-    "end_year_wikidata": 1573
+    }
   },
   {
     "id": "jp-q319531",
@@ -188,7 +186,7 @@
       "ja": "安土桃山時代",
       "zh": "安土桃山时代"
     },
-    "start_year": 1568,
+    "start_year": 1573,
     "end_year": 1600,
     "start_precision": "year",
     "end_precision": "year",
@@ -196,8 +194,12 @@
     "source": {
       "wikidata": "Q319531",
       "start": "P580",
-      "end": "P582"
-    }
+      "end": "P582",
+      "override": {
+        "start_year": 1573
+      }
+    },
+    "note": "시작은 ja 문서(安土桃山時代) 첫 문단의 1573년(室町幕府 멸망)을 따른다. Wikidata P580은 1568(織田信長 입경) — 자국어판 시대 문서와 다르면 문서 쪽(규칙, 2026-09-05)"
   },
   {
     "id": "jp-q184963",

@@ -322,7 +322,9 @@ curation/
   nikh/                              -- 국사편찬위 연표 ZIP·JSONL (gitignore, tools/fetch-nikh.mjs)
   _qid-sitelinks.json                -- QID → 언어판 수 (tools/enrich.mjs, 중요도 프록시)
   polities/{region}.json             -- 시대 밴드 41개. 어느 정치체를 밴드로 둘지는 사람이 고르고(tools/polities.mjs BANDS)
-                                        시작·끝 연도는 Wikidata(P580/P582·P571/P576, CC0). 열 관점으로 덮은 값은 override+note
+                                        시작·끝 연도는 Wikidata(P580/P582·P571/P576, CC0). 덮는 규칙(2026-09-05): Wikidata 값이
+                                        그 시대의 자국어판 문서 첫 문단과 다르면 문서 쪽을 따르고 override+note(삼국 시대 BC 57,
+                                        아즈치모모야마 1573). 열 관점 값(중화민국 끝 1949, 미국 시작 1776)도 같은 자리에
 ```
 - 한 줄 = 사건 하나. `status` 필드가 §4-4의 상태다.
 - 발행(§6)은 이 파일들에서 정적 JSON 청크를 생성한다. **`curation/`은 원본, `/data/v1/`은 파생물**이다.

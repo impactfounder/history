@@ -21,7 +21,7 @@ export default function SourcesPage() {
         </p>
         <h1 className="mb-2 text-2xl font-semibold tracking-tight [text-wrap:balance]">출처와 라이선스</h1>
         <p className="mb-8 text-neutral-600">
-          이 연표의 사건 본문은 우리가 쓴 문장이 아니다. 아래 원천의 연표 한 줄을 <b>그대로</b> 싣고, 사건마다 어디서 왔는지와 어떤 조건으로 쓸 수 있는지를 적는다. 상세 패널의 “출처” 줄이 그 사건의 것이다.
+          이 연표의 사건 본문은 우리가 쓴 문장이 아니다. 아래 원천의 연표 한 줄을 <b>그대로</b> 싣고, 사건마다 어디서 왔는지와 어떤 조건으로 쓸 수 있는지를 적는다. 상세 패널의 “출처” 줄이 그 사건의 것이다. 수록 범위는 기원전 500년부터 <b>2025년까지</b>다 — 올해는 비운다. 올해의 연표는 아직 움직이는 문서라서다.
         </p>
 
         <section className="mb-8">

@@ -325,6 +325,14 @@ export function TimelineGrid() {
       .then((o) => setOfficialYear(o))
       .catch(() => setOfficialYear(null));
   };
+  /** 추천 연도 칩·연도 랜딩: 그 해를 연도 레벨(s=40)로 중앙에. 줌과 같은 경로(pendingTop) — 이벤트 핸들러라 경쟁이 없다 */
+  const goTo = (year: number, sTarget = 40) => {
+    const s = clampScale(sTarget, axis.viewportH);
+    pendingTop.current = scrollTopForYear(year, { s, viewportH: axis.viewportH });
+    setAxis((a) => ({ ...a, s }));
+    setLevel(levelOf(s));
+    setSelected(null);
+  };
   const openDetail = (ev: PublishedEvent) => {
     setOfficialYear(null);
     setSelected({ ev, detail: null });
@@ -350,10 +358,18 @@ export function TimelineGrid() {
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-neutral-200 px-4">
         <span className="font-semibold tracking-tight">history</span>
         {manifest?.stage === "preview" ? (
-          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-800">미리보기 · {manifest.counts.events}건 · 원문 그대로</span>
+          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-800">미리보기 · {manifest.counts.events}건 · 원문 그대로 · 2025년까지</span>
         ) : (
-          <span className="text-neutral-400">{manifest ? `${manifest.counts.events}건` : "데이터 없음"}</span>
+          <span className="text-neutral-400">{manifest ? `${manifest.counts.events}건 · 2025년까지 수록` : "데이터 없음"}</span>
         )}
+        {/* 추천 연도 칩(§11 C-1) — 네 열이 동시에 촘촘한 해. 조작을 배우기 전에 제품의 답을 먼저 보여준다 */}
+        <nav className="flex gap-1 text-[11px]" aria-label="추천 연도">
+          {[1592, 1882, 1945].map((y) => (
+            <button key={y} type="button" onClick={() => goTo(y)} className="rounded-full border border-neutral-300 px-2 py-0.5 text-neutral-600 hover:bg-neutral-100">
+              {y}년
+            </button>
+          ))}
+        </nav>
         <span className="ml-auto text-neutral-500">
           시간 이동은 스크롤 · 확대는 <kbd className="rounded border px-1">Ctrl</kbd>+휠 또는{" "}
           <kbd className="rounded border px-1">+</kbd>/<kbd className="rounded border px-1">−</kbd>

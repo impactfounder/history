@@ -33,7 +33,7 @@
       "ja": "三国時代 (朝鮮半島)",
       "zh": "三国时代 (朝鲜半岛)"
     },
-    "start_year": -17,
+    "start_year": -56,
     "end_year": 660,
     "start_precision": "year",
     "end_precision": "year",
@@ -41,9 +41,12 @@
     "source": {
       "wikidata": "Q165292",
       "start": "P580",
-      "end": "P582"
+      "end": "P582",
+      "override": {
+        "start_year": -56
+      }
     },
-    "note": "고구려·백제·신라(·가야) 병존 — P0는 한 줄 라벨"
+    "note": "고구려·백제·신라(·가야) 병존 — P0는 한 줄 라벨. 시작은 ko 문서 첫 문단의 기원전 57년(신라 건국)을 따른다. Wikidata P580은 기원전 18(백제 건국) — 자국어판 시대 문서와 다르면 문서 쪽(규칙, 2026-09-05)"
   },
   {
     "id": "kr-q702639",

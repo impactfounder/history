@@ -22,7 +22,7 @@ const UA = `history-timeline-collector/0.1 (research; ${CONTACT})`;
 const BANDS = {
   kr: [
     { ko: "고조선", historicity: "traditional", note: "시작 BC 2333은 전승(editorial-policy §4-3). 축은 BC 500부터라 잘려 보인다" },
-    { ko: "삼국 시대", note: "고구려·백제·신라(·가야) 병존 — P0는 한 줄 라벨" },
+    { ko: "삼국 시대", override: { start_year: -56 }, note: "고구려·백제·신라(·가야) 병존 — P0는 한 줄 라벨. 시작은 ko 문서 첫 문단의 기원전 57년(신라 건국)을 따른다. Wikidata P580은 기원전 18(백제 건국) — 자국어판 시대 문서와 다르면 문서 쪽(규칙, 2026-09-05)" },
     { ko: "남북국 시대", note: "통일신라·발해" },
     { ko: "고려" },
     { ko: "조선" },
@@ -57,7 +57,7 @@ const BANDS = {
     { ko: "헤이안 시대" },
     { ko: "가마쿠라 시대" },
     { ko: "무로마치 시대" },
-    { ko: "아즈치모모야마 시대" },
+    { ko: "아즈치모모야마 시대", override: { start_year: 1573 }, note: "시작은 ja 문서(安土桃山時代) 첫 문단의 1573년(室町幕府 멸망)을 따른다. Wikidata P580은 1568(織田信長 입경) — 자국어판 시대 문서와 다르면 문서 쪽(규칙, 2026-09-05)" },
     { ko: "에도 시대" },
     { ko: "메이지 시대" },
     { ko: "다이쇼 시대" },
