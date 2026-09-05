@@ -654,13 +654,15 @@ export function TimelineGrid() {
                             <button
                               key={ev.id}
                               type="button"
-                              onClick={(e) => { lastChip.current = e.currentTarget; openDetail(ev); }}
+                              // 같은 칩을 다시 누르면 닫는다(토글, 대표 지시 2026-09-05). 다른 칩이면 바꿔 연다
+                              onClick={(e) => { lastChip.current = e.currentTarget; if (selected?.ev.id === ev.id) setSelected(null); else openDetail(ev); }}
+                              aria-pressed={selected?.ev.id === ev.id}
                               title={ev.date_ko}
                               data-col={c.id}
                               data-b={b}
                               data-i={idx}
                               style={{ top: chipTop, height: ch }}
-                              className={`absolute left-1 right-1 flex items-center rounded border bg-white px-1.5 text-left focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 ${tone}${ev.hist === "traditional" ? " italic" : ""}`}
+                              className={`absolute left-1 right-1 flex items-center rounded border bg-white px-1.5 text-left focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 ${tone}${ev.hist === "traditional" ? " italic" : ""}${selected?.ev.id === ev.id ? " ring-2 ring-neutral-800 ring-offset-1" : ""}`}
                             >
                               <span className="min-w-0 truncate">
                                 {/* 칩은 짧게(대표 지시 2026-09-05): 한국어 이름(ko 사이트링크)이 있으면 그것만, 원문은 상세에.
