@@ -43,6 +43,12 @@ const MAX_PER_CELL: Record<Level, number> = { century: 3, decade: 5, year: 8, mo
  * 문장 하나라 한 줄을 다 차지하므로, 개수만 세면 연도 레벨(행 40px)에서 둘째 줄이 잘린다(2026-09-05 확인).
  */
 const CHIP_PITCH = 24;
+/** 하단 줌 바의 레벨 정류장(§5-3 경계 4·40 안쪽의 대표 스케일). */
+const LEVEL_STOPS: { level: Level; s: number; label: string }[] = [
+  { level: "century", s: 2, label: "세기" },
+  { level: "decade", s: 8, label: "십년" },
+  { level: "year", s: 40, label: "연도" },
+];
 /** 뷰포트 밖으로 더 그리는 행 수. 관성 스크롤의 지연을 흡수한다. */
 const OVERSCAN_ROWS = 3;
 /** 제스처가 끝났다고 보는 유휴 시간(ms). 이후 앵커 연도를 새로 잡는다. */
@@ -316,22 +322,29 @@ export function TimelineGrid() {
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
 
-  // ── 키보드 줌 ─────────────────────────────────────────────────────────────
+  // ── 뷰포트 중앙 기준 줌 — 키보드(+/−/0)와 하단 줌 바가 같이 쓴다(§5-5 표) ──
+  const zoomCenterTo = useCallback((sTarget: number) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const cur = axisRef.current;
+    const mid = cur.viewportH / 2;
+    const sNext = clampScale(sTarget, cur.viewportH);
+    if (sNext === cur.s) return;
+    const year = anchorYearAt(el.scrollTop, mid, cur);
+    pendingTop.current = zoomToYear(year, mid, sNext, cur.viewportH);
+    setAxis((a) => ({ ...a, s: sNext }));
+  }, []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "+" && e.key !== "=" && e.key !== "-" && e.key !== "0") return;
-      const el = scrollerRef.current;
-      if (!el) return;
+      if ((e.target as HTMLElement | null)?.closest("input, textarea, [contenteditable]")) return;
       const cur = axisRef.current;
-      const mid = cur.viewportH / 2;
-      const year = anchorYearAt(el.scrollTop, mid, cur);
-      const sNext = e.key === "0" ? 8 : clampScale(cur.s * (e.key === "-" ? 1 / 1.6 : 1.6), cur.viewportH);
-      pendingTop.current = zoomToYear(year, mid, sNext, cur.viewportH);
-      setAxis((a) => ({ ...a, s: sNext }));
+      zoomCenterTo(e.key === "0" ? LANDING_S : cur.s * (e.key === "-" ? 1 / 1.6 : 1.6));
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [zoomCenterTo]);
 
   // ── 의미 레벨: s에서 파생하되 이력을 둔다(§5-3) ──────────────────────────
   useEffect(() => {
@@ -685,7 +698,19 @@ export function TimelineGrid() {
                   {selected.detail.src.map((s) => (
                     <a key={s.url} href={s.url} target="_blank" rel="noreferrer" className="underline">{new URL(s.url).hostname}</a>
                   ))} ({selected.detail.license}) · <a href="/sources" className="underline">출처와 라이선스</a> ·{" "}
-                  <a href={`/y/${selected.detail.year}`} className="underline">{selected.ev.date_ko.replace(/경$/, "")} 페이지</a>
+                  <a href={`/y/${selected.detail.year}`} className="underline">{selected.ev.date_ko.replace(/경$/, "")} 페이지</a> ·{" "}
+                  {/* 오류 신고(§11 C-8): 원문을 그대로 싣는 구조라 고칠 것은 "어느 줄을 어느 해·어느 열에"와 국사편찬위 대응뿐 */}
+                  <a
+                    href={`https://github.com/impactfounder/history/issues/new?${new URLSearchParams({
+                      title: `[사건 오류] ${selected.ev.date_ko} · ${selected.ev.title.slice(0, 40)}`,
+                      body: `사건 id: ${selected.ev.id}\n연도·열: ${selected.ev.date_ko} · ${selected.ev.regions[0]?.r}\n원문: ${selected.detail.text}\n출처: ${selected.detail.src.map((s) => s.url).join(", ")}\n\n무엇이 틀렸나요? (연도 / 열 귀속 / 국사편찬위 대응 / 그 밖에)\n`,
+                    })}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline"
+                  >
+                    오류 신고
+                  </a>
                 </div>
               </>
             ) : (
@@ -696,20 +721,37 @@ export function TimelineGrid() {
       </div>
 
       {/* 하단 줌 바 자리 + 계측 HUD */}
-      <footer className="shrink-0 border-t border-neutral-200 bg-neutral-50 px-4 py-2 font-mono text-[11px] text-neutral-600">
-        <div className="flex flex-wrap gap-x-5 gap-y-1">
-          <span>
-            레벨 <b className="text-neutral-900">{rows.level}</b>
-            {levelOf(axis.s) !== rows.level && <span className="text-amber-700"> (이력 유지)</span>} · s{" "}
-            <b className="text-neutral-900">{axis.s.toFixed(2)}</b> px/년 ({bounds.min.toFixed(2)}–{bounds.max})
-          </span>
-          <span>스페이서 <b className="text-neutral-900">{Math.round(contentHeight(axis)).toLocaleString("ko-KR")}</b> px</span>
-          <span>scrollTop {Math.round(scrollTop).toLocaleString("ko-KR")}</span>
-          <span>중앙 <b className="text-neutral-900">{formatYear(Math.round(centerYear(scrollTop, axis)))}</b></span>
-          <span>보이는 행 {buckets.length}개 ({formatRowLabel(rows.from, rows.level)} ~ {formatRowLabel(rows.to, rows.level)})</span>
-          <span>청크 {chunkKeys.length}키 · 캐시 {loadedChunks}</span>
-          <span>뷰포트 {axis.viewportH}px</span>
+      {/* 하단 줌 바(§5-10 40px): 뷰포트 중앙 기준 −/+, 레벨 정류장, 중앙 연도. 계측은 개발 모드에서만 */}
+      <footer className="flex h-10 shrink-0 items-center gap-3 border-t border-neutral-200 bg-white px-3 text-[12px] text-neutral-700">
+        <div className="flex items-center gap-0.5" role="group" aria-label="확대·축소">
+          <button type="button" onClick={() => zoomCenterTo(axisRef.current.s / 1.6)} disabled={axis.s <= bounds.min} className="h-7 w-7 rounded border border-neutral-300 leading-none hover:bg-neutral-100 disabled:opacity-30" aria-label="축소">−</button>
+          {LEVEL_STOPS.map((st) => (
+            <button
+              key={st.level}
+              type="button"
+              onClick={() => zoomCenterTo(st.s)}
+              aria-pressed={rows.level === st.level}
+              className={`h-7 rounded px-2 ${rows.level === st.level ? "bg-neutral-900 text-white" : "text-neutral-600 hover:bg-neutral-100"}`}
+            >
+              {st.label}
+            </button>
+          ))}
+          <button type="button" onClick={() => zoomCenterTo(axisRef.current.s * 1.6)} disabled={axis.s >= bounds.max} className="h-7 w-7 rounded border border-neutral-300 leading-none hover:bg-neutral-100 disabled:opacity-30" aria-label="확대">+</button>
         </div>
+        <span className="text-neutral-500">
+          중앙 <b className="text-neutral-900">{formatYear(Math.round(centerYear(scrollTop, axis)))}</b>
+        </span>
+        <span className="hidden text-neutral-400 sm:inline">{formatRowLabel(rows.from, rows.level)} ~ {formatRowLabel(rows.to, rows.level)}</span>
+        {process.env.NODE_ENV === "development" && (
+          <details className="ml-auto font-mono text-[11px] text-neutral-500">
+            <summary className="cursor-pointer select-none">계측</summary>
+            <div className="absolute right-2 bottom-10 z-30 flex flex-col gap-0.5 rounded border border-neutral-200 bg-white p-2 shadow">
+              <span>레벨 {rows.level}{levelOf(axis.s) !== rows.level && <span className="text-amber-700"> (이력 유지)</span>} · s {axis.s.toFixed(2)} px/년 ({bounds.min.toFixed(2)}–{bounds.max})</span>
+              <span>스페이서 {Math.round(contentHeight(axis)).toLocaleString("ko-KR")} px · scrollTop {Math.round(scrollTop).toLocaleString("ko-KR")}</span>
+              <span>보이는 행 {buckets.length} · 청크 {chunkKeys.length}키 · 캐시 {loadedChunks} · 뷰포트 {axis.viewportH}px</span>
+            </div>
+          </details>
+        )}
       </footer>
     </div>
   );
