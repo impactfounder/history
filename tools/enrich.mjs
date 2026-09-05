@@ -42,12 +42,15 @@ async function api(params, tries = 4) {
 
 // ── QID 모으기 ──────────────────────────────────────────────────────────────
 const qids = new Set();
+// 연표 수집(candidates)과 위키데이터 사건(wikidata) 둘 다 — 후자는 QID가 곧 사건이다
 for (const region of readdirSync("curation/raw", { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name)) {
-  const f = path.join("curation/raw", region, "candidates.jsonl");
-  if (!existsSync(f)) continue;
-  for (const line of readFileSync(f, "utf8").split("\n").filter(Boolean)) {
-    const q = JSON.parse(line).qid;
-    if (q) qids.add(q);
+  for (const name of ["candidates.jsonl", "wikidata.jsonl"]) {
+    const f = path.join("curation/raw", region, name);
+    if (!existsSync(f)) continue;
+    for (const line of readFileSync(f, "utf8").split("\n").filter(Boolean)) {
+      const q = JSON.parse(line).qid;
+      if (q) qids.add(q);
+    }
   }
 }
 const cache = existsSync(OUT) && !refresh ? JSON.parse(readFileSync(OUT, "utf8")) : { fetchedAt: null, counts: {} };
@@ -70,6 +73,7 @@ function timeOf(claims, prop) {
   return out;
 }
 cache.facts ??= {};
+cache.titles ??= {}; // QID → {ko,en,ja,zh} 사이트링크 표제어. 위키데이터 사건(tools/wikidata-events.mjs)의 이름
 for (let i = 0; i < todo.length; i += 50) {
   const batch = todo.slice(i, i + 50);
   // claims까지 받는다 — 기간(P580 시작·P582 끝), 시점(P585), 사람 여부(P31=Q5). 기간 막대와 월·일 보강에 쓴다
@@ -77,6 +81,9 @@ for (let i = 0; i < todo.length; i += 50) {
   for (const [qid, ent] of Object.entries(j.entities ?? {})) {
     cache.counts[qid] = ent.missing !== undefined ? 0 : Object.keys(ent.sitelinks ?? {}).filter(isLangWiki).length;
     if (ent.missing !== undefined) continue;
+    const sl = ent.sitelinks ?? {};
+    const titles = Object.fromEntries(["ko", "en", "ja", "zh"].map((l) => [l, sl[`${l}wiki`]?.title]).filter(([, v]) => v));
+    if (Object.keys(titles).length) cache.titles[qid] = titles;
     const start = timeOf(ent.claims, "P580"), end = timeOf(ent.claims, "P582"), point = timeOf(ent.claims, "P585");
     const types = (ent.claims?.P31 ?? []).map((c) => c.mainsnak?.datavalue?.value?.id).filter(Boolean);
     const human = types.includes("Q5");

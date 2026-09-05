@@ -135,8 +135,10 @@ function rejectReason(raw, title) {
 // ── 입력 ────────────────────────────────────────────────────────────────────
 const qidCache = existsSync("curation/raw/_qid-sitelinks.json") ? JSON.parse(readFileSync("curation/raw/_qid-sitelinks.json", "utf8")) : { counts: {}, facts: {} };
 const sitelinks = qidCache.counts ?? {};
-/** QID → {start, end, point, human} (tools/enrich.mjs). 기간 막대와 월·일 보강. */
+/** QID → {start, end, point, human, types} (tools/enrich.mjs). 기간 막대와 월·일 보강, 순위 가중치. */
 const facts = qidCache.facts ?? {};
+/** QID → {ko,en,ja,zh} 사이트링크 표제어. 위키데이터 사건의 이름(연표 줄이 없다). */
+const sitelinkTitles = qidCache.titles ?? {};
 
 /** 원문의 명시적 연도 범위 "1592–1598" / "1950-1953" / "1592년부터 1598년" — 있으면 그 줄이 말하는 기간이다. */
 const RANGE_RE = /(?<![\d])(\d{3,4})\s*(?:[–—~-]|년부터\s*)(\d{3,4})(?![\d])/;
@@ -191,12 +193,55 @@ if (regions.includes("kr")) {
 /** 같은 해 + 전해 음력 11·12월(양력으로 넘어오는 달). */
 const nikhCandidates = (y) => [...(nikhByYear.get(y) ?? []), ...(nikhByYear.get(y - 1) ?? []).filter((n) => n.date.cal === "lunar" && n.date.m >= 11)];
 
+/** 위키데이터 사건을 받아들이는 문턱 — 언어판 수와 한 해 상한. */
+const WD_MIN_SITELINKS = 3;
+const WD_PER_YEAR = 10;
+
+/**
+ * 위키데이터 사건(tools/wikidata-events.mjs)을 수집 행 모양으로. 연표 줄이 아니라 사건 항목이라
+ * 본문 줄이 없다 — 이름은 사이트링크, 설명은 한국어 위키백과 첫 문단(about)이 채운다.
+ * 같은 QID가 이미 연표에서 왔으면 버린다(같은 사건을 두 줄로 만들지 않는다).
+ */
+function wikidataRows(region, seenQids) {
+  const f = path.join("curation/raw", region, "wikidata.jsonl");
+  if (!existsSync(f)) return [];
+  const out = [];
+  const perYear = new Map();
+  for (const line of readFileSync(f, "utf8").split("\n").filter(Boolean)) {
+    const w = JSON.parse(line);
+    if (seenQids.has(w.qid)) continue;
+    const sl = sitelinkTitles[w.qid];
+    if (!sl?.ko && !sl?.en) continue; // 이름이 없으면 칩에 쓸 게 없다
+    // 언어판 3개 이상 — 미국은 주·지역 선거가 8,903건 중 대부분이었다(2026-09-05). 여러 언어에 실린 사건만
+    if ((sitelinks[w.qid] ?? 0) < WD_MIN_SITELINKS) continue;
+    // 한 해에 너무 몰리지 않게(미국 대선 해의 주별 선거 등)
+    const n = (perYear.get(w.date.year) ?? 0) + 1;
+    if (n > WD_PER_YEAR) continue;
+    perYear.set(w.date.year, n);
+    out.push({
+      id: w.id,
+      status: "draft",
+      region,
+      kind: "event",
+      shape: "wikidata",
+      text: sl.ko ?? sl.en, // 라벨이 곧 본문 — 연표 줄이 없다
+      date: w.date,
+      qid: w.qid,
+      names_native: sl,
+      links: [],
+      source: w.source,
+    });
+  }
+  return out;
+}
+
 // ── 파생 ────────────────────────────────────────────────────────────────────
 mkdirSync("curation/events", { recursive: true });
 for (const region of regions) {
   const src = path.join("curation/raw", region, "candidates.jsonl");
   if (!existsSync(src)) { console.warn(`${region}: ${src} 없음`); continue; }
-  const raws = readFileSync(src, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l));
+  const collected = readFileSync(src, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l));
+  const raws = [...collected, ...wikidataRows(region, new Set(collected.map((r) => r.qid).filter(Boolean)))];
   const out = [];
   const stat = { published: 0, rejected: {}, qid: 0, matched: 0, official: 0, byImp: {} };
 
@@ -207,7 +252,8 @@ for (const region of regions) {
 
     // QID는 링크 앵커(그 언어판 표제어)가 이 줄에 실제로 있을 때만 이 사건의 것이다
     const anchor = raw.names_native?.[lang];
-    const qidValid = Boolean(raw.qid && anchor && raw.text.includes(anchor));
+    // 위키데이터 사건은 QID가 곧 그 사건이다(앵커 검사가 필요 없다). 연표 줄은 앵커가 줄에 있어야 한다
+    const qidValid = raw.shape === "wikidata" ? Boolean(raw.qid) : Boolean(raw.qid && anchor && raw.text.includes(anchor));
     const n = qidValid ? sitelinks[raw.qid] ?? null : null;
 
     const rec = {
