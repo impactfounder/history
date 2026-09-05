@@ -174,6 +174,18 @@ function readUrlState(): { y: number | null; s: number | null; r: RegionId[] | n
   };
 }
 
+/** 사건의 한국어 이름(ko 사이트링크 표제어, 괄호 구분자 제거). 원문이 한국어면 없음 — 칩 라벨의 1순위. */
+const koNameOf = (ev: PublishedEvent): string | undefined =>
+  ev.lang !== "ko" ? ev.names.kr?.nat?.replace(/\s*\([^)]*\)$/, "") || undefined : undefined;
+
+/**
+ * 한국어 이름이 **사건**을 가리키는가. QID는 인물·왕조일 때가 많아(이시진, 도요토미 히데요시, 청나라)
+ * 그 이름만 칩에 쓰면 무슨 일인지 사라진다. 사건 이름 꼴(…전쟁·조약·사건·혁명·즉위…)일 때만 이름만으로 충분.
+ */
+const EVENT_LIKE =
+  /(전쟁|전투|대첩|사건|조약|협정|협약|조규|장정|혁명|운동|반란|봉기|난|군란|민란|내란|동란|병란|사변|양요|왜란|호란|옥사|사화|환국|반정|정난|의거|항쟁|정변|쿠데타|개혁|유신|선언|조인|건국|멸망|즉위|퇴위|설립|창설|창건|창립|개통|준공|천도|회담|회의|칙령|헌법|독립|해방|점령|침공|침략|정벌|원정|학살|폭동|시위|파업|선거|취임|암살|탄생|개교|창간|출간|발명|발견|탐험|상륙|항해|동맹|연합|분할|통일|합병|병합|폐지|제정|반포|공포|시행|편찬|간행|완성|건립|축조|화재|지진|홍수|기근|역병|참사|사고|폭발|붕괴|공습|폭격|포격|해전|공방전|포위|함락|항복|휴전|종전|개전|법령|법|령|제도|정책|계획|박람회|올림픽|대회|재판|판결|처형|유배|망명|귀국|파견|사절|통신사|수신사|개항|개국|쇄국|금지령|해금|폐번|치현|과거|칙서)$/;
+const isEventName = (ko: string) => EVENT_LIKE.test(ko);
+
 /** 그 해 그 열의 정치체. 밴드는 약 40개라 선형 탐색으로 충분하다. */
 const polityAt = (list: Polity[] | undefined, year: number): Polity | undefined =>
   list?.find((p) => p.y0 <= year && (p.y1 == null || year < p.y1));
@@ -651,20 +663,23 @@ export function TimelineGrid() {
                               className={`absolute left-1 right-1 flex items-center rounded border bg-white px-1.5 text-left focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 ${tone}${ev.hist === "traditional" ? " italic" : ""}`}
                             >
                               <span className="min-w-0 truncate">
-                                {/* 한국어 이름이 있으면 앞에(ko 사이트링크 표제어) — 번역 전의 절반짜리 한국어. 원문이 한국어면 중복이라 뺀다 */}
-                                {ev.title_ko ? (
-                                  ev.title_ko
-                                ) : (
-                                  <>
-                                    {ev.lang !== "ko" && ev.names.kr?.nat && (
-                                      <>
-                                        <span className="font-medium">{ev.names.kr.nat.replace(/\s*\([^)]*\)$/, "")}</span>
-                                        <span className="opacity-50"> · </span>
-                                      </>
-                                    )}
-                                    {ev.title}
-                                  </>
-                                )}
+                                {/* 칩은 짧게(대표 지시 2026-09-05): 한국어 이름(ko 사이트링크)이 있으면 그것만, 원문은 상세에.
+                                    같은 셀에 같은 이름이 둘 이상이면(도요토미 히데요시 ×3) 구분을 위해 원문을 덧붙인다 */}
+                                {(() => {
+                                  const ko = koNameOf(ev);
+                                  const dup = ko !== undefined && placed.filter((p) => koNameOf(p.ev) === ko).length > 1;
+                                  if (ko && !dup && isEventName(ko)) return ko; // 사건 이름이면 그것만 — 원문은 상세에
+                                  if (ev.title_ko) return ev.title_ko;
+                                  return ko ? (
+                                    <>
+                                      <span className="font-medium">{ko}</span>
+                                      <span className="opacity-50"> · </span>
+                                      {ev.title}
+                                    </>
+                                  ) : (
+                                    ev.title
+                                  );
+                                })()}
                                 {ev.hist === "traditional" && <span className="text-neutral-400"> (전승)</span>}
                                 {ev.official ? <span className="text-neutral-400" title="국사편찬위원회 연표에 있는 사건"> ◆</span> : null}
                               </span>
