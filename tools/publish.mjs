@@ -44,7 +44,11 @@ const REGION_LANG = { kr: "ko", cn: "zh", jp: "ja", us: "en" };
 const GENERAL_DB = new Set(["고대사연표", "근대사연표", "대한민국사연표"]);
 
 const sha = (s) => createHash("sha256").update(s).digest("hex");
-const eventId = (r) => "ev_" + sha(`${r.source_id}|${r.title}`).slice(0, 12);
+/**
+ * 사건 id. 연도를 넣는다 — 수집기의 행 id는 sha1(url|revid|text)라 **같은 문장이 여러 해에 반복되면**
+ * 같은 id가 된다("Rebellion breaks out in Sichuan"이 송 연표에 네 번, 2026-09-05 중복 키 경고).
+ */
+const eventId = (r) => "ev_" + sha(`${r.source_id}|${r.date.year}|${r.title}`).slice(0, 12);
 const bucket = (y, u) => Math.floor(y / u) * u;
 const yearKo = (y) => (y <= 0 ? `기원전 ${1 - y}년` : `${y}년`);
 const formatYear = (y, approx) => yearKo(y) + (approx ? "경" : "");
@@ -156,7 +160,8 @@ let officialMatched = 0;
 for (const region of REGIONS.map((x) => x.id)) {
   const rs = all.filter((r) => r.region === region);
   if (!rs.length) continue;
-  const recs = rs.map(toRecord);
+  // id가 겹치면 앞의 것만 — 같은 해·같은 문서에 같은 줄이 두 번 있으면 클라이언트 key가 충돌한다
+  const recs = [...new Map(rs.map((r) => [eventId(r), toRecord(r)])).values()];
   // §6-2: imp desc → 언어판 수 desc → y0 asc → id. 클라이언트는 재정렬하지 않고 앞에서부터 셀 높이만큼 보인다
   const sortKey = (a, b) => b.regions[0].imp - a.regions[0].imp || (b.sl ?? 0) - (a.sl ?? 0) || a.y0 - b.y0 || (a.id < b.id ? -1 : 1);
 

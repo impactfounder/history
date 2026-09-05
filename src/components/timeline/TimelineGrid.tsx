@@ -194,6 +194,21 @@ const REGION_COLOR: Record<RegionId, string> = { kr: "#0047A0", cn: "#C8102E", j
 /** 국기(public/flags, 위키미디어 공용의 공유 저작물). 윈도우는 국기 이모지를 못 그려서 SVG로. */
 const FLAG: Record<RegionId, string> = { kr: "/flags/kr.svg", cn: "/flags/cn.svg", jp: "/flags/jp.svg", us: "/flags/us.svg" };
 
+const rgba = (hex: string, a: number) => {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+};
+/**
+ * 정치체 밴드 배경(대표 제안 2026-09-05: "왕조마다 배경을 다르게"). 열 색의 농도만 번갈아 쓴다 —
+ * 왕조마다 다른 색을 주면 네 열이 무지개가 되고, 흰 칩 위의 글자 대비도 흔들린다. 농도 세 단계를
+ * 돌려 이웃한 왕조가 언제나 다르게 보이게 하고, 경계에는 진한 선을 긋는다.
+ */
+const BAND_ALPHA = [0.045, 0.1, 0.02];
+const bandStyle = (region: RegionId, i: number) => ({
+  background: rgba(REGION_COLOR[region], BAND_ALPHA[i % BAND_ALPHA.length]!),
+  borderTop: `1px solid ${rgba(REGION_COLOR[region], 0.35)}`,
+});
+
 /** 그 해 그 열의 정치체. 밴드는 약 40개라 선형 탐색으로 충분하다. */
 const polityAt = (list: Polity[] | undefined, year: number): Polity | undefined =>
   list?.find((p) => p.y0 <= year && (p.y1 == null || year < p.y1));
@@ -579,7 +594,7 @@ export function TimelineGrid() {
             const top = railY(y0, railH);
             const h = railY(y1, railH) - top;
             return (
-              <div key={p.id} className={`absolute inset-x-0 overflow-hidden ${i % 2 ? "bg-neutral-200/60" : ""}`} style={{ top, height: h }} title={polityLabel(p)}>
+              <div key={p.id} className="absolute inset-x-0 overflow-hidden" style={{ top, height: h, ...bandStyle(cols[0] ?? "kr", i) }} title={polityLabel(p)}>
                 {h >= 14 && <div className="truncate px-1 text-[10px] leading-[14px] text-neutral-500">{polityName(p)}</div>}
               </div>
             );
@@ -664,11 +679,7 @@ export function TimelineGrid() {
                     const y1 = Math.min(p.y1 ?? AXIS_YEAR_END + 1, AXIS_YEAR_END + 1);
                     if (y1 <= y0) return null;
                     return (
-                      <div
-                        key={p.id}
-                        className={i % 2 ? "absolute inset-x-0 bg-neutral-50" : "absolute inset-x-0 bg-transparent"}
-                        style={{ top: yearToY(y0, axis), height: (y1 - y0) * axis.s }}
-                      />
+                      <div key={p.id} className="absolute inset-x-0" style={{ top: yearToY(y0, axis), height: (y1 - y0) * axis.s, ...bandStyle(c.id, i) }} />
                     );
                   })}
                 </div>
@@ -803,7 +814,10 @@ export function TimelineGrid() {
                     return (
                       // 라벨은 오른쪽에 붙인다 — 칩은 왼쪽에서 흐르므로 첫 행과 덜 겹친다
                       <div key={p.id} className="absolute inset-x-0 flex items-start justify-end" style={{ top: yearToY(y0, axis), height: h }}>
-                        <div className="sticky max-w-[70%] truncate rounded-full border border-neutral-300 bg-white/90 px-2 text-[11px] leading-[18px] text-neutral-500 backdrop-blur" style={{ top: COLUMN_HEADER_H + 3, margin: "3px 4px 0 0", height: BAND_LABEL_H - 2 }}>
+                        <div
+                          className="sticky max-w-[70%] truncate rounded-full border bg-white/90 px-2 text-[11px] leading-[18px] backdrop-blur"
+                          style={{ top: COLUMN_HEADER_H + 3, margin: "3px 4px 0 0", height: BAND_LABEL_H - 2, color: REGION_COLOR[c.id], borderColor: rgba(REGION_COLOR[c.id], 0.4) }}
+                        >
                           {p.hist === "traditional" ? <i>{polityLabel(p)}</i> : polityLabel(p)}
                         </div>
                       </div>
