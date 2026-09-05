@@ -25,6 +25,9 @@ describe("stripYear / parseWikiDate / segments", () => {
     expect(parseWikiDate("2009년 5월 노무현 전 대통령 서거")).toEqual({ m: 5 });
     expect(parseWikiDate("15 August. The assassination")).toEqual({ m: 8, d: 15 });
     expect(parseWikiDate("1953: Armistice")).toEqual({});
+    expect(parseWikiDate("1945年（昭和20年） 8月14日 ポツダム宣言受諾。")).toEqual({ m: 8, d: 14 }); // 원호 연수(20年)는 월이 아니다
+    expect(parseWikiDate("1912年：2月12日溥仪頒布《宣統帝退位詔書》")).toEqual({ m: 2, d: 12 });
+    expect(parseWikiDate("7月 連合国がポツダム宣言発表。")).toEqual({ m: 7 });
   });
   it("ko 표 행은 쉼표로 나누고, 날짜는 세그먼트에서 뺀다", () => {
     expect(segments("1882년 조미수호조규 체결, 임오군란 일어남, 일본과 제물포조약 체결", { split: true }))

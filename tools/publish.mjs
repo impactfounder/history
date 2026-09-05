@@ -65,6 +65,7 @@ function toRecord(r) {
     kind: "point",
     y0: r.date.year,
     prec: r.date.precision ?? "year",
+    ...(r.date.month ? { m: r.date.month } : {}),
     approx: Boolean(r.date.approximate),
     hist: r.historicity ?? "historical",
     title: r.title,

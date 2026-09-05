@@ -23,7 +23,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { bestMatches, stripYear } from "../src/lib/curation/nikh-match.mjs";
+import { bestMatches, parseWikiDate, stripYear } from "../src/lib/curation/nikh-match.mjs";
 
 const REGIONS = process.argv.slice(2).filter((a) => /^[a-z]{2}$/.test(a));
 const regions = REGIONS.length ? REGIONS : ["kr", "cn", "jp", "us"];
@@ -157,7 +157,8 @@ for (const region of regions) {
       ...(reason ? { reject_reason: reason } : {}),
       region,
       kind: raw.kind === "event" ? "event" : "period",
-      date: raw.date,
+      // 월·일은 원문 표기("June —", "6월 30일", "8月14日")에서 기계로. 연도 안 배치(그리드)에 쓴다
+      date: (() => { const md = parseWikiDate(raw.text); return md.m ? { ...raw.date, month: md.m, ...(md.d ? { day: md.d } : {}) } : raw.date; })(),
       historicity: historicityOf(region, raw.date.year),
       lang,
       title,

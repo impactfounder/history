@@ -37,12 +37,51 @@ const COLUMNS = [
 type RegionId = (typeof COLUMNS)[number]["id"];
 
 /** 셀당 최대 칩 수(PRD §5-3). 넘치면 `+N`. */
-const MAX_PER_CELL: Record<Level, number> = { century: 3, decade: 5, year: 8, month: 8 };
 /**
- * 칩 한 줄의 세로 피치(px): 칩 20 + gap 4. 셀에 들어가는 칩 수는 행 높이로 정한다 — 칩은 대개
- * 문장 하나라 한 줄을 다 차지하므로, 개수만 세면 연도 레벨(행 40px)에서 둘째 줄이 잘린다(2026-09-05 확인).
+ * 칩 높이(px). 위계는 색이 아니라 **크기**로(대표 제안 2026-09-05): 5는 크고 굵게, 4는 중간, 3 이하는 작게.
+ * 검은 바탕 칩은 격자를 바둑판처럼 만들고 원문 텍스트를 가린다 — 흰 바탕에 글자 크기·굵기·테두리만 다르다.
  */
-const CHIP_PITCH = 24;
+const CHIP_H: Record<number, number> = { 5: 26, 4: 22 };
+const chipH = (imp: number) => CHIP_H[imp] ?? 20;
+const CHIP_GAP = 2;
+const CELL_PAD = 2;
+
+interface PlacedChip { ev: PublishedEvent; top: number; h: number }
+
+/**
+ * 셀 안 배치(2026-09-05, "행이 넓어지면 아래가 빈다"에 대한 답). 두 단계:
+ *  1) 중요도 순(청크 순서)으로 행 높이 예산에 들어갈 만큼 고른다 — 개수 상한이 아니라 높이 상한.
+ *  2) 고른 것을 시간 순으로 실제 시점 위치(연·월 오프셋)에 놓되, 앞 칩과 겹치면 아래로 민다.
+ * 행이 낮으면(십년 80px) 지금처럼 위에서 쌓이고, 행이 높으면(십년 400px·연도 399px) 시간을 따라
+ * 퍼져서 빈 자리가 "사건 없는 시간"으로 읽힌다. 월은 원문 표기가 있을 때만(m).
+ */
+function layoutCell(evs: PublishedEvent[], h: number, b: number, unit: number): { placed: PlacedChip[]; hidden: number } {
+  const avail = h - CELL_PAD * 2;
+  const chosen: PublishedEvent[] = [];
+  let used = 0;
+  for (const ev of evs) {
+    const ch = chipH(ev.regions[0]?.imp ?? 3);
+    if (used + ch > avail) break;
+    chosen.push(ev);
+    used += ch + CHIP_GAP;
+  }
+  const at = (ev: PublishedEvent) => ev.y0 + ((ev.m ?? 1) - 1) / 12;
+  chosen.sort((a, c) => at(a) - at(c) || (c.regions[0]?.imp ?? 0) - (a.regions[0]?.imp ?? 0));
+  const placed: PlacedChip[] = [];
+  let cursor = CELL_PAD;
+  for (const ev of chosen) {
+    const ch = chipH(ev.regions[0]?.imp ?? 3);
+    const want = CELL_PAD + ((at(ev) - b) / unit) * h;
+    const top = Math.max(cursor, Math.min(want, h - CELL_PAD - ch)); // 시점 위치, 단 바닥을 넘기지 않는다
+    if (top + ch > h - CELL_PAD) break;
+    placed.push({ ev, top, h: ch });
+    cursor = top + ch + CHIP_GAP;
+  }
+  return { placed, hidden: evs.length - placed.length };
+}
+
+/** 행 안 보조선: 십년 행은 연 단위, 연도 행은 월 단위. 행이 이만큼 높을 때만(선 사이 20px 이상). */
+const subdivisions = (level: Level, h: number): number => (level === "decade" && h >= 200 ? 10 : level === "year" && h >= 240 ? 12 : 0);
 /** 하단 줌 바의 레벨 정류장(§5-3 경계 4·40 안쪽의 대표 스케일). */
 const LEVEL_STOPS: { level: Level; s: number; label: string }[] = [
   { level: "century", s: 2, label: "세기" },
@@ -58,6 +97,8 @@ const GESTURE_IDLE_MS = 180;
 interface PublishedEvent {
   id: string;
   y0: number;
+  /** 월(1~12). 원문에 표기가 있을 때만. 행 안 배치의 시점 오프셋에 쓴다. */
+  m?: number;
   approx: boolean;
   hist: "historical" | "traditional";
   title: string;
@@ -566,28 +607,37 @@ export function TimelineGrid() {
             {buckets.map((b) => {
               const top = yearToY(b, axis);
               const h = rows.unit * axis.s;
-              const max = Math.max(1, Math.min(MAX_PER_CELL[rows.level], Math.floor((h - 4) / CHIP_PITCH)));
+              const sub = subdivisions(rows.level, h);
               return (
                 <div key={b} className="absolute inset-x-0 flex border-t border-neutral-200" style={{ top, height: h }}>
-                  {/* 연도 거터 (§5-10) */}
-                  <div className="w-10 shrink-0 wide:w-12 border-r border-neutral-200 px-1 text-[11px] text-neutral-500 tabular-nums">
+                  {/* 연도 거터 (§5-10). 행이 높으면 보조선 눈금(연·월)도 */}
+                  <div className="relative w-10 shrink-0 wide:w-12 border-r border-neutral-200 px-1 text-[11px] text-neutral-500 tabular-nums">
                     {formatRowLabel(b, rows.level)}
+                    {sub > 0 &&
+                      Array.from({ length: sub - 1 }, (_, i) => (
+                        <span key={i} className="absolute left-1 text-[10px] text-neutral-300" style={{ top: ((i + 1) / sub) * h - 6 }}>
+                          {rows.level === "decade" ? b + i + 1 : `${i + 2}월`}
+                        </span>
+                      ))}
                   </div>
                   {shown.map((c) => {
                     const evs = cellEvents(c.id, b);
-                    const visible = evs.slice(0, max);
-                    // 칩은 가로로 흐른다(§5-10 목업 "칩 칩 +2"). 세로로 쌓으면 s가 작을 때 행 높이를 넘겨 잘린다.
+                    const { placed, hidden } = layoutCell(evs, h, b, rows.unit);
                     return (
-                      <div key={c.id} className="flex min-w-0 flex-1 flex-wrap content-start gap-1 overflow-hidden border-r border-neutral-100 px-1 py-0.5">
-                        {visible.map((ev, idx) => {
-                          // 시각 위계(§5-10): 중요도 5 굵게 > 4 > 3 기본. 전승은 기울임.
+                      <div key={c.id} className="relative min-w-0 flex-1 overflow-hidden border-r border-neutral-100">
+                        {sub > 0 &&
+                          Array.from({ length: sub - 1 }, (_, i) => (
+                            <div key={i} className="pointer-events-none absolute inset-x-0 border-t border-neutral-100" style={{ top: ((i + 1) / sub) * h }} aria-hidden />
+                          ))}
+                        {placed.map(({ ev, top: chipTop, h: ch }, idx) => {
+                          // 시각 위계(§5-10)는 크기로: 5 크고 굵게 > 4 중간 > 3 이하 작게. 전승은 기울임.
                           const imp = ev.regions[0]?.imp ?? 3;
                           const tone =
                             imp >= 5
-                              ? "border-neutral-800 bg-neutral-900 font-semibold text-white"
+                              ? "border-neutral-700 text-[14px] font-semibold text-neutral-900"
                               : imp === 4
-                                ? "border-neutral-400 bg-neutral-100 font-medium text-neutral-900"
-                                : "border-neutral-200 bg-white text-neutral-700";
+                                ? "border-neutral-400 text-[13px] font-medium text-neutral-900"
+                                : "border-neutral-200 text-[12px] text-neutral-700";
                           return (
                             <button
                               key={ev.id}
@@ -597,30 +647,32 @@ export function TimelineGrid() {
                               data-col={c.id}
                               data-b={b}
                               data-i={idx}
-                              // 넘치는 셀에서는 "+N"이 같은 줄에 남도록 칩 폭을 조금 양보한다 — 안 그러면 +N이 둘째 줄로 밀려 잘린다
-                              className={`${evs.length > max ? "max-w-[calc(100%-2.25rem)]" : "max-w-full"} truncate rounded border px-1.5 py-0.5 text-left leading-tight focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 ${tone}${ev.hist === "traditional" ? " italic" : ""}`}
+                              style={{ top: chipTop, height: ch }}
+                              className={`absolute left-1 right-1 flex items-center rounded border bg-white px-1.5 text-left focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 ${tone}${ev.hist === "traditional" ? " italic" : ""}`}
                             >
-                              {/* 한국어 이름이 있으면 앞에(ko 사이트링크 표제어) — 번역 전의 절반짜리 한국어. 원문이 한국어면 중복이라 뺀다 */}
-                              {ev.title_ko ? (
-                                ev.title_ko
-                              ) : (
-                                <>
-                                  {ev.lang !== "ko" && ev.names.kr?.nat && (
-                                    <>
-                                      <span className="font-medium">{ev.names.kr.nat.replace(/\s*\([^)]*\)$/, "")}</span>
-                                      <span className="opacity-50"> · </span>
-                                    </>
-                                  )}
-                                  {ev.title}
-                                </>
-                              )}
-                              {ev.hist === "traditional" && <span className="text-neutral-400"> (전승)</span>}
-                              {ev.official ? <span className="text-neutral-400" title="국사편찬위원회 연표에 있는 사건"> ◆</span> : null}
+                              <span className="min-w-0 truncate">
+                                {/* 한국어 이름이 있으면 앞에(ko 사이트링크 표제어) — 번역 전의 절반짜리 한국어. 원문이 한국어면 중복이라 뺀다 */}
+                                {ev.title_ko ? (
+                                  ev.title_ko
+                                ) : (
+                                  <>
+                                    {ev.lang !== "ko" && ev.names.kr?.nat && (
+                                      <>
+                                        <span className="font-medium">{ev.names.kr.nat.replace(/\s*\([^)]*\)$/, "")}</span>
+                                        <span className="opacity-50"> · </span>
+                                      </>
+                                    )}
+                                    {ev.title}
+                                  </>
+                                )}
+                                {ev.hist === "traditional" && <span className="text-neutral-400"> (전승)</span>}
+                                {ev.official ? <span className="text-neutral-400" title="국사편찬위원회 연표에 있는 사건"> ◆</span> : null}
+                              </span>
                             </button>
                           );
                         })}
-                        {evs.length > max && (
-                          <span className="inline-block rounded px-1 text-[11px] text-neutral-500">+{evs.length - max}</span>
+                        {hidden > 0 && (
+                          <span className="pointer-events-none absolute bottom-0.5 right-1 rounded bg-white/90 px-1 text-[11px] text-neutral-500">+{hidden}</span>
                         )}
                       </div>
                     );

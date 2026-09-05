@@ -27,6 +27,8 @@
 const MONTHS = { january: 1, february: 2, march: 3, april: 4, may: 5, june: 6, july: 7, august: 8, september: 9, october: 10, november: 11, december: 12 };
 const MONTH_RE = /\b(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)\b|\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})\b/i;
 const KO_DATE_RE = /(\d{1,2})월\s*(\d{1,2})일|(\d{1,2})월/;
+/** ja·zh: 5月3日 / 5月. "1633年（寛永10年）"의 원호 연수와는 다르다(年 뒤가 아니라 月). */
+const CJK_DATE_RE = /(?<![\d年])(\d{1,2})月(?:(\d{1,2})日)?/;
 
 /** 괄호 속 한자 풀이·출전 표시·구두점·공백을 걷어낸 비교용 문자열. */
 export const norm = (s) =>
@@ -53,13 +55,15 @@ export const stripYear = (t) =>
 export function parseWikiDate(text) {
   const ko = KO_DATE_RE.exec(text);
   if (ko) return ko[1] ? { m: Number(ko[1]), d: Number(ko[2]) } : { m: Number(ko[3]) };
+  const cjk = CJK_DATE_RE.exec(text);
+  if (cjk) return cjk[2] ? { m: Number(cjk[1]), d: Number(cjk[2]) } : { m: Number(cjk[1]) };
   const en = MONTH_RE.exec(text);
   if (en) return en[2] ? { m: MONTHS[en[2].toLowerCase()], d: Number(en[1]) } : { m: MONTHS[en[3].toLowerCase()], d: Number(en[4]) };
   return {};
 }
 
 /** 날짜 표기를 뗀 본문. 세그먼트 비교에 날짜 숫자가 섞이지 않게 한다. */
-const stripDate = (t) => t.replace(KO_DATE_RE, "").replace(MONTH_RE, "").replace(/^[\s.,:]+/, "");
+const stripDate = (t) => t.replace(KO_DATE_RE, "").replace(CJK_DATE_RE, "").replace(MONTH_RE, "").replace(/^[\s.,:]+/, "");
 
 /** 한 행을 사건 세그먼트로. ko 표 행만 쉼표·대시로 나눈다. */
 export function segments(text, { split }) {
