@@ -14,10 +14,11 @@ describe("formatYearL / formatRowLabelL", () => {
     expect(formatRowLabelL(1900, "decade", "ko")).toBe("1900년대");
     expect(formatRowLabelL(1900, "decade", "en")).toBe("1900s");
     expect(formatRowLabelL(1900, "decade", "ja")).toBe("1900年代");
-    expect(formatRowLabelL(-500, "decade", "ko")).toBe("기원전 501–492년");
+    // 기원전 범위는 "년"을 뗀다 — 좁은 거터에서 줄이 감겨 다음 행과 겹쳤다
+    expect(formatRowLabelL(-500, "decade", "ko")).toBe("기원전 501–492");
     expect(formatRowLabelL(-500, "decade", "en")).toBe("501–492 BC");
-    expect(formatRowLabelL(0, "decade", "ko")).toBe("기원전 1년–서기 9년"); // 경계 버킷
-    expect(formatRowLabelL(0, "decade", "en")).toBe("1 BC – AD 9");
+    expect(formatRowLabelL(0, "decade", "ko")).toBe("기원전 1–서기 9"); // 경계 버킷
+    expect(formatRowLabelL(0, "decade", "en")).toBe("1 BC–AD 9");
     expect(formatRowLabelL(1882, "year", "zh")).toBe("1882年");
   });
 });

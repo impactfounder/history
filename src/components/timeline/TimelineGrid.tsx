@@ -596,7 +596,7 @@ export function TimelineGrid() {
           {/* 열 헤더 — 열 이름 + 뷰포트 상단 연도의 정치체(파생 표시). 밴드가 얕아 sticky 라벨이
               숨는 구간에서도 어느 시대인지 안다(PRD §5-10 조건 ④의 보완) */}
           <div className="sticky top-0 z-10 flex border-b border-neutral-200 bg-white/95 text-[11px] font-medium text-neutral-600 backdrop-blur" style={{ height: COLUMN_HEADER_H }}>
-            <div className="w-10 shrink-0 wide:w-12 border-r border-neutral-200" />
+            <div className="w-12 shrink-0 wide:w-14 border-r border-neutral-200" />
             {shown.map((c, i) => {
               const p = polityAt(polities[c.id], yToYear(scrollTop + COLUMN_HEADER_H, axis));
               const btn = "rounded px-1 leading-none text-white/70 hover:bg-white/25 hover:text-white disabled:invisible";
@@ -651,7 +651,7 @@ export function TimelineGrid() {
           <div className="relative w-full" style={{ height: contentHeight(axis) }}>
             {/* 정치체 밴드 — 색 띠 층. 행 아래에 깔린다. 약 40개라 가상화하지 않는다(§5-5A 레이어, 조건 ⑤) */}
             <div className="pointer-events-none absolute inset-0 flex" aria-hidden>
-              <div className="w-10 shrink-0 wide:w-12" />
+              <div className="w-12 shrink-0 wide:w-14" />
               {shown.map((c) => (
                 <div key={c.id} className="relative min-w-0 flex-1">
                   {(polities[c.id] ?? []).map((p, i) => {
@@ -672,7 +672,7 @@ export function TimelineGrid() {
             {/* 기간 막대 층 — 끝 연도(y1)가 있는 사건은 칩 시작점부터 끝까지 열 오른쪽 가장자리에 세로 막대(PRD §5-5 "기간 막대").
                 행 셀은 overflow hidden이라 행을 넘는 기간은 여기서 그린다. 칩 높이보다 짧은 기간은 그리지 않는다 */}
             <div className="pointer-events-none absolute inset-0 flex" aria-hidden>
-              <div className="w-10 shrink-0 wide:w-12" />
+              <div className="w-12 shrink-0 wide:w-14" />
               {shown.map((c) => {
                 const spans = chunkKeys
                   .flatMap((key) => chunks.current.get(`${DATA}/events/${c.id}/${key}.json`) ?? [])
@@ -705,8 +705,9 @@ export function TimelineGrid() {
               return (
                 <div key={b} className="absolute inset-x-0 flex border-t border-neutral-200/70" style={{ top, height: h }}>
                   {/* 연도 거터 (§5-10). 행이 높으면 보조선 눈금(연·월)도 */}
-                  <div className="relative w-10 shrink-0 wide:w-12 border-r border-neutral-200 px-1 text-[11px] text-neutral-500 tabular-nums">
-                    {formatRowLabelL(b, rows.level, locale)}
+                  {/* 연도 거터. 라벨이 행 높이를 넘으면 잘라 다음 행과 겹치지 않게(2026-09-05) */}
+                  <div className="relative w-12 shrink-0 overflow-hidden wide:w-14 border-r border-neutral-200 px-1 leading-[1.15] text-neutral-500 tabular-nums" style={{ fontSize: 10 }}>
+                    <span className="[word-break:keep-all]">{formatRowLabelL(b, rows.level, locale)}</span>
                     {sub > 0 &&
                       Array.from({ length: sub - 1 }, (_, i) => (
                         <span key={i} className="absolute left-1 text-[10px] text-neutral-300" style={{ top: ((i + 1) / sub) * h - 6 }}>
@@ -786,7 +787,7 @@ export function TimelineGrid() {
             {/* 정치체 스티키 라벨 층 — 행 위에 얹힌다. 밴드 박스(absolute)의 자식이 sticky(조건 ①),
                 박스에 overflow 없음(②), 조상에 transform 없음(③), 얕은 밴드는 라벨 생략(④) */}
             <div className="pointer-events-none absolute inset-0 z-[5] flex" aria-hidden>
-              <div className="w-10 shrink-0 wide:w-12" />
+              <div className="w-12 shrink-0 wide:w-14" />
               {shown.map((c) => (
                 <div key={c.id} className="relative min-w-0 flex-1">
                   {(polities[c.id] ?? []).map((p) => {

@@ -292,21 +292,23 @@ export function formatRowLabelL(bucket: number, level: Level, locale: Locale): s
       default: return `${bucket}年代`;
     }
   }
+  // 기원전 범위는 "년"을 뗀다 — 40px 거터에서 "기원전 801–792년"이 세 줄로 감겨 다음 행과 겹쳤다(2026-09-05)
   if (end <= 0) {
     if (unit === 1) return formatYearL(bucket, locale);
     const a = 1 - bucket, b = 1 - end;
     switch (locale) {
-      case "ko": return `기원전 ${a}–${b}년`;
+      case "ko": return `기원전 ${a}–${b}`;
       case "en": return `${a}–${b} BC`;
-      case "ja": return `紀元前${a}–${b}年`;
-      case "zh": return `公元前${a}–${b}年`;
+      case "ja": return `紀元前${a}–${b}`;
+      case "zh": return `公元前${a}–${b}`;
     }
   }
+  // 기원전과 서기가 한 버킷에 걸치는 경계
   switch (locale) {
-    case "ko": return `기원전 ${1 - bucket}년–서기 ${end}년`;
-    case "en": return `${1 - bucket} BC – AD ${end}`;
-    case "ja": return `紀元前${1 - bucket}年–西暦${end}年`;
-    case "zh": return `公元前${1 - bucket}年–公元${end}年`;
+    case "ko": return `기원전 ${1 - bucket}–서기 ${end}`;
+    case "en": return `${1 - bucket} BC–AD ${end}`;
+    case "ja": return `紀元前${1 - bucket}–西暦${end}`;
+    case "zh": return `公元前${1 - bucket}–公元${end}`;
   }
 }
 
