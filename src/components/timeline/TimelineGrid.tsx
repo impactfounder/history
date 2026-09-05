@@ -701,12 +701,13 @@ export function TimelineGrid() {
                       const top = yearToY(y0, axis) + CELL_PAD;
                       const h = yearToY(ev.y1! + 1, axis) - top;
                       const imp = ev.regions[0]?.imp ?? 3;
+                      // 칩 왼쪽 여백(14px)에 3px 막대 세 줄까지. 오른쪽에 두면 "+N" 배지와 겹쳐 무슨 선인지 알 수 없었다(2026-09-05)
                       return (
                         <div
                           key={ev.id}
-                          className={`absolute rounded-full ${imp >= 5 ? "bg-neutral-700/60" : imp === 4 ? "bg-neutral-500/50" : "bg-neutral-400/40"}`}
-                          style={{ top, height: h, right: 3 + (i % 3) * 5, width: 3 }}
-                          title={`${ev.title} ${ev.y0}–${ev.y1}`}
+                          className="absolute rounded-full"
+                          style={{ top, height: h, left: 2 + (i % 3) * 4, width: 3, background: rgba(REGION_COLOR[c.id], imp >= 5 ? 0.55 : imp === 4 ? 0.4 : 0.28) }}
+                          title={`${ev.title} · ${ev.y0}–${ev.y1}`}
                         />
                       );
                     })}
@@ -764,7 +765,7 @@ export function TimelineGrid() {
                               data-b={b}
                               data-i={idx}
                               style={{ top: chipTop, height: ch }}
-                              className={`absolute left-1.5 right-1.5 flex items-center rounded-md text-left focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 ${tone}${ev.hist === "traditional" ? " italic" : ""}${selected?.ev.id === ev.id ? " ring-2 ring-neutral-800 ring-offset-1" : ""}`}
+                              className={`absolute left-3.5 right-1.5 flex items-center rounded-md text-left focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 ${tone}${ev.hist === "traditional" ? " italic" : ""}${selected?.ev.id === ev.id ? " ring-2 ring-neutral-800 ring-offset-1" : ""}`}
                             >
                               {imp <= 3 && <span className="mr-1.5 shrink-0 text-neutral-300" aria-hidden>•</span>}
                               <span className="min-w-0 truncate">

@@ -55,13 +55,48 @@ const NON_EVENT_TYPES = new Set([
   "Q41710", "Q11446", "Q4022", "Q8502", "Q34442", "Q46970", "Q3957", "Q1364",
   "Q9430", "Q165", "Q23397", "Q46831", "Q33837", "Q34763", "Q39816", "Q1970725", // 바다·호수·산맥·군도·반도·계곡·삼림 — 지리
 ]);
+/**
+ * 사건 유형(위키데이터 P31) — tools/wikidata-events.mjs의 화이트리스트와 같은 뜻. 이름이 사건 꼴이
+ * 아니어도 유형이 사건이면 사건으로 본다.
+ */
+const EVENT_TYPES = new Set([
+  "Q178561", "Q188055", "Q198", "Q131569", "Q12890393", "Q124734", "Q10931", "Q7944", "Q3199915", "Q45382", "Q40231",
+  "Q1656682", "Q13418847", "Q350604", "Q168247", "Q2001676", "Q3839081", "Q8065", "Q1266946", "Q464980", "Q625298",
+  "Q1006311", "Q180684", "Q2223653", "Q18123741", "Q3241045", "Q1190554", "Q1190554",
+]);
+/**
+ * 순위 점수 = 언어판 수 × 가중치. **사건임을 증명해야 1점**이다(2026-09-05 두 번째 손질). 이름이 사건
+ * 꼴이거나 P31이 사건 유형이면 1, 사람·나라·기관이면 0.15, 나머지(불교·컴퓨터·철기 시대 같은 개념)는 0.3.
+ * 개념 항목이 언어판 200개를 업고 세기 레벨에 올라오던 문제.
+ */
 const score = (r) => {
   const f = facts[r.qid];
-  const w = isEventNameAny(r.names_native) ? 1 : (f?.human || (f?.types ?? []).some((t) => NON_EVENT_TYPES.has(t))) ? 0.2 : 0.5;
+  const isEvent = isEventNameAny(r.names_native) || (f?.types ?? []).some((t) => EVENT_TYPES.has(t));
+  const w = isEvent ? 1 : (f?.human || (f?.types ?? []).some((t) => NON_EVENT_TYPES.has(t))) ? 0.15 : 0.3;
   return (r.sitelinks ?? 0) * w;
 };
+/**
+ * 한 QID는 세기·십년 레벨에 한 번만(2026-09-05 대표 지적 "중복"). 원인은 같은 사건의 반복이 아니라
+ * **한 QID에 매달린 서로 다른 줄**이었다 — 송나라 QID가 붙은 42줄, 쓰촨성 15줄, 아베 신조 11줄이
+ * 세기 청크를 채웠다. 그 QID의 대표 한 줄(순위 최고, 같으면 이른 해)만 승격 후보로 두고
+ * 나머지는 3 이하로 눌러 연도 레벨에서만 보이게 한다. 진짜 같은 사건의 반복(러일 전쟁 1904·1905)도
+ * 같은 규칙으로 정리된다.
+ */
+function secondaryByQid(recs) {
+  const groups = new Map();
+  for (const r of recs) if (r.qid) (groups.get(r.qid) ?? groups.set(r.qid, []).get(r.qid)).push(r);
+  const secondary = new Set();
+  for (const g of groups.values()) {
+    if (g.length < 2) continue;
+    g.sort((a, b) => score(b) - score(a) || a.date.year - b.date.year);
+    for (const r of g.slice(1)) secondary.add(r);
+  }
+  return secondary;
+}
+
 function assignImportance(recs) {
-  const ranked = recs.filter((r) => r.sitelinks > 2 && !isWork(r)).sort((a, b) => score(b) - score(a));
+  const secondary = secondaryByQid(recs);
+  const ranked = recs.filter((r) => r.sitelinks > 2 && !isWork(r) && !secondary.has(r)).sort((a, b) => score(b) - score(a));
   let i = 0;
   for (const [imp, share] of SHARES) {
     const end = Math.min(ranked.length, i + Math.ceil(recs.length * share));
@@ -69,6 +104,7 @@ function assignImportance(recs) {
   }
   for (const r of recs) {
     if (r.importance_auto === undefined) r.importance_auto = r.sitelinks != null && r.sitelinks <= 2 ? 1 : isWork(r) && r.sitelinks > 10 ? 3 : 2;
+    if (secondary.has(r)) r.importance_auto = Math.min(r.importance_auto, 3); // 같은 QID의 두 번째부터는 연도 레벨에서만
     r.rank_score = Math.round(score(r)); // 발행 정렬 키(같은 중요도 안의 순서)
   }
 }

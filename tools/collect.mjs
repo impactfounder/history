@@ -121,6 +121,8 @@ function bodyLinks(html) {
 function parseYear(text) {
   const t = text.replace(/,/g, "").trim();
   let m;
+  // 기간 표현은 연도가 아니다 — "3年間弱に及ぶ民主党中心の政権が…"(3년간)이 서기 3년으로 읽혔다(2026-09-05)
+  if (/^(?:約|约|およそ)?\s*\d{1,4}\s*(?:年間|年余|年余り|ヶ年|か年|年多)/.test(t)) return null;
   // 한자권(ja·zh, 2026-09-05 C-12): 前386年 / 紀元前2万年頃 / 約前1747年 / 607年 / 1159年（平治元年） / 前3世紀
   if ((m = t.match(/^(?:約|约|およそ)?\s*(紀元前|公元前|西元前|前)\s*(\d{1,2})\s*(?:世紀|世纪)/))) {
     const c = Number(m[2]);
@@ -163,6 +165,9 @@ function parseYear(text) {
   if ((m = t.match(/^(\d{1,7})\s*(BCE?|CE|AD)?\b/i))) {
     const y = Number(m[1]);
     const bc = /^BCE?$/i.test(m[2] ?? "");
+    // 한자권 줄의 맨 앞 숫자는 목록 번호일 때가 많다 — "1 大化 (645年-650年)"가 서기 1년이 됐다.
+    // 한자·가나가 이어지는데 연호 표시(BC/AD)도 없으면 연도로 보지 않는다(2026-09-05)
+    if (!m[2] && /^[\s.:·-]*[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(t.slice(m[1].length))) return null;
     return { year: bc ? 1 - y : y, precision: "year", era: bc ? "bc" : "ad" };
   }
   return null;
@@ -180,7 +185,9 @@ const MONTHS =
  * 어긋났다.
  */
 const isDayMonth = (text) =>
-  new RegExp(`^\\d{1,2}(st|nd|rd|th)?\\s+(${MONTHS})\\b`, "i").test(text.trim()) ||
+  // 날짜 범위도 날짜다 — "3 to 11 May — Jinan incident."가 서기 3년이 되고, 뒤따르는 줄들이 그 해를
+  // 물려받아 "Battle of Midway"가 서기 4년에 놓였다(2026-09-05)
+  new RegExp(`^\\d{1,2}(st|nd|rd|th)?(\\s*(?:to|and|&|,|–|—|-)\\s*\\d{1,2}(st|nd|rd|th)?)*\\s+(${MONTHS})\\b`, "i").test(text.trim()) ||
   new RegExp(`^(${MONTHS})\\s+\\d{1,2}\\b`, "i").test(text.trim()) ||
   /^\d{1,2}\s*(월|月)/.test(text.trim());
 
