@@ -121,6 +121,20 @@ const write = (rel, obj) => {
 
 write("regions.json", { regions: REGIONS });
 
+// ── 정치체 밴드 (tools/polities.mjs → curation/polities/{region}.json) ────────
+// 약 40개라 한 파일. 가상화하지 않고 전부 렌더한다(PRD §5-5A 레이어 구조).
+const polities = {};
+for (const { id } of REGIONS) {
+  const f = `curation/polities/${id}.json`;
+  if (!existsSync(f)) continue;
+  polities[id] = JSON.parse(readFileSync(f, "utf8")).map((p) => ({
+    id: p.id, name: p.name_ko, names: p.names, y0: p.start_year, y1: p.end_year, hist: p.historicity,
+    label: `${p.name_ko} ${yearKo(p.start_year).replace(/년$/, "")}–${p.end_year == null ? "" : yearKo(p.end_year).replace(/년$/, "")}`,
+    ...(p.note ? { note: p.note } : {}),
+  }));
+}
+write("polities.json", { regions: polities });
+
 const byLevel = { century: 0, decade: 0, year: 0 };
 let officialMatched = 0;
 for (const region of REGIONS.map((x) => x.id)) {

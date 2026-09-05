@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   AXIS_SPAN_YEARS,
+  AXIS_YEAR_END,
   AXIS_YEAR_START,
   anchorYearAt,
   bucketStart,
@@ -15,9 +16,11 @@ import {
   levelOf,
   levelWithHysteresis,
   railWindow,
+  railY,
   scaleBounds,
   scrollTopForYear,
   visibleRows,
+  yToYear,
   yearToY,
   zoomToYear,
   type Axis,
@@ -73,8 +76,28 @@ interface Detail {
 /** official/kr/{연도}.json — 이 해의 공식 연표. */
 interface OfficialYear { year: number; count: number; shown: number; license: string; entries: OfficialEntry[] }
 interface Manifest { stage: "published" | "preview"; counts: { events: number; officialMatched?: number } }
+/** 정치체 밴드(polities.json, tools/polities.mjs). y1 null = 진행 중. */
+interface Polity {
+  id: string;
+  name: string;
+  names: Partial<Record<"ko" | "en" | "ja" | "zh", string | null>>;
+  y0: number;
+  y1: number | null;
+  hist: "historical" | "traditional";
+  label: string;
+  note?: string;
+}
+type Polities = Partial<Record<RegionId, Polity[]>>;
 
 const DATA = "/data/v1";
+/** 정치체 스티키 헤더 라벨 높이(px). 밴드가 이보다 얕으면 라벨 없이 색 띠만(PRD §5-10 조건 ④). */
+const BAND_LABEL_H = 22;
+/** 스크롤 컨테이너 상단의 열 헤더 높이(px). 밴드 라벨은 그 아래에 붙는다. */
+const COLUMN_HEADER_H = 26;
+
+/** 그 해 그 열의 정치체. 밴드는 약 40개라 선형 탐색으로 충분하다. */
+const polityAt = (list: Polity[] | undefined, year: number): Polity | undefined =>
+  list?.find((p) => p.y0 <= year && (p.y1 == null || year < p.y1));
 
 export function TimelineGrid() {
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -107,11 +130,17 @@ export function TimelineGrid() {
   /** 상세 패널 "이 해의 공식 연표" — 눌렀을 때만 받는다(한 해 최대 80건). */
   const [officialYear, setOfficialYear] = useState<OfficialYear | null>(null);
 
+  const [polities, setPolities] = useState<Polities>({});
+
   useEffect(() => {
     fetch(`${DATA}/manifest.json`)
       .then((r) => (r.ok ? r.json() : null))
       .then(setManifest)
       .catch(() => setManifest(null));
+    fetch(`${DATA}/polities.json`)
+      .then((r) => (r.ok ? (r.json() as Promise<{ regions: Polities }>) : null))
+      .then((p) => setPolities(p?.regions ?? {}))
+      .catch(() => setPolities({}));
   }, []);
 
   const ensureChunk = useCallback((region: RegionId, key: string) => {
@@ -285,6 +314,19 @@ export function TimelineGrid() {
           className="relative w-16 shrink-0 cursor-grab border-r border-neutral-200 bg-neutral-50 select-none"
           title="시대 레일 — 클릭하면 그 시대로 점프"
         >
+          {/* 홈 열(한국) 정치체 색 띠 — 연도 도메인으로 매핑한다(§5-5A: 스크롤 비율이 아니다) */}
+          {(polities.kr ?? []).map((p, i) => {
+            const y0 = Math.max(p.y0, AXIS_YEAR_START);
+            const y1 = Math.min(p.y1 ?? AXIS_YEAR_END + 1, AXIS_YEAR_END + 1);
+            if (y1 <= y0) return null;
+            const top = railY(y0, railH);
+            const h = railY(y1, railH) - top;
+            return (
+              <div key={p.id} className={`absolute inset-x-0 overflow-hidden ${i % 2 ? "bg-neutral-200/60" : ""}`} style={{ top, height: h }} title={p.label}>
+                {h >= 14 && <div className="truncate px-1 text-[10px] leading-[14px] text-neutral-500">{p.name}</div>}
+              </div>
+            );
+          })}
           <div className="absolute inset-x-1 rounded bg-neutral-400/70" style={{ top: win.top, height: win.height }} />
         </div>
 
@@ -295,16 +337,43 @@ export function TimelineGrid() {
           className="relative min-w-0 flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           style={{ overflowAnchor: "none", overscrollBehaviorY: "contain", touchAction: "pan-y" }}
         >
-          {/* 정치체 스티키 헤더 자리 — 밴드 데이터(M1 수작업) 전까지 열 이름만 */}
-          <div className="sticky top-0 z-10 flex border-b border-neutral-200 bg-white/95 text-[11px] font-medium text-neutral-600 backdrop-blur">
+          {/* 열 헤더 — 열 이름 + 뷰포트 상단 연도의 정치체(파생 표시). 밴드가 얕아 sticky 라벨이
+              숨는 구간에서도 어느 시대인지 안다(PRD §5-10 조건 ④의 보완) */}
+          <div className="sticky top-0 z-10 flex border-b border-neutral-200 bg-white/95 text-[11px] font-medium text-neutral-600 backdrop-blur" style={{ height: COLUMN_HEADER_H }}>
             <div className="w-12 shrink-0 border-r border-neutral-200" />
-            {COLUMNS.map((c) => (
-              <div key={c.id} className="min-w-0 flex-1 border-r border-neutral-100 px-2 py-1">{c.label}</div>
-            ))}
+            {COLUMNS.map((c) => {
+              const p = polityAt(polities[c.id], yToYear(scrollTop + COLUMN_HEADER_H, axis));
+              return (
+                <div key={c.id} className="flex min-w-0 flex-1 items-center gap-1.5 truncate border-r border-neutral-100 px-2">
+                  <span>{c.label}</span>
+                  {p && <span className="truncate font-normal text-neutral-500">{p.label}</span>}
+                </div>
+              );
+            })}
           </div>
 
           {/* 스페이서 */}
           <div className="relative w-full" style={{ height: contentHeight(axis) }}>
+            {/* 정치체 밴드 — 색 띠 층. 행 아래에 깔린다. 약 40개라 가상화하지 않는다(§5-5A 레이어, 조건 ⑤) */}
+            <div className="pointer-events-none absolute inset-0 flex" aria-hidden>
+              <div className="w-12 shrink-0" />
+              {COLUMNS.map((c) => (
+                <div key={c.id} className="relative min-w-0 flex-1">
+                  {(polities[c.id] ?? []).map((p, i) => {
+                    const y0 = Math.max(p.y0, AXIS_YEAR_START);
+                    const y1 = Math.min(p.y1 ?? AXIS_YEAR_END + 1, AXIS_YEAR_END + 1);
+                    if (y1 <= y0) return null;
+                    return (
+                      <div
+                        key={p.id}
+                        className={i % 2 ? "absolute inset-x-0 bg-neutral-100/70" : "absolute inset-x-0 bg-transparent"}
+                        style={{ top: yearToY(y0, axis), height: (y1 - y0) * axis.s }}
+                      />
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
             {buckets.map((b) => {
               const top = yearToY(b, axis);
               const h = rows.unit * axis.s;
@@ -353,6 +422,29 @@ export function TimelineGrid() {
                 </div>
               );
             })}
+            {/* 정치체 스티키 라벨 층 — 행 위에 얹힌다. 밴드 박스(absolute)의 자식이 sticky(조건 ①),
+                박스에 overflow 없음(②), 조상에 transform 없음(③), 얕은 밴드는 라벨 생략(④) */}
+            <div className="pointer-events-none absolute inset-0 z-[5] flex" aria-hidden>
+              <div className="w-12 shrink-0" />
+              {COLUMNS.map((c) => (
+                <div key={c.id} className="relative min-w-0 flex-1">
+                  {(polities[c.id] ?? []).map((p) => {
+                    const y0 = Math.max(p.y0, AXIS_YEAR_START);
+                    const y1 = Math.min(p.y1 ?? AXIS_YEAR_END + 1, AXIS_YEAR_END + 1);
+                    const h = (y1 - y0) * axis.s;
+                    if (y1 <= y0 || h < BAND_LABEL_H + 8) return null;
+                    return (
+                      // 라벨은 오른쪽에 붙인다 — 칩은 왼쪽에서 흐르므로 첫 행과 덜 겹친다
+                      <div key={p.id} className="absolute inset-x-0 flex items-start justify-end" style={{ top: yearToY(y0, axis), height: h }}>
+                        <div className="sticky max-w-[70%] truncate rounded-full border border-neutral-300 bg-white/90 px-2 text-[11px] leading-[18px] text-neutral-500 backdrop-blur" style={{ top: COLUMN_HEADER_H + 3, margin: "3px 4px 0 0", height: BAND_LABEL_H - 2 }}>
+                          {p.hist === "traditional" ? <i>{p.label}</i> : p.label}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 

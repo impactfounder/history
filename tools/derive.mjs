@@ -88,9 +88,13 @@ function mergeDuplicates(recs, region) {
   return merged;
 }
 
-/** 사건이 아닌 줄 — 연도 범위 머리글("2010–present"), 날짜만("September 11"), 글자 없는 줄. */
+/** 열의 수록 시작 연도(PRD §11 C-3). 미국 열은 1607 제임스타운부터 — pre-US 연표의 그 이전 행은 싣지 않는다. */
+const COVERAGE_FROM = { us: 1607 };
+
+/** 사건이 아닌 줄 — 연도 범위 머리글("2010–present"), 날짜만("September 11"), 글자 없는 줄, 수록 범위 밖. */
 function rejectReason(raw, title) {
   if (raw.kind !== "event") return "시대 구분(kind=period) — 정치체 밴드로";
+  if (raw.date.year < (COVERAGE_FROM[raw.region] ?? -Infinity)) return `수록 범위 밖(${COVERAGE_FROM[raw.region]}년 이전, C-3)`;
   const t = title.replace(/[–—-]/g, "-").trim();
   if (/^-?\s*(present|현재)\.?$/i.test(t) || /^\d{3,4}\s*-\s*(present|\d{3,4})\.?$/i.test(t)) return "연도 범위 머리글";
   const letters = t.replace(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/gi, "").replace(/[^\p{L}]/gu, "");

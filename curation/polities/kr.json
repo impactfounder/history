@@ -1,0 +1,182 @@
+[
+  {
+    "id": "kr-q28405",
+    "region": "kr",
+    "qid": "Q28405",
+    "name_ko": "고조선",
+    "names": {
+      "ko": "고조선",
+      "en": "Old Chosŏn",
+      "ja": "古朝鮮",
+      "zh": "古朝鮮"
+    },
+    "start_year": -2332,
+    "end_year": -107,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "traditional",
+    "source": {
+      "wikidata": "Q28405",
+      "start": "P571",
+      "end": "P576"
+    },
+    "note": "시작 BC 2333은 전승(editorial-policy §4-3). 축은 BC 500부터라 잘려 보인다"
+  },
+  {
+    "id": "kr-q165292",
+    "region": "kr",
+    "qid": "Q165292",
+    "name_ko": "삼국 시대",
+    "names": {
+      "ko": "삼국 시대",
+      "en": "Three Kingdoms of Korea",
+      "ja": "三国時代 (朝鮮半島)",
+      "zh": "三国时代 (朝鲜半岛)"
+    },
+    "start_year": -17,
+    "end_year": 660,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q165292",
+      "start": "P580",
+      "end": "P582"
+    },
+    "note": "고구려·백제·신라(·가야) 병존 — P0는 한 줄 라벨"
+  },
+  {
+    "id": "kr-q702639",
+    "region": "kr",
+    "qid": "Q702639",
+    "name_ko": "남북국 시대",
+    "names": {
+      "ko": "남북국 시대",
+      "en": "Northern and Southern States period",
+      "ja": "南北国時代",
+      "zh": "南北国时代"
+    },
+    "start_year": 698,
+    "end_year": 918,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q702639",
+      "start": "P580",
+      "end": "P582"
+    },
+    "note": "통일신라·발해. 끝 926 → 918(다음 밴드 고려 시작으로 자름)",
+    "end_year_wikidata": 926
+  },
+  {
+    "id": "kr-q28208",
+    "region": "kr",
+    "qid": "Q28208",
+    "name_ko": "고려",
+    "names": {
+      "ko": "고려",
+      "en": "Goryeo",
+      "ja": "高麗",
+      "zh": "高麗"
+    },
+    "start_year": 918,
+    "end_year": 1392,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q28208",
+      "start": "P580",
+      "end": "P582"
+    }
+  },
+  {
+    "id": "kr-q28179",
+    "region": "kr",
+    "qid": "Q28179",
+    "name_ko": "조선",
+    "names": {
+      "ko": "조선",
+      "en": "Joseon",
+      "ja": "李氏朝鮮",
+      "zh": "朝鲜王朝"
+    },
+    "start_year": 1392,
+    "end_year": 1897,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q28179",
+      "start": "P571",
+      "end": "P576"
+    }
+  },
+  {
+    "id": "kr-q28233",
+    "region": "kr",
+    "qid": "Q28233",
+    "name_ko": "대한제국",
+    "names": {
+      "ko": "대한제국",
+      "en": "Korean Empire",
+      "ja": "大韓帝国",
+      "zh": "大韓帝國"
+    },
+    "start_year": 1897,
+    "end_year": 1910,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q28233",
+      "start": "P571",
+      "end": "P576"
+    }
+  },
+  {
+    "id": "kr-q503585",
+    "region": "kr",
+    "qid": "Q503585",
+    "name_ko": "일제강점기",
+    "names": {
+      "ko": "일제강점기",
+      "en": "Korea under Japanese rule",
+      "ja": "日本統治時代の朝鮮",
+      "zh": "朝鮮日治時期"
+    },
+    "start_year": 1910,
+    "end_year": 1945,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q503585",
+      "start": "P571",
+      "end": "P576"
+    }
+  },
+  {
+    "id": "kr-q884",
+    "region": "kr",
+    "qid": "Q884",
+    "name_ko": "대한민국",
+    "names": {
+      "ko": "대한민국",
+      "en": "South Korea",
+      "ja": "大韓民国",
+      "zh": "大韩民国"
+    },
+    "start_year": 1948,
+    "end_year": null,
+    "start_precision": "year",
+    "end_precision": null,
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q884",
+      "start": "P571",
+      "end": null
+    }
+  }
+]

@@ -1,0 +1,334 @@
+[
+  {
+    "id": "jp-q52824",
+    "region": "jp",
+    "qid": "Q52824",
+    "name_ko": "조몬 시대",
+    "names": {
+      "ko": "조몬 시대",
+      "en": "Jōmon period",
+      "ja": "縄文時代",
+      "zh": "繩紋時代"
+    },
+    "start_year": -12999,
+    "end_year": -399,
+    "start_precision": "millennium",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q52824",
+      "start": "P580",
+      "end": "P582"
+    }
+  },
+  {
+    "id": "jp-q207858",
+    "region": "jp",
+    "qid": "Q207858",
+    "name_ko": "야요이 시대",
+    "names": {
+      "ko": "야요이 시대",
+      "en": "Yayoi period",
+      "ja": "弥生時代",
+      "zh": "彌生時代"
+    },
+    "start_year": -299,
+    "end_year": 250,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q207858",
+      "start": "P580",
+      "end": "P582"
+    }
+  },
+  {
+    "id": "jp-q459939",
+    "region": "jp",
+    "qid": "Q459939",
+    "name_ko": "고훈 시대",
+    "names": {
+      "ko": "고훈 시대",
+      "en": "Kofun period",
+      "ja": "古墳時代",
+      "zh": "古坟时代"
+    },
+    "start_year": 250,
+    "end_year": 538,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q459939",
+      "start": "P580",
+      "end": "P582"
+    }
+  },
+  {
+    "id": "jp-q210688",
+    "region": "jp",
+    "qid": "Q210688",
+    "name_ko": "아스카 시대",
+    "names": {
+      "ko": "아스카 시대",
+      "en": "Asuka period",
+      "ja": "飛鳥時代",
+      "zh": "飛鳥時代"
+    },
+    "start_year": 538,
+    "end_year": 710,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q210688",
+      "start": "P580",
+      "end": "P582"
+    }
+  },
+  {
+    "id": "jp-q189178",
+    "region": "jp",
+    "qid": "Q189178",
+    "name_ko": "나라 시대",
+    "names": {
+      "ko": "나라 시대",
+      "en": "Nara period",
+      "ja": "奈良時代",
+      "zh": "奈良時代"
+    },
+    "start_year": 710,
+    "end_year": 794,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q189178",
+      "start": "P580",
+      "end": "P582"
+    }
+  },
+  {
+    "id": "jp-q193292",
+    "region": "jp",
+    "qid": "Q193292",
+    "name_ko": "헤이안 시대",
+    "names": {
+      "ko": "헤이안 시대",
+      "en": "Heian period",
+      "ja": "平安時代",
+      "zh": "平安时代"
+    },
+    "start_year": 794,
+    "end_year": 1185,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q193292",
+      "start": "P580",
+      "end": "P582"
+    }
+  },
+  {
+    "id": "jp-q236205",
+    "region": "jp",
+    "qid": "Q236205",
+    "name_ko": "가마쿠라 시대",
+    "names": {
+      "ko": "가마쿠라 시대",
+      "en": "Kamakura period",
+      "ja": "鎌倉時代",
+      "zh": "鎌倉時代"
+    },
+    "start_year": 1185,
+    "end_year": 1333,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q236205",
+      "start": "P580",
+      "end": "P582"
+    }
+  },
+  {
+    "id": "jp-q334845",
+    "region": "jp",
+    "qid": "Q334845",
+    "name_ko": "무로마치 시대",
+    "names": {
+      "ko": "무로마치 시대",
+      "en": "Muromachi period",
+      "ja": "室町時代",
+      "zh": "室町时代"
+    },
+    "start_year": 1336,
+    "end_year": 1568,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q334845",
+      "start": "P580",
+      "end": "P582"
+    },
+    "note": "끝 1573 → 1568(다음 밴드 아즈치모모야마 시대 시작으로 자름)",
+    "end_year_wikidata": 1573
+  },
+  {
+    "id": "jp-q319531",
+    "region": "jp",
+    "qid": "Q319531",
+    "name_ko": "아즈치모모야마 시대",
+    "names": {
+      "ko": "아즈치모모야마 시대",
+      "en": "Azuchi–Momoyama period",
+      "ja": "安土桃山時代",
+      "zh": "安土桃山时代"
+    },
+    "start_year": 1568,
+    "end_year": 1600,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q319531",
+      "start": "P580",
+      "end": "P582"
+    }
+  },
+  {
+    "id": "jp-q184963",
+    "region": "jp",
+    "qid": "Q184963",
+    "name_ko": "에도 시대",
+    "names": {
+      "ko": "에도 시대",
+      "en": "Edo period",
+      "ja": "江戸時代",
+      "zh": "江户时代"
+    },
+    "start_year": 1603,
+    "end_year": 1868,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q184963",
+      "start": "P580",
+      "end": "P582"
+    }
+  },
+  {
+    "id": "jp-q3125096",
+    "region": "jp",
+    "qid": "Q3125096",
+    "name_ko": "메이지 시대",
+    "names": {
+      "ko": "메이지 시대",
+      "en": "Meiji era",
+      "ja": "明治",
+      "zh": "明治"
+    },
+    "start_year": 1868,
+    "end_year": 1912,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q3125096",
+      "start": "P580",
+      "end": "P582"
+    }
+  },
+  {
+    "id": "jp-q329174",
+    "region": "jp",
+    "qid": "Q329174",
+    "name_ko": "다이쇼 시대",
+    "names": {
+      "ko": "다이쇼 시대",
+      "en": "Taishō era",
+      "ja": "大正",
+      "zh": "大正"
+    },
+    "start_year": 1912,
+    "end_year": 1926,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q329174",
+      "start": "P580",
+      "end": "P582"
+    }
+  },
+  {
+    "id": "jp-q327567",
+    "region": "jp",
+    "qid": "Q327567",
+    "name_ko": "쇼와 시대",
+    "names": {
+      "ko": "쇼와 시대",
+      "en": "Shōwa era",
+      "ja": "昭和",
+      "zh": "昭和"
+    },
+    "start_year": 1926,
+    "end_year": 1989,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q327567",
+      "start": "P580",
+      "end": "P582"
+    }
+  },
+  {
+    "id": "jp-q234510",
+    "region": "jp",
+    "qid": "Q234510",
+    "name_ko": "헤이세이 시대",
+    "names": {
+      "ko": "헤이세이 시대",
+      "en": "Heisei era",
+      "ja": "平成",
+      "zh": "平成"
+    },
+    "start_year": 1989,
+    "end_year": 2019,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q234510",
+      "start": "P580",
+      "end": "P582"
+    }
+  },
+  {
+    "id": "jp-q62609017",
+    "region": "jp",
+    "qid": "Q62609017",
+    "name_ko": "레이와 시대",
+    "names": {
+      "ko": "레이와 시대",
+      "en": "Reiwa era",
+      "ja": "令和",
+      "zh": "令和"
+    },
+    "start_year": 2019,
+    "end_year": null,
+    "start_precision": "year",
+    "end_precision": null,
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q62609017",
+      "start": "P580",
+      "end": null
+    }
+  }
+]

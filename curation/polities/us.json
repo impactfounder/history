@@ -1,0 +1,51 @@
+[
+  {
+    "id": "us-q179997",
+    "region": "us",
+    "qid": "Q179997",
+    "name_ko": "13개 식민지",
+    "names": {
+      "ko": "13개 식민지",
+      "en": "Thirteen Colonies",
+      "ja": "13植民地",
+      "zh": "十三殖民地"
+    },
+    "start_year": 1607,
+    "end_year": 1776,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q179997",
+      "start": "P571",
+      "end": "P576"
+    },
+    "note": "미국 열 수록 시작 1607(PRD §11 C-3)"
+  },
+  {
+    "id": "us-q30",
+    "region": "us",
+    "qid": "Q30",
+    "name_ko": "미국",
+    "names": {
+      "ko": "미국",
+      "en": "United States",
+      "ja": "アメリカ合衆国",
+      "zh": "美国"
+    },
+    "start_year": 1776,
+    "end_year": null,
+    "start_precision": "year",
+    "end_precision": null,
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q30",
+      "start": "P571",
+      "end": null,
+      "override": {
+        "start_year": 1776
+      }
+    },
+    "note": "독립 선언 1776. Wikidata P571의 첫 값은 1784(파리 조약 발효)라 열 관점(건국 통념)으로 덮는다"
+  }
+]

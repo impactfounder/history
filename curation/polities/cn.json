@@ -1,0 +1,366 @@
+[
+  {
+    "id": "cn-q185047",
+    "region": "cn",
+    "qid": "Q185047",
+    "name_ko": "춘추 시대",
+    "names": {
+      "ko": "춘추 시대",
+      "en": "Spring and Autumn period",
+      "ja": "春秋時代",
+      "zh": "春秋时期"
+    },
+    "start_year": -770,
+    "end_year": -475,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q185047",
+      "start": "P580",
+      "end": "P582"
+    }
+  },
+  {
+    "id": "cn-q185063",
+    "region": "cn",
+    "qid": "Q185063",
+    "name_ko": "전국 시대",
+    "names": {
+      "ko": "전국 시대",
+      "en": "Warring States period",
+      "ja": "戦国時代 (中国)",
+      "zh": "战国时期"
+    },
+    "start_year": -475,
+    "end_year": -220,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q185063",
+      "start": "P580",
+      "end": "P582"
+    }
+  },
+  {
+    "id": "cn-q7183",
+    "region": "cn",
+    "qid": "Q7183",
+    "name_ko": "진나라",
+    "names": {
+      "ko": "진나라",
+      "en": "Qin dynasty",
+      "ja": "秦朝",
+      "zh": "秦朝"
+    },
+    "start_year": -220,
+    "end_year": -205,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q7183",
+      "start": "P571",
+      "end": "P576"
+    }
+  },
+  {
+    "id": "cn-q7209",
+    "region": "cn",
+    "qid": "Q7209",
+    "name_ko": "한나라",
+    "names": {
+      "ko": "한나라",
+      "en": "Han dynasty",
+      "ja": "漢",
+      "zh": "汉朝"
+    },
+    "start_year": -205,
+    "end_year": 220,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q7209",
+      "start": "P571",
+      "end": "P576"
+    }
+  },
+  {
+    "id": "cn-q185043",
+    "region": "cn",
+    "qid": "Q185043",
+    "name_ko": "삼국 시대 (중국)",
+    "names": {
+      "ko": "삼국 시대 (중국)",
+      "en": "Three Kingdoms",
+      "ja": "三国時代 (中国)",
+      "zh": "三国"
+    },
+    "start_year": 220,
+    "end_year": 266,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q185043",
+      "start": "P580",
+      "end": "P582"
+    },
+    "note": "끝 280 → 266(다음 밴드 진 (위진) 시작으로 자름)",
+    "end_year_wikidata": 280
+  },
+  {
+    "id": "cn-q7352",
+    "region": "cn",
+    "qid": "Q7352",
+    "name_ko": "진 (위진)",
+    "names": {
+      "ko": "진 (위진)",
+      "en": "Jin dynasty (266–420)",
+      "ja": "晋 (王朝)",
+      "zh": "晋朝"
+    },
+    "start_year": 266,
+    "end_year": 420,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q7352",
+      "start": "P571",
+      "end": "P576"
+    }
+  },
+  {
+    "id": "cn-q49696",
+    "region": "cn",
+    "qid": "Q49696",
+    "name_ko": "남북조 시대",
+    "names": {
+      "ko": "남북조 시대",
+      "en": "Northern and Southern dynasties",
+      "ja": "南北朝時代 (中国)",
+      "zh": "南北朝"
+    },
+    "start_year": 420,
+    "end_year": 581,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q49696",
+      "start": "P580",
+      "end": "P582"
+    },
+    "note": "끝 589 → 581(다음 밴드 수나라 시작으로 자름)",
+    "end_year_wikidata": 589
+  },
+  {
+    "id": "cn-q7405",
+    "region": "cn",
+    "qid": "Q7405",
+    "name_ko": "수나라",
+    "names": {
+      "ko": "수나라",
+      "en": "Sui dynasty",
+      "ja": "隋",
+      "zh": "隋朝"
+    },
+    "start_year": 581,
+    "end_year": 618,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q7405",
+      "start": "P571",
+      "end": "P576"
+    }
+  },
+  {
+    "id": "cn-q9683",
+    "region": "cn",
+    "qid": "Q9683",
+    "name_ko": "당나라",
+    "names": {
+      "ko": "당나라",
+      "en": "Tang dynasty",
+      "ja": "唐",
+      "zh": "唐朝"
+    },
+    "start_year": 618,
+    "end_year": 907,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q9683",
+      "start": "P580",
+      "end": "P582"
+    }
+  },
+  {
+    "id": "cn-q242115",
+    "region": "cn",
+    "qid": "Q242115",
+    "name_ko": "오대 십국 시대",
+    "names": {
+      "ko": "오대 십국 시대",
+      "en": "Five Dynasties and Ten Kingdoms period",
+      "ja": "五代十国時代",
+      "zh": "五代十国"
+    },
+    "start_year": 907,
+    "end_year": 960,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q242115",
+      "start": "P580",
+      "end": "P582"
+    }
+  },
+  {
+    "id": "cn-q7462",
+    "region": "cn",
+    "qid": "Q7462",
+    "name_ko": "송나라",
+    "names": {
+      "ko": "송나라",
+      "en": "Song dynasty",
+      "ja": "宋 (王朝)",
+      "zh": "宋朝"
+    },
+    "start_year": 960,
+    "end_year": 1271,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q7462",
+      "start": "P580",
+      "end": "P582"
+    },
+    "note": "끝 1279 → 1271(다음 밴드 원나라 시작으로 자름)",
+    "end_year_wikidata": 1279
+  },
+  {
+    "id": "cn-q7313",
+    "region": "cn",
+    "qid": "Q7313",
+    "name_ko": "원나라",
+    "names": {
+      "ko": "원나라",
+      "en": "Yuan dynasty",
+      "ja": "元 (王朝)",
+      "zh": "元朝"
+    },
+    "start_year": 1271,
+    "end_year": 1368,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q7313",
+      "start": "P571",
+      "end": "P576"
+    }
+  },
+  {
+    "id": "cn-q9903",
+    "region": "cn",
+    "qid": "Q9903",
+    "name_ko": "명나라",
+    "names": {
+      "ko": "명나라",
+      "en": "Ming dynasty",
+      "ja": "明",
+      "zh": "明朝"
+    },
+    "start_year": 1368,
+    "end_year": 1636,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q9903",
+      "start": "P571",
+      "end": "P576"
+    },
+    "note": "끝 1644 → 1636(다음 밴드 청나라 시작으로 자름)",
+    "end_year_wikidata": 1644
+  },
+  {
+    "id": "cn-q8733",
+    "region": "cn",
+    "qid": "Q8733",
+    "name_ko": "청나라",
+    "names": {
+      "ko": "청나라",
+      "en": "Qing dynasty",
+      "ja": "清",
+      "zh": "清朝"
+    },
+    "start_year": 1636,
+    "end_year": 1912,
+    "start_precision": "year",
+    "end_precision": "year",
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q8733",
+      "start": "P580",
+      "end": "P576"
+    }
+  },
+  {
+    "id": "cn-q865",
+    "region": "cn",
+    "qid": "Q865",
+    "name_ko": "중화민국",
+    "names": {
+      "ko": "중화민국",
+      "en": "Taiwan",
+      "ja": "中華民国",
+      "zh": "中華民國"
+    },
+    "start_year": 1912,
+    "end_year": 1949,
+    "start_precision": "year",
+    "end_precision": null,
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q865",
+      "start": "P580",
+      "end": null,
+      "override": {
+        "end_year": 1949
+      }
+    },
+    "note": "중국 열에서는 본토 통치가 끝난 1949를 끝으로 본다. Wikidata는 진행 중(타이완)"
+  },
+  {
+    "id": "cn-q148",
+    "region": "cn",
+    "qid": "Q148",
+    "name_ko": "중화인민공화국",
+    "names": {
+      "ko": "중화인민공화국",
+      "en": "China",
+      "ja": "中華人民共和国",
+      "zh": "中华人民共和国"
+    },
+    "start_year": 1949,
+    "end_year": null,
+    "start_precision": "year",
+    "end_precision": null,
+    "historicity": "historical",
+    "source": {
+      "wikidata": "Q148",
+      "start": "P571",
+      "end": null
+    }
+  }
+]
