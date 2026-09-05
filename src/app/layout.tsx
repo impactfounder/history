@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "history — 나라별 비교 연표",
-  description:
-    "여러 나라의 역사를 같은 연도 축 위에 나란히 놓고 비교한다. 그 해, 그 나라에 무슨 일이 있었나.",
+  metadataBase: new URL(SITE_URL),
+  title: { default: `${SITE_NAME} — 나라별 비교 연표`, template: `%s | ${SITE_NAME}` },
+  description: SITE_DESCRIPTION,
+  // 열 조합·연도·스케일이 붙은 `/?r=&y=&s=`는 전부 `/`가 정본(PRD §5-8)
+  alternates: { canonical: "/" },
+  openGraph: { type: "website", siteName: SITE_NAME, locale: "ko_KR", title: `${SITE_NAME} — 나라별 비교 연표`, description: SITE_DESCRIPTION },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

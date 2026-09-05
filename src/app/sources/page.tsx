@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "출처와 라이선스 — history",
+  title: "출처와 라이선스",
   description: "이 연표의 본문은 원천의 원문을 그대로 싣고 사건마다 출처와 라이선스를 표기한다.",
+  alternates: { canonical: "/sources" },
 };
 
 /**

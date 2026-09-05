@@ -29,6 +29,13 @@ npm run publish                      # → public/data/v1/ (정적 JSON 청크)
 `curation/raw/`와 `public/data/`는 재현 가능한 파생물이라 추적하지 않는다. 위키미디어 API
 예절상 `MVMT_CONTACT=you@example.com`을 붙여 수집기를 돌린다.
 
+## 배포
+
+`npm run build`가 발행(`prebuild` → `public/data/v1`)까지 포함한다. 국사편찬위 연표 원본이 없는 CI는
+`curation/nikh/official-years.json`(추적됨)으로 같은 파일을 만든다. Vercel이면 레포를 import하거나
+`npx vercel --prod`. 환경변수는 없어도 되고, 도메인이 정해지면 `NEXT_PUBLIC_SITE_URL`로 sitemap·canonical의
+기준 URL을 준다(없으면 Vercel 프로덕션 호스트).
+
 ## 문서
 
 - `docs/PRD.md` — 제품 정의와 결정 기록(부록 A)

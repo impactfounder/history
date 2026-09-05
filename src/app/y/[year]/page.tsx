@@ -46,7 +46,14 @@ const bucket10 = (y: number) => Math.floor(y / 10) * 10;
 export async function generateMetadata({ params }: { params: Promise<{ year: string }> }): Promise<Metadata> {
   const y = parseYear((await params).year);
   const label = y === null ? "연도" : formatYear(y);
-  return { title: `${label} — 그 해, 각 나라에 무슨 일 | history`, description: `${label}의 한국·중국·일본·미국 사건을 한 표에 놓는다.` };
+  const title = `${label} — 그 해, 각 나라에 무슨 일`;
+  const description = `${label}의 한국·중국·일본·미국 사건을 한 표에 놓는다. 원천 연표 원문 그대로, 출처 표기.`;
+  return {
+    title,
+    description,
+    alternates: { canonical: y === null ? undefined : `/y/${y}` },
+    openGraph: { title, description, type: "article" },
+  };
 }
 
 export default async function YearPage({ params }: { params: Promise<{ year: string }> }) {
