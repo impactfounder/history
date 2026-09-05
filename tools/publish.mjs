@@ -168,26 +168,39 @@ for (const region of REGIONS.map((x) => x.id)) {
 }
 
 // ── [한국] 이 해의 공식 연표 ────────────────────────────────────────────────
+// 원본(curation/raw/nikh, 131MB)은 레포 밖이다. 사건이 있는 해만 80건씩 추린 curation/nikh/official-years.json
+// (약 3MB)을 추적해 두어, 원본이 없는 CI에서도 같은 파일을 발행한다. 원본이 있으면 추린 파일을 새로 쓴다.
 let officialYears = 0, officialEntries = 0;
-const nikhFile = "curation/raw/nikh/timeline.jsonl";
-if (existsSync(nikhFile) && all.some((r) => r.region === "kr")) {
+const nikhRaw = "curation/raw/nikh/timeline.jsonl";
+const nikhSubset = "curation/nikh/official-years.json";
+let official = null; // { [year]: { count, entries } }
+if (existsSync(nikhRaw) && all.some((r) => r.region === "kr")) {
   const years = new Set(all.filter((r) => r.region === "kr").map((r) => r.date.year));
   const byYear = new Map();
-  for (const line of readFileSync(nikhFile, "utf8").split("\n").filter(Boolean)) {
+  for (const line of readFileSync(nikhRaw, "utf8").split("\n").filter(Boolean)) {
     const n = JSON.parse(line);
     if (!years.has(n.date.y)) continue;
     (byYear.get(n.date.y) ?? byYear.set(n.date.y, []).get(n.date.y)).push(n);
   }
-  const index = {};
   const dateKey = (n) => (n.date.m ?? 13) * 32 + (n.date.d ?? 32);
+  official = {};
   for (const [y, ns] of byYear) {
     // 일반 연표 먼저, 그 안에서 날짜순. 80건이 넘으면 자르되 count는 전체를 알려준다
     ns.sort((a, b) => (GENERAL_DB.has(a.db) ? 0 : 1) - (GENERAL_DB.has(b.db) ? 0 : 1) || dateKey(a) - dateKey(b));
-    const entries = ns.slice(0, OFFICIAL_PER_YEAR).map((n) => ({ id: n.id, db: n.db, series: n.series, date_ko: formatNikhDate(n.date), text: n.text, url: n.url }));
-    write(`official/kr/${y}.json`, { year: y, count: ns.length, shown: entries.length, license: "KOGL 제1유형(이용허락범위 제한 없음)", entries });
-    index[y] = ns.length;
+    official[y] = { count: ns.length, entries: ns.slice(0, OFFICIAL_PER_YEAR).map((n) => ({ id: n.id, db: n.db, series: n.series, date_ko: formatNikhDate(n.date), text: n.text, url: n.url })) };
+  }
+  mkdirSync(path.dirname(nikhSubset), { recursive: true });
+  writeFileSync(nikhSubset, JSON.stringify(official));
+} else if (existsSync(nikhSubset)) {
+  official = JSON.parse(readFileSync(nikhSubset, "utf8"));
+}
+if (official) {
+  const index = {};
+  for (const [y, o] of Object.entries(official)) {
+    write(`official/kr/${y}.json`, { year: Number(y), count: o.count, shown: o.entries.length, license: "KOGL 제1유형(이용허락범위 제한 없음)", entries: o.entries });
+    index[y] = o.count;
     officialYears++;
-    officialEntries += entries.length;
+    officialEntries += o.entries.length;
   }
   write("official/kr/index.json", { region: "kr", source: "국사편찬위원회 연표", years: index });
 }

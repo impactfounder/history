@@ -13,6 +13,17 @@ import { AXIS_YEAR_END, AXIS_YEAR_START, formatYear } from "@/lib/timeline/axis"
 
 const DATA_DIR = path.join(process.cwd(), "public", "data", "v1");
 const CONTEXT_YEARS = 2;
+/** 수록 끝(PRD C-2). tools/derive.mjs DATA_END_YEAR와 같이 올린다. */
+const DATA_END_YEAR = 2025;
+
+/**
+ * 빌드 때 전부 정적으로 만든다(축 범위 2,525쪽). 서버리스에서는 public/의 파일을 fs로 읽을 수 없고,
+ * 검색 유입 페이지는 CLS 0·즉시 응답이 목표라(§5-8) 요청 시 렌더가 아니라 SSG가 맞다.
+ */
+export const dynamicParams = false;
+export function generateStaticParams() {
+  return Array.from({ length: DATA_END_YEAR - AXIS_YEAR_START + 1 }, (_, i) => ({ year: String(AXIS_YEAR_START + i) }));
+}
 
 interface Region { id: string; label_ko: string; coverage_from?: number }
 interface Ev { id: string; y0: number; title: string; lang: string; hist: string; names?: Partial<Record<string, { nat?: string | null }>>; regions: { r: string; imp: number }[]; official?: number }

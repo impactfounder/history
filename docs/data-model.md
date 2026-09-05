@@ -319,7 +319,8 @@ Supabase로 옮기는 시점(PRD 부록 A-14)에 `review_log` 테이블과 `/adm
 curation/
   raw/{region}/{source-slug}.jsonl   -- 수집 원문 행 + 출처 URL·revid·접근일
   events/{region}.jsonl              -- 기계 파생 레코드(발행 원본). tools/derive.mjs가 만든다
-  nikh/                              -- 국사편찬위 연표 ZIP·JSONL (gitignore, tools/fetch-nikh.mjs)
+  raw/nikh/                          -- 국사편찬위 연표 ZIP·JSONL 원본 131MB (gitignore, tools/fetch-nikh.mjs)
+  nikh/official-years.json           -- 사건이 있는 해만 80건씩 추린 3.8MB (git 추적). 원본 없는 CI는 이걸로 발행
   _qid-sitelinks.json                -- QID → 언어판 수 (tools/enrich.mjs, 중요도 프록시)
   polities/{region}.json             -- 시대 밴드 41개. 어느 정치체를 밴드로 둘지는 사람이 고르고(tools/polities.mjs BANDS)
                                         시작·끝 연도는 Wikidata(P580/P582·P571/P576, CC0). 덮는 규칙(2026-09-05): Wikidata 값이
