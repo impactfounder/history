@@ -55,11 +55,31 @@ const todo = [...qids].filter((q) => !(q in cache.counts));
 console.log(`QID ${qids.size}개 · 캐시 ${qids.size - todo.length} · 조회 ${todo.length}`);
 
 // ── 조회 ────────────────────────────────────────────────────────────────────
+/** Wikidata 시간값 → {y, m?, d?}. 연도 0이 없으므로 -0057 = BC 57 = 천문학적 -56. precision 9=년 10=월 11=일 */
+function timeOf(claims, prop) {
+  const list = (claims?.[prop] ?? []).filter((c) => c.mainsnak?.datavalue?.value?.time);
+  if (!list.length) return null;
+  const c = list.find((x) => x.rank === "preferred") ?? list[0];
+  const v = c.mainsnak.datavalue.value;
+  const m = /^([+-]\d+)-(\d\d)-(\d\d)/.exec(v.time);
+  if (!m) return null;
+  const y = Number(m[1]);
+  const out = { y: y < 0 ? y + 1 : y };
+  if (v.precision >= 10 && Number(m[2])) out.m = Number(m[2]);
+  if (v.precision >= 11 && Number(m[3])) out.d = Number(m[3]);
+  return out;
+}
+cache.facts ??= {};
 for (let i = 0; i < todo.length; i += 50) {
   const batch = todo.slice(i, i + 50);
-  const j = await api({ action: "wbgetentities", ids: batch.join("|"), props: "sitelinks" });
+  // claims까지 받는다 — 기간(P580 시작·P582 끝), 시점(P585), 사람 여부(P31=Q5). 기간 막대와 월·일 보강에 쓴다
+  const j = await api({ action: "wbgetentities", ids: batch.join("|"), props: "sitelinks|claims" });
   for (const [qid, ent] of Object.entries(j.entities ?? {})) {
     cache.counts[qid] = ent.missing !== undefined ? 0 : Object.keys(ent.sitelinks ?? {}).filter(isLangWiki).length;
+    if (ent.missing !== undefined) continue;
+    const start = timeOf(ent.claims, "P580"), end = timeOf(ent.claims, "P582"), point = timeOf(ent.claims, "P585");
+    const human = (ent.claims?.P31 ?? []).some((c) => c.mainsnak?.datavalue?.value?.id === "Q5");
+    if (start || end || point || human) cache.facts[qid] = { ...(start ? { start } : {}), ...(end ? { end } : {}), ...(point ? { point } : {}), ...(human ? { human: true } : {}) };
   }
   cache.fetchedAt = new Date().toISOString();
   writeFileSync(OUT, JSON.stringify(cache));

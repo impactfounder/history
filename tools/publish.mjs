@@ -66,10 +66,14 @@ function toRecord(r) {
     y0: r.date.year,
     prec: r.date.precision ?? "year",
     ...(r.date.month ? { m: r.date.month } : {}),
+    // 기간 사건의 끝 연도(derive.mjs endYearOf) — 그리드가 기간 막대를 그린다
+    ...(r.date.end_year ? { y1: r.date.end_year } : {}),
     approx: Boolean(r.date.approximate),
     hist: r.historicity ?? "historical",
     title: r.title,
     ...(r.title_ko ? { title_ko: r.title_ko } : {}),
+    // 짧은 설명(한국어 위키백과 description, "일본의 무장" 같은 한 구) — 칩 툴팁용
+    ...(r.about?.description ? { desc: r.about.description } : {}),
     lang: r.lang,
     names,
     regions: [{ r: r.region, imp: r.importance_auto, role: "primary" }],
@@ -91,6 +95,8 @@ function toDetail(r, id) {
     official: r.sources
       .filter((s) => s.kind === "nikh")
       .map((s) => ({ id: s.id, db: s.db, series: s.series, date_ko: formatNikhDate(s.date), text: s.text, url: s.url, license: s.license })),
+    // 설명: 연결 문서의 한국어 위키백과 첫 문단(tools/summaries.mjs). 원문 그대로 + 출처
+    ...(r.about ? { about: r.about } : {}),
     // 병합된 다른 언어판 줄의 원문(derive.mjs mergeDuplicates)
     alt: r.sources.filter((s) => s.kind === "wikipedia" && s.alt).map((s) => ({ lang: s.lang, text: s.text, url: s.url })),
     src: r.sources.filter((s) => s.kind === "wikipedia").map((s) => ({ url: s.url, revid: s.revid, accessedAt: s.accessedAt, license: s.license })),

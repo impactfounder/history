@@ -99,11 +99,15 @@ interface PublishedEvent {
   y0: number;
   /** 월(1~12). 원문에 표기가 있을 때만. 행 안 배치의 시점 오프셋에 쓴다. */
   m?: number;
+  /** 기간 사건의 끝 연도(원문 범위 또는 위키데이터 P582). 있으면 기간 막대. */
+  y1?: number;
   approx: boolean;
   hist: "historical" | "traditional";
   title: string;
   /** 기계 번역(tools/translate.mjs). 있으면 칩에 이것을 보인다. */
   title_ko?: string;
+  /** 연결 문서의 짧은 설명("일본의 무장") — 칩 툴팁. */
+  desc?: string;
   lang: string;
   names: Partial<Record<RegionId, { nat?: string; lang?: string }>>;
   regions: { r: RegionId; imp: number; role: string }[];
@@ -122,6 +126,8 @@ interface Detail {
   /** 기계 번역과 그 출처(모델·시각). 원문이 진본. */
   text_ko?: string;
   mt?: { model: string; at: string };
+  /** 연결 문서의 한국어 위키백과 첫 문단(tools/summaries.mjs). 인물·왕조 문서면 그 설명. */
+  about?: { title: string; text: string; url: string; revid: number | null; license: string };
   lang: string;
   year: number;
   license: string;
@@ -616,6 +622,35 @@ export function TimelineGrid() {
                 </div>
               ))}
             </div>
+            {/* 기간 막대 층 — 끝 연도(y1)가 있는 사건은 칩 시작점부터 끝까지 열 오른쪽 가장자리에 세로 막대(PRD §5-5 "기간 막대").
+                행 셀은 overflow hidden이라 행을 넘는 기간은 여기서 그린다. 칩 높이보다 짧은 기간은 그리지 않는다 */}
+            <div className="pointer-events-none absolute inset-0 flex" aria-hidden>
+              <div className="w-10 shrink-0 wide:w-12" />
+              {shown.map((c) => {
+                const spans = chunkKeys
+                  .flatMap((key) => chunks.current.get(`${DATA}/events/${c.id}/${key}.json`) ?? [])
+                  .filter((ev) => ev.y1 !== undefined && ev.y1 > ev.y0 && (ev.y1 + 1 - ev.y0) * axis.s > chipH(ev.regions[0]?.imp ?? 3) + 8)
+                  .sort((a, b) => a.y0 - b.y0);
+                return (
+                  <div key={c.id} className="relative min-w-0 flex-1">
+                    {spans.map((ev, i) => {
+                      const y0 = ev.y0 + ((ev.m ?? 1) - 1) / 12;
+                      const top = yearToY(y0, axis) + CELL_PAD;
+                      const h = yearToY(ev.y1! + 1, axis) - top;
+                      const imp = ev.regions[0]?.imp ?? 3;
+                      return (
+                        <div
+                          key={ev.id}
+                          className={`absolute rounded-full ${imp >= 5 ? "bg-neutral-700/60" : imp === 4 ? "bg-neutral-500/50" : "bg-neutral-400/40"}`}
+                          style={{ top, height: h, right: 3 + (i % 3) * 5, width: 3 }}
+                          title={`${ev.title} ${ev.y0}–${ev.y1}`}
+                        />
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
             {buckets.map((b) => {
               const top = yearToY(b, axis);
               const h = rows.unit * axis.s;
@@ -657,7 +692,7 @@ export function TimelineGrid() {
                               // 같은 칩을 다시 누르면 닫는다(토글, 대표 지시 2026-09-05). 다른 칩이면 바꿔 연다
                               onClick={(e) => { lastChip.current = e.currentTarget; if (selected?.ev.id === ev.id) setSelected(null); else openDetail(ev); }}
                               aria-pressed={selected?.ev.id === ev.id}
-                              title={ev.date_ko}
+                              title={ev.desc ? `${ev.date_ko} · ${ev.desc}` : ev.date_ko}
                               data-col={c.id}
                               data-b={b}
                               data-i={idx}
@@ -766,6 +801,16 @@ export function TimelineGrid() {
                     <p className="leading-relaxed text-neutral-700 [text-wrap:pretty] [word-break:keep-all]">{a.text}</p>
                   </div>
                 ))}
+                {/* 설명 — 연결 문서의 한국어 위키백과 첫 문단. 표제어가 인물·왕조면 그 설명이라 "관련 문서"라 부른다 */}
+                {selected.detail.about && (
+                  <div className="mb-3 rounded border border-neutral-200 px-3 py-2">
+                    <div className="mb-1 text-[11px] text-neutral-500">
+                      {isEventName(selected.detail.about.title.replace(/\s*\([^)]*\)$/, "")) ? "설명" : "관련 문서"} · 한국어 위키백과 「{selected.detail.about.title}」
+                    </div>
+                    <p className="leading-relaxed [text-wrap:pretty] [word-break:keep-all]">{selected.detail.about.text}</p>
+                    <a href={selected.detail.about.url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-[11px] text-neutral-500 underline">문서 보기 ({selected.detail.about.license})</a>
+                  </div>
+                )}
                 {/* 이 사건을 부르는 이름 (§5-9) — 사이트링크 원문 */}
                 {COLUMNS.some((c) => selected.ev.names[c.id]?.nat) && (
                   <table className="mb-3 w-full text-[12px]">

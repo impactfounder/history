@@ -107,7 +107,34 @@ function rejectReason(raw, title) {
 }
 
 // ── 입력 ────────────────────────────────────────────────────────────────────
-const sitelinks = existsSync("curation/raw/_qid-sitelinks.json") ? JSON.parse(readFileSync("curation/raw/_qid-sitelinks.json", "utf8")).counts : {};
+const qidCache = existsSync("curation/raw/_qid-sitelinks.json") ? JSON.parse(readFileSync("curation/raw/_qid-sitelinks.json", "utf8")) : { counts: {}, facts: {} };
+const sitelinks = qidCache.counts ?? {};
+/** QID → {start, end, point, human} (tools/enrich.mjs). 기간 막대와 월·일 보강. */
+const facts = qidCache.facts ?? {};
+
+/** 원문의 명시적 연도 범위 "1592–1598" / "1950-1953" / "1592년부터 1598년" — 있으면 그 줄이 말하는 기간이다. */
+const RANGE_RE = /(?<![\d])(\d{3,4})\s*(?:[–—~-]|년부터\s*)(\d{3,4})(?![\d])/;
+/** 사건 이름 꼴(한국어 표제어) — 기간을 붙일 때 왕조·시대(수백 년)를 거른다. TimelineGrid의 EVENT_LIKE와 같은 뜻, 더 짧은 목록 */
+const EVENT_WORD = /(전쟁|전투|대첩|사건|조약|협정|협약|혁명|운동|반란|봉기|난|군란|민란|내란|사변|양요|왜란|호란|정변|쿠데타|개혁|유신|원정|정벌|침공|침략|점령|포위|공방전|해전|학살|폭동|시위|파업|기근|역병|홍수|지진|화재|박람회|올림픽|대회|회담|회의|재판|탐험|항해|운항|건설|공사)$/;
+
+/**
+ * 기간(끝 연도). ① 원문의 명시 범위 ② 위키데이터 P580/P582 — 사람이 아니고, 시작이 그 줄의 해와 같고(±1),
+ * 60년 이하이며, 표제어가 사건 꼴일 때만. 왕조·시대 QID가 붙은 줄("청나라 · August — Qing and UK…")에
+ * 왕조 276년이 붙는 것을 막는다.
+ */
+function endYearOf(raw, year, qidValid) {
+  const m = RANGE_RE.exec(raw.text);
+  if (m) {
+    const a = Number(m[1]), b = Number(m[2]);
+    if (b > a && b - a <= 100 && Math.abs(a - year) <= 1) return { y1: b, src: "text" };
+  }
+  const f = qidValid ? facts[raw.qid] : null;
+  if (!f || f.human || !f.start || !f.end) return null;
+  const ko = raw.names_native?.ko?.replace(/\s*\([^)]*\)$/, "") ?? "";
+  if (!EVENT_WORD.test(ko)) return null;
+  if (Math.abs(f.start.y - year) > 1 || f.end.y <= year || f.end.y - f.start.y > 60) return null;
+  return { y1: f.end.y, src: "wikidata" };
+}
 /** 한글 옮김 캐시(tools/translate.mjs). 키 sha1(lang|title) — 같은 줄은 한 번만 번역한다. */
 const translations = new Map(
   existsSync("curation/translations/ko.jsonl")
@@ -115,6 +142,12 @@ const translations = new Map(
     : [],
 );
 const hashOf = (lang, text) => createHash("sha1").update(`${lang}|${text}`).digest("hex").slice(0, 16);
+/** 한국어 위키백과 첫 문단 캐시(tools/summaries.mjs). 표제어 → {extract, url, revid}. */
+const summaries = new Map(
+  existsSync("curation/summaries/ko.jsonl")
+    ? readFileSync("curation/summaries/ko.jsonl", "utf8").split("\n").filter(Boolean).map((l) => { const s = JSON.parse(l); return [s.title, s]; })
+    : [],
+);
 if (!Object.keys(sitelinks).length) console.warn("⚠ _qid-sitelinks.json 없음 — 중요도가 전부 2가 된다. tools/enrich.mjs를 먼저 돌려라.");
 
 let nikhByYear = null;
@@ -157,8 +190,16 @@ for (const region of regions) {
       ...(reason ? { reject_reason: reason } : {}),
       region,
       kind: raw.kind === "event" ? "event" : "period",
-      // 월·일은 원문 표기("June —", "6월 30일", "8月14日")에서 기계로. 연도 안 배치(그리드)에 쓴다
-      date: (() => { const md = parseWikiDate(raw.text); return md.m ? { ...raw.date, month: md.m, ...(md.d ? { day: md.d } : {}) } : raw.date; })(),
+      // 월·일은 원문 표기("June —", "6월 30일", "8月14日")에서 기계로, 없으면 위키데이터 시점(P585/P580)이 그 해면 그것.
+      // 연도 안 배치(그리드)에 쓴다. 끝 연도(기간)는 endYearOf
+      date: (() => {
+        const md = parseWikiDate(raw.text);
+        const f = qidValid ? facts[raw.qid] : null;
+        const wd = f && !f.human ? (f.point?.y === raw.date.year ? f.point : f.start?.y === raw.date.year ? f.start : null) : null;
+        const m = md.m ?? wd?.m, d = md.m ? md.d : wd?.d;
+        const end = endYearOf(raw, raw.date.year, qidValid);
+        return { ...raw.date, ...(m ? { month: m } : {}), ...(d ? { day: d } : {}), ...(end ? { end_year: end.y1, end_source: end.src } : {}) };
+      })(),
       historicity: historicityOf(region, raw.date.year),
       lang,
       title,
@@ -168,6 +209,10 @@ for (const region of regions) {
         ? { title_ko: translations.get(hashOf(lang, title)).ko, mt: { model: translations.get(hashOf(lang, title)).model, at: translations.get(hashOf(lang, title)).at } }
         : {}),
       ...(qidValid ? { qid: raw.qid, names_native: raw.names_native, sitelinks: n } : {}),
+      // 설명: 연결된 문서의 한국어 위키백과 첫 문단(tools/summaries.mjs). 인물·왕조 문서면 그 설명이 붙는다 — UI는 "관련 문서"
+      ...(qidValid && summaries.get(raw.names_native.ko)?.extract
+        ? { about: { title: raw.names_native.ko, text: summaries.get(raw.names_native.ko).extract, description: summaries.get(raw.names_native.ko).description ?? null, url: summaries.get(raw.names_native.ko).url, revid: summaries.get(raw.names_native.ko).revid, license: LICENSE_WIKI } }
+        : {}),
       importance_auto: undefined, // 열 전체를 본 뒤 assignImportance가 채운다
       sources: [],
       derivedAt: new Date().toISOString(),

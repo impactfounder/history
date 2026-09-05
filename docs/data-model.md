@@ -271,6 +271,10 @@ ko.wikipedia에 중국·일본·미국 단일 연표 문서는 **없다**. 중�
          text  = 원문 줄 그대로
          names = 사이트링크 원문(ko·en·ja·zh). 링크 앵커가 그 줄에 있을 때만. 한글 옮김은 P1
          importance_auto = 언어판 수, 열 안 상대 순위(§4-3, tools/enrich.mjs)
+         date.month/day = 원문 표기("June —", "6월 30일", "8月14日") → 없으면 위키데이터 시점(P585/P580)이 그 해일 때
+         date.end_year  = ① 원문 명시 범위 "1592–1598" ② 위키데이터 P580/P582 — 사람 아님·시작이 그 해(±1)·60년 이하·
+                          표제어가 사건 꼴일 때만(왕조 QID에 276년이 붙는 것을 막는다). 2026-09-05: 95건
+         about          = 연결 문서의 한국어 위키백과 첫 문단 + 짧은 설명(tools/summaries.mjs, 2,121건). 원문 그대로 + 출처
          kind  = looksLikePeriod 규칙 → period는 발행 제외(polities로)
          [한국] 국사편찬위 연표와 매칭(src/lib/curation/nikh-match.mjs: 표제어·통째 포함·
                 한글 핵심어·2-gram Dice + 날짜 일치) → 맞으면 sources 앞에 국사편찬위 항목
@@ -322,6 +326,9 @@ curation/
   raw/nikh/                          -- 국사편찬위 연표 ZIP·JSONL 원본 131MB (gitignore, tools/fetch-nikh.mjs)
   nikh/official-years.json           -- 사건이 있는 해만 80건씩 추린 3.8MB (git 추적). 원본 없는 CI는 이걸로 발행
   _qid-sitelinks.json                -- QID → 언어판 수 (tools/enrich.mjs, 중요도 프록시)
+  summaries/ko.jsonl                 -- ko 표제어 → 한국어 위키백과 첫 문단·짧은 설명 (tools/summaries.mjs, git 추적).
+                                        사건의 "설명"이자 인물·왕조 문서면 "관련 문서". 원문 그대로 + 출처(CC BY-SA)
+  translations/ko.jsonl              -- sha1(lang|원문) → 기계 번역 (tools/translate.mjs, git 추적)
   polities/{region}.json             -- 시대 밴드 41개. 어느 정치체를 밴드로 둘지는 사람이 고르고(tools/polities.mjs BANDS)
                                         시작·끝 연도는 Wikidata(P580/P582·P571/P576, CC0). 덮는 규칙(2026-09-05): Wikidata 값이
                                         그 시대의 자국어판 문서 첫 문단과 다르면 문서 쪽을 따르고 override+note(삼국 시대 BC 57,
