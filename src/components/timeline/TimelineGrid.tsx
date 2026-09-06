@@ -26,7 +26,7 @@ import {
   type Axis,
   type Level,
 } from "@/lib/timeline/axis";
-import { LOCALES, LOCALE_LABEL, LOCALE_REGION, REGION_LABEL, T, eventLabel, formatRowLabelL, formatYearL, isEventName, isLocale, nameIn, type Locale } from "@/lib/i18n";
+import { LOCALES, LOCALE_LABEL, LOCALE_REGION, REGION_LABEL, T, eventLabel, formatRowLabelL, formatYearL, isEventName, isLocale, localePath, nameIn, type Locale } from "@/lib/i18n";
 
 /** 기본 4열 (PRD §5-2). */
 const COLUMNS = [
@@ -654,7 +654,7 @@ export function TimelineGrid() {
           ))}
         </nav>
         {/* 언어마다 길이가 다른 마지막 조각(출처/Sources/出典/来源)도 고정 폭 — 아니면 왼쪽 언어 버튼이 밀린다 */}
-        <a href="/sources" className="w-14 shrink-0 truncate text-right text-[11px] text-neutral-500 underline">{t.sources}</a>
+        <a href={localePath(locale, "/sources")} className="w-14 shrink-0 truncate text-right text-[11px] text-neutral-500 underline">{t.sources}</a>
       </header>
 
       <div className="relative flex min-h-0 flex-1">
@@ -1045,8 +1045,8 @@ export function TimelineGrid() {
                   {selected.detail.src.map((s) => (
                     <a key={s.url} href={s.url} target="_blank" rel="noreferrer" className="underline">{new URL(s.url).hostname}</a>
                   ))}
-                  {selected.detail.src.length > 0 && ` (${selected.detail.license})`} · <a href="/sources" className="underline">{t.licensePage}</a> ·{" "}
-                  <a href={`/y/${selected.detail.year}`} className="underline">{t.yearPage(formatYearL(selected.ev.y0, locale))}</a> ·{" "}
+                  {selected.detail.src.length > 0 && ` (${selected.detail.license})`} · <a href={localePath(locale, "/sources")} className="underline">{t.licensePage}</a> ·{" "}
+                  <a href={localePath(locale, `/y/${selected.detail.year}`)} className="underline">{t.yearPage(formatYearL(selected.ev.y0, locale))}</a> ·{" "}
                   {/* 오류 신고(§11 C-8): 원문을 그대로 싣는 구조라 고칠 것은 "어느 줄을 어느 해·어느 열에"와 국사편찬위 대응뿐 */}
                   <a
                     href={`https://github.com/impactfounder/history/issues/new?${new URLSearchParams({

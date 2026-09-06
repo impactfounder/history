@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { eventLabel, formatRowLabelL, formatYearL, isEventName, type LabelSource } from "./i18n";
+import { LOCALES, PREFIXED_LOCALES, eventLabel, formatRowLabelL, formatYearL, isEventName, localePath, type LabelSource } from "./i18n";
 
 describe("formatYearL / formatRowLabelL", () => {
   it("연도를 언어 관용대로", () => {
@@ -65,5 +65,18 @@ describe("eventLabel", () => {
     const bundled: LabelSource = { title: "조미수호조규 체결, 임오군란 일어남, 일본과 제물포조약 체결", lang: "ko", names: {} };
     expect(eventLabel(bundled, "ko")).toEqual({ text: "조미수호조규 체결 외 2" });
     expect(eventLabel(bundled, "en")).toEqual({ text: bundled.title }); // 영어 UI: 표제어 없으면 원문
+  });
+});
+
+describe("localePath", () => {
+  it("한국어는 접두 없이, 나머지는 로케일 세그먼트", () => {
+    expect(localePath("ko", "/y/1592")).toBe("/y/1592");
+    expect(localePath("en", "/y/1592")).toBe("/en/y/1592");
+    expect(localePath("ja", "/sources")).toBe("/ja/sources");
+    expect(localePath("zh", "/y/-56")).toBe("/zh/y/-56");
+  });
+  it("접두 목록에 한국어는 없다 — 루트가 한국어다", () => {
+    expect(PREFIXED_LOCALES).toEqual(["en", "ja", "zh"]);
+    expect(LOCALES.filter((l) => !PREFIXED_LOCALES.includes(l as never))).toEqual(["ko"]);
   });
 });

@@ -2,8 +2,8 @@
  * UI 언어 — 한국어 기본, 영어·일본어·중국어 선택(대표 지시 2026-09-05, PRD §8 i18n을 P2에서 앞당김).
  *
  * 바뀌는 것: UI 문구, 열 이름, 연도 표기, 사건 라벨(위키데이터 사이트링크 — 열마다 이미 4개 언어판
- * 표제어가 있다), 정치체 라벨. 바뀌지 않는 것: 원문·설명 본문(원천 언어 그대로), 국사편찬위 항목(한국어),
- * /y·/sources 페이지(한국어 — 다음 단계).
+ * 표제어가 있다), 정치체 라벨. 바뀌지 않는 것: 원문·설명 본문(원천 언어 그대로), 국사편찬위 항목(한국어).
+ * 문서 페이지(`/y`·`/sources`)는 2026-09-06 언어별 URL로 나눴다 — 문구는 서버 전용이라 i18n-pages.tsx.
  *
  * 의존성 0. 축 라벨 규칙은 axis.ts formatRowLabel과 같은 버킷 규칙을 각 언어로 옮긴 것이다.
  */
@@ -14,6 +14,15 @@ export type Locale = "ko" | "en" | "ja" | "zh";
 export const LOCALES: readonly Locale[] = ["ko", "en", "ja", "zh"] as const;
 export const isLocale = (s: string | null | undefined): s is Locale => LOCALES.includes(s as Locale);
 export const LOCALE_LABEL: Record<Locale, string> = { ko: "한국어", en: "English", ja: "日本語", zh: "中文" };
+
+/**
+ * 문서 페이지(`/y`·`/sources`)의 언어별 경로 — 한국어는 루트, 나머지는 `/{locale}` 접두.
+ * 색인 대상이라 언어가 URL에 있어야 한다(PRD §5-8). 그리드(`/`)는 색인 대상이 아니라 `?lang=`을 쓴다.
+ * 문구는 서버 전용이라 i18n-pages.tsx에 있지만, 이 규칙 하나는 그리드도 링크를 만들 때 쓴다.
+ */
+export const localePath = (locale: Locale, path: string): string => (locale === "ko" ? path : `/${locale}${path}`);
+/** 접두가 붙는 언어 — `app/(intl)/[locale]`이 정적 생성하는 목록. 한국어는 여기 없다(루트에 있다). */
+export const PREFIXED_LOCALES = ["en", "ja", "zh"] as const satisfies readonly Locale[];
 
 export type RegionId = "kr" | "cn" | "jp" | "us";
 /** 열 → 그 열의 자국어판(관점 명칭 원문). 사건 라벨을 언어별로 고를 때 names[열]을 쓴다. */
