@@ -157,11 +157,24 @@ write("polities.json", { regions: polities });
 
 const byLevel = { century: 0, decade: 0, year: 0 };
 let officialMatched = 0;
+let spanDupes = 0;
+let spanKept = 0;
 for (const region of REGIONS.map((x) => x.id)) {
   const rs = all.filter((r) => r.region === region);
   if (!rs.length) continue;
   // id가 겹치면 앞의 것만 — 같은 해·같은 문서에 같은 줄이 두 번 있으면 클라이언트 key가 충돌한다
   const recs = [...new Map(rs.map((r) => [eventId(r), toRecord(r)])).values()];
+  // 같은 기간이 여러 줄에 걸린 경우 막대는 하나만 남긴다(2026-09-09). id가 다르므로 위 dedupe가
+  // 잡지 못한다 — 미국 열의 "1968 Civil rights movement 1954–1968"이 10겹, 의화단 운동이 2겹으로
+  // 겹쳐 그려졌다. 3px 실선일 때는 묻혔지만 지속이 주 채널이 되면 전면에 뜬다.
+  // 사건 자체는 지우지 않고 y1만 떼어 낸다 — 수록 건수와 +N 계산을 건드리지 않기 위해서다.
+  const seenSpan = new Set();
+  for (const e of recs) {
+    if (e.y1 === undefined) continue;
+    const key = `${e.y0}|${e.y1}|${e.title}`;
+    if (seenSpan.has(key)) { delete e.y1; spanDupes++; } else seenSpan.add(key);
+  }
+  spanKept += seenSpan.size;
   // §6-2: imp desc → 언어판 수 desc → y0 asc → id. 클라이언트는 재정렬하지 않고 앞에서부터 셀 높이만큼 보인다
   const sortKey = (a, b) => b.regions[0].imp - a.regions[0].imp || (b.sl ?? 0) - (a.sl ?? 0) || a.y0 - b.y0 || (a.id < b.id ? -1 : 1);
 
@@ -225,6 +238,7 @@ if (official) {
 }
 
 const counts = {
+  spans: { kept: spanKept, deduped: spanDupes },
   events: all.length,
   byRegion: Object.fromEntries(REGIONS.map((x) => [x.id, all.filter((r) => r.region === x.id).length])),
   byLevel,
@@ -238,5 +252,6 @@ console.log(`발행 — stage=${stage} → ${OUT}
   사건        ${all.length}  (${Object.entries(counts.byRegion).map(([k, v]) => `${k} ${v}`).join(" · ")})
   제외        rejected ${skipped.rejected} · period ${skipped.period}
   청크 수록   century ${byLevel.century} · decade ${byLevel.decade} · year ${byLevel.year}
+  기간        막대 ${spanKept}건 (중복 제거 ${spanDupes})
   공식 출처   매칭 사건 ${officialMatched} · 연도 파일 ${officialYears} (항목 ${officialEntries})
   파일        ${Object.keys(chunks).length}`);
