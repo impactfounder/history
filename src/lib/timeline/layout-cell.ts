@@ -36,6 +36,8 @@ export interface CellLayout<T> {
  * @param h     행 높이(px) = 행 단위 × s
  * @param b     행 버킷의 시작 연도
  * @param unit  행 단위(연) — 세기 100 · 십년 10 · 연도 1
+ * @param heights 항목 높이표. 좁은 화면은 메타 줄을 접으므로 ITEM_H_COMPACT를 넘긴다.
+ * @param laneW   배지 레인 폭. 좁은 화면은 배지가 숫자뿐이라 MORE_LANE_W_COMPACT.
  */
 export function layoutCell<T extends KindSource & { y0: number; m?: number }>(
   evs: T[],
@@ -43,6 +45,8 @@ export function layoutCell<T extends KindSource & { y0: number; m?: number }>(
   b: number,
   unit: number,
   locale: Locale,
+  heights: Record<"lead" | "plain", number> = ITEM_H,
+  laneW: number = MORE_LANE_W,
 ): CellLayout<T> {
   const avail = h - CELL_PAD * 2;
 
@@ -51,7 +55,7 @@ export function layoutCell<T extends KindSource & { y0: number; m?: number }>(
   let used = 0;
   for (const ev of evs) {
     const kind = itemKind(ev, locale);
-    const ih = ITEM_H[kind];
+    const ih = heights[kind];
     if (used + ih > avail) break;
     chosen.push({ ev, kind, h: ih });
     used += ih + ITEM_GAP;
@@ -76,7 +80,7 @@ export function layoutCell<T extends KindSource & { y0: number; m?: number }>(
   // 3) 배지 레인 — 숨은 것이 있을 때만, 아래쪽 띠와 겹치는 항목에만
   if (hidden > 0) {
     for (const p of placed) {
-      if (p.top + p.h > avail - MORE_BADGE_BAND) p.laneEnd = MORE_LANE_W;
+      if (p.top + p.h > avail - MORE_BADGE_BAND) p.laneEnd = laneW;
     }
   }
 

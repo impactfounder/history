@@ -20,6 +20,11 @@
 /** 항목 높이(px). lead = 제목 + 메타 두 줄, plain = 원문 한 줄 + 언어 태그. */
 export const ITEM_H = { lead: 34, plain: 28 } as const;
 export type ItemKind = keyof typeof ITEM_H;
+/**
+ * 좁은 화면(<600px)의 항목 높이. 메타 줄을 접고 한 줄만 두므로 낮다.
+ * 390px 폰에서 열이 2개(열당 163px)라 두 줄을 주면 한 칸에 한 건도 안 들어간다.
+ */
+export const ITEM_H_COMPACT = { lead: 24, plain: 20 } as const;
 
 export const ITEM_GAP = 2;
 export const CELL_PAD = 2;
@@ -34,6 +39,11 @@ export const ITEM_INSET_END = 12;
  */
 export const MORE_BADGE_BAND = 20;
 export const MORE_LANE_W = 64;
+/**
+ * 좁은 화면의 배지 레인. 폰에서는 배지가 「53건 더」가 아니라 숫자만이라 좁아도 된다.
+ * 64px을 그대로 두면 163px 열의 절반을 먹어 제목이 「얄타 …」로 잘린다.
+ */
+export const MORE_LANE_W_COMPACT = 24;
 
 /** 열 카드 헤더 높이(국기 + 나라 이름 + 그 시점의 왕조). sticky. */
 export const COLUMN_HEADER_H = 44;
@@ -47,10 +57,14 @@ export const ERA_TICK_W = 20;
 
 /** 시간 축 열 전체 폭 = 미니맵 + 연도 라벨. 이전 레일 64 + 거터 56 = 120을 대체한다. */
 export const AXIS_W = 86;
+/** 좁은 화면의 축 = 미니맵 8 + 연도 라벨 56. 390px에서 86px은 열을 너무 깎는다. */
+export const AXIS_W_COMPACT = 64;
+export const MINIMAP_W_COMPACT = 8;
 /** 시대 미니맵 폭(축 왼쪽 끝). 축 전체를 세로로 압축해 담고, 뷰포트 창을 표시한다. */
 export const MINIMAP_W = 10;
 /** 연도 라벨 열 폭 = AXIS_W − MINIMAP_W. */
 export const AXIS_LABEL_W = AXIS_W - MINIMAP_W;
+export const AXIS_LABEL_W_COMPACT = AXIS_W_COMPACT - MINIMAP_W_COMPACT;
 
 /** WCAG 2.2 SC 2.5.8 (AA) 최소 타깃. */
 export const HIT_MIN = 24;

@@ -140,12 +140,15 @@
   /* 치수 — 원본은 src/lib/design/metrics.ts. metrics.test.ts가 일치를 강제한다. */
   --size-item-lead: 34px;
   --size-item-plain: 28px;
+  --size-item-lead-compact: 24px;
+  --size-item-plain-compact: 20px;
   --size-item-gap: 2px;
   --size-cell-pad: 2px;
   --size-item-inset-start: 14px;
   --size-item-inset-end: 12px;
   --size-more-badge-band: 20px;
   --size-more-lane: 64px;
+  --size-more-lane-compact: 24px;
   --size-col-header: 44px;
   --size-card-gap: 10px;
   --size-lug: 3px;
@@ -153,6 +156,9 @@
   --size-axis: 86px;
   --size-minimap: 10px;
   --size-axis-label: 76px;
+  --size-axis-compact: 64px;
+  --size-minimap-compact: 8px;
+  --size-axis-label-compact: 56px;
   --size-hit-min: 24px;
   --size-hit-comfort: 44px;
   --size-topbar: 44px;

@@ -31,15 +31,21 @@ import { layoutCell } from "@/lib/timeline/layout-cell";
 import { originalTag } from "@/lib/timeline/item-kind";
 import {
   AXIS_LABEL_W,
+  AXIS_LABEL_W_COMPACT,
   CARD_GAP,
   CELL_PAD,
   COLUMN_HEADER_H,
   ERA_TICK_W,
+  HIT_COMFORT,
   ITEM_H,
+  ITEM_H_COMPACT,
   ITEM_INSET_END,
   ITEM_INSET_START,
   LUG_W,
   MINIMAP_W,
+  MINIMAP_W_COMPACT,
+  MORE_LANE_W,
+  MORE_LANE_W_COMPACT,
   TOPBAR_H,
   ZOOM_FLOAT_INSET,
 } from "@/lib/design/metrics";
@@ -209,6 +215,11 @@ export function TimelineGrid() {
   // s의 초기값은 십년 레벨. 착지 지점은 §11 C-1이 정해지면 바꾼다.
   const [axis, setAxis] = useState<Axis>({ s: 8, viewportH: 800 });
   const [scrollTop, setScrollTop] = useState(0);
+  /**
+   * 좁은 화면(<600px). 축 폭·항목 높이·메타 줄 유무가 여기서 갈린다(README §화면 → 모바일).
+   * 열 축소(<360 1열 · <600 2열)는 착지 때 한 번뿐이지만, 이 값은 회전·리사이즈를 따라간다.
+   */
+  const [narrow, setNarrow] = useState(false);
   /** 의미 레벨은 스케일에서 바로 나오지 않는다 — 경계 왕복을 막는 이력이 있다(§5-3). */
   const [level, setLevel] = useState<Level>(() => levelOf(8));
   const [railH, setRailH] = useState(800);
@@ -347,6 +358,7 @@ export function TimelineGrid() {
         // 창이 줄면 s도 함께 눌러야 한 행이 뷰포트를 넘지 않는다(§5-5A S_MAX)
         setAxis((a) => (a.viewportH === vh ? a : { s: clampScale(a.s, vh), viewportH: vh }));
       }
+      setNarrow(el.clientWidth > 0 && el.clientWidth < 600);
       if (railRef.current) setRailH(railRef.current.clientHeight);
       if (scrubRef.current) setScrubH(scrubRef.current.clientHeight);
     };
@@ -595,6 +607,11 @@ export function TimelineGrid() {
     el.scrollTop = scrollTopForYear(AXIS_YEAR_START + ratio * AXIS_SPAN_YEARS, axis);
     setScrollTop(el.scrollTop);
   };
+  const axisLabelW = narrow ? AXIS_LABEL_W_COMPACT : AXIS_LABEL_W;
+  const minimapW = narrow ? MINIMAP_W_COMPACT : MINIMAP_W;
+  const itemH = narrow ? ITEM_H_COMPACT : ITEM_H;
+  const laneW = narrow ? MORE_LANE_W_COMPACT : MORE_LANE_W;
+
   const jumpFromRail = (clientY: number) => jumpTo(railRef.current, clientY);
   const jumpFromScrub = (clientY: number) => jumpTo(scrubRef.current, clientY);
 
@@ -604,8 +621,12 @@ export function TimelineGrid() {
           「자리 고정」 규약은 유지한다 — 언어를 바꿔도 각 조각의 폭이 변하지 않아야 한다 */}
       <header className="flex shrink-0 items-center gap-4 border-b border-line px-4" style={{ height: TOPBAR_H }}>
         <span className="shrink-0 font-semibold tracking-tight">history</span>
-        {/* 추천 연도(§11 C-1) — 네 열이 동시에 촘촘한 해. 조작을 배우기 전에 제품의 답을 먼저 보여준다 */}
-        <nav className="flex shrink-0 gap-4 text-meta" aria-label={t.recommended}>
+        {/*
+          추천 연도(§11 C-1) — 네 열이 동시에 촘촘한 해. 조작을 배우기 전에 제품의 답을 먼저 보여준다.
+          390px에서는 이 다섯 조각의 합이 496px이라 마지막 「출처」가 잘려 나갔다.
+          좁은 화면에서는 추천 연도·배지·출처를 ☰ 메뉴로 접고 언어만 남긴다(README §화면 → 모바일).
+        */}
+        <nav className="hidden shrink-0 gap-4 text-meta sm:flex" aria-label={t.recommended}>
           {[1592, 1882, 1945].map((y) => (
             <button key={y} type="button" onClick={() => goTo(y)} className="text-fg-subtle tabular-nums hover:text-fg">
               {formatYearL(y, locale)}
@@ -613,12 +634,12 @@ export function TimelineGrid() {
           ))}
         </nav>
         {manifest?.stage === "preview" ? (
-          <span className="ml-auto min-w-0 truncate rounded bg-warn-surface px-1.5 py-0.5 text-meta text-warn-text">{t.badgePreview(manifest.counts.events)}</span>
+          <span className="ml-auto hidden min-w-0 truncate rounded bg-warn-surface px-1.5 py-0.5 text-meta text-warn-text sm:inline">{t.badgePreview(manifest.counts.events)}</span>
         ) : (
-          <span className="ml-auto min-w-0 truncate text-meta text-fg-subtle">{manifest ? t.badge(manifest.counts.events) : t.noData}</span>
+          <span className="ml-auto hidden min-w-0 truncate text-meta text-fg-subtle sm:inline">{manifest ? t.badge(manifest.counts.events) : t.noData}</span>
         )}
         {/* 언어(대표 지시 2026-09-05): 한국어 기본, URL ?lang=. 현재 언어만 진하게 */}
-        <nav className="flex shrink-0 gap-3 text-meta" aria-label={t.language}>
+        <nav className="ml-auto flex shrink-0 gap-3 text-meta sm:ml-0" aria-label={t.language}>
           {LOCALES.map((l) => (
             <button
               key={l}
@@ -633,7 +654,22 @@ export function TimelineGrid() {
           ))}
         </nav>
         {/* 언어마다 길이가 다른 마지막 조각(출처/Sources/出典/来源)도 고정 폭 — 아니면 왼쪽 언어 묶음이 밀린다 */}
-        <a href={localePath(locale, "/sources")} className="w-14 shrink-0 truncate text-right text-meta text-fg-subtle underline">{t.sources}</a>
+        <a href={localePath(locale, "/sources")} className="hidden w-14 shrink-0 truncate text-right text-meta text-fg-subtle underline sm:block">{t.sources}</a>
+        {/* 좁은 화면의 ☰ — 접어 둔 세 조각이 여기 들어간다. 타깃은 44px(HIT_COMFORT) */}
+        <details className="relative shrink-0 sm:hidden">
+          <summary className="flex cursor-pointer list-none items-center justify-center text-fg-subtle" style={{ width: HIT_COMFORT, height: HIT_COMFORT }} aria-label={t.recommended}>☰</summary>
+          <div className="absolute right-0 top-full z-40 flex w-max flex-col gap-2 rounded-lg border border-line bg-surface p-3 text-meta shadow-[var(--shadow-float)]">
+            <div className="flex gap-4">
+              {[1592, 1882, 1945].map((y) => (
+                <button key={y} type="button" onClick={(e) => { goTo(y); (e.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open"); }} className="tabular-nums text-fg-subtle">
+                  {formatYearL(y, locale)}
+                </button>
+              ))}
+            </div>
+            <span className="whitespace-nowrap text-fg-subtle">{manifest ? t.badge(manifest.counts.events) : t.noData}</span>
+            <a href={localePath(locale, "/sources")} className="text-fg-subtle underline">{t.sources}</a>
+          </div>
+        </details>
       </header>
 
       {/* 중간 영역. 배경이 캔버스라 열 카드 사이 10px으로 드러난다(README 7-3) */}
@@ -643,8 +679,8 @@ export function TimelineGrid() {
         <div
           ref={railRef}
           onPointerDown={(e) => jumpFromRail(e.clientY)}
-          className="relative hidden shrink-0 cursor-grab bg-surface-sunken select-none md:block"
-          style={{ width: MINIMAP_W }}
+          className="relative shrink-0 cursor-grab bg-surface-sunken select-none"
+          style={{ width: minimapW }}
           title={t.minimapTitle}
         >
           {/* 홈 열(첫 열) 왕조를 무채색 두 톤 계단으로 — 연도 도메인으로 매핑한다(§5-5A: 스크롤 비율이 아니다) */}
@@ -667,7 +703,7 @@ export function TimelineGrid() {
             축의 양 끝에서만 보인다. 이 층은 뷰포트 높이에 고정이라 위아래 모서리가 늘 보인다.
           */}
           <div className="pointer-events-none absolute inset-0 z-0 flex" aria-hidden>
-            <div className="shrink-0" style={{ width: AXIS_LABEL_W }} />
+            <div className="shrink-0" style={{ width: axisLabelW }} />
             {shown.map((c) => (
               <div key={c.id} className="min-w-0 flex-1 rounded-card border border-line bg-surface" style={{ marginLeft: CARD_GAP }} />
             ))}
@@ -688,7 +724,7 @@ export function TimelineGrid() {
               polityAt(뷰포트 상단 연도)를 보므로 스크롤하면 왕조 이름이 저절로 바뀐다 —
               별도의 스티키 라벨 층이 필요 없어지는 이유다 */}
           <div className="sticky top-0 z-20 flex" style={{ height: COLUMN_HEADER_H }}>
-            <div className="shrink-0" style={{ width: AXIS_LABEL_W }} />
+            <div className="shrink-0" style={{ width: axisLabelW }} />
             {shown.map((c, i) => {
               const p = polityAt(polities[c.id], yToYear(scrollTop + COLUMN_HEADER_H, axis));
               const btn = "rounded px-1 leading-none text-fg-subtle hover:bg-surface-hover hover:text-fg disabled:invisible";
@@ -747,7 +783,7 @@ export function TimelineGrid() {
                 이름은 열 헤더가 맡고, 여기서는 "언제 바뀌었나"만 말한다.
                 약 40개라 가상화하지 않는다(§5-5A 레이어) */}
             <div className="pointer-events-none absolute inset-0 flex" aria-hidden>
-              <div className="shrink-0" style={{ width: AXIS_LABEL_W }} />
+              <div className="shrink-0" style={{ width: axisLabelW }} />
               {shown.map((c) => (
                 <div key={c.id} className="relative min-w-0 flex-1" style={{ marginLeft: CARD_GAP }}>
                   {(polities[c.id] ?? []).map((p, i) => {
@@ -776,7 +812,7 @@ export function TimelineGrid() {
                 처리도, 클릭 통과 문제도 생기지 않는다.
                 60px보다 짧으면 프레임을 포기하고 칩 라벨의 "1592–1598"로 넘긴다(rank.SPAN_MIN_PX) */}
             <div className="pointer-events-none absolute inset-0 flex" aria-hidden>
-              <div className="shrink-0" style={{ width: AXIS_LABEL_W }} />
+              <div className="shrink-0" style={{ width: axisLabelW }} />
               {shown.map((c) => {
                 const cand = chunkKeys
                   .flatMap((key) => chunks.current.get(`${DATA}/events/${c.id}/${key}.json`) ?? [])
@@ -819,7 +855,7 @@ export function TimelineGrid() {
                       라벨이 행 높이를 넘으면 잘라 다음 행과 겹치지 않게(2026-09-05) */}
                   <div
                     className="relative shrink-0 overflow-hidden pr-2 text-right font-serif text-axis text-fg-muted tabular-nums"
-                    style={{ width: AXIS_LABEL_W }}
+                    style={{ width: axisLabelW }}
                   >
                     <span className="whitespace-nowrap">{formatRowLabelL(b, rows.level, locale)}</span>
                     {sub > 0 &&
@@ -831,7 +867,7 @@ export function TimelineGrid() {
                   </div>
                   {shown.map((c) => {
                     const evs = cellEvents(c.id, b);
-                    const { placed, hidden } = layoutCell(evs, h, b, rows.unit, locale);
+                    const { placed, hidden } = layoutCell(evs, h, b, rows.unit, locale, itemH, laneW);
                     // 같은 셀에 같은 표제어가 둘 이상이면(도요토미 히데요시 ×3) 라벨에 원문을 덧붙인다
                     const seen = new Map<string, number>();
                     for (const pl of placed) { const n = nameIn(pl.ev, locale); if (n) seen.set(n, (seen.get(n) ?? 0) + 1); }
@@ -877,14 +913,14 @@ export function TimelineGrid() {
                               >
                                 {label.name ?? label.text}
                               </span>
-                              {meta && <span className="min-w-0 truncate text-item-meta text-fg-subtle tabular-nums">{meta}</span>}
+                              {meta && !narrow && <span className="min-w-0 truncate text-item-meta text-fg-subtle tabular-nums">{meta}</span>}
                             </button>
                           );
                         })}
                         {/* `+26` → `26건 더`. 줄바꿈 금지 · 불투명 — 잘린 글줄 위에 겹쳐 찍히면 읽을 수 없다 */}
                         {hidden > 0 && (
                           <span className="pointer-events-none absolute bottom-[3px] whitespace-nowrap bg-surface px-[3px] text-item-meta text-fg-subtle tabular-nums" style={{ right: ITEM_INSET_END }}>
-                            {t.moreCount(hidden)}
+                            {narrow ? hidden : t.moreCount(hidden)}
                           </span>
                         )}
                       </div>

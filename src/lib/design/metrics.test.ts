@@ -4,7 +4,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   AXIS_LABEL_W,
+  AXIS_LABEL_W_COMPACT,
   AXIS_W,
+  AXIS_W_COMPACT,
   CARD_GAP,
   CELL_PAD,
   COLUMN_HEADER_H,
@@ -14,11 +16,14 @@ import {
   ITEM_GAP,
   ITEM_H,
   ITEM_INSET_END,
+  ITEM_H_COMPACT,
   ITEM_INSET_START,
   LUG_W,
   MINIMAP_W,
+  MINIMAP_W_COMPACT,
   MORE_BADGE_BAND,
   MORE_LANE_W,
+  MORE_LANE_W_COMPACT,
   TOPBAR_H,
   ZOOM_FLOAT_H,
   ZOOM_FLOAT_INSET,
@@ -43,12 +48,15 @@ describe("치수 토큰 — metrics.ts(원본) ↔ globals.css(사본)", () => {
   const pairs: [string, number][] = [
     ["item-lead", ITEM_H.lead],
     ["item-plain", ITEM_H.plain],
+    ["item-lead-compact", ITEM_H_COMPACT.lead],
+    ["item-plain-compact", ITEM_H_COMPACT.plain],
     ["item-gap", ITEM_GAP],
     ["cell-pad", CELL_PAD],
     ["item-inset-start", ITEM_INSET_START],
     ["item-inset-end", ITEM_INSET_END],
     ["more-badge-band", MORE_BADGE_BAND],
     ["more-lane", MORE_LANE_W],
+    ["more-lane-compact", MORE_LANE_W_COMPACT],
     ["col-header", COLUMN_HEADER_H],
     ["card-gap", CARD_GAP],
     ["lug", LUG_W],
@@ -56,6 +64,9 @@ describe("치수 토큰 — metrics.ts(원본) ↔ globals.css(사본)", () => {
     ["axis", AXIS_W],
     ["minimap", MINIMAP_W],
     ["axis-label", AXIS_LABEL_W],
+    ["axis-compact", AXIS_W_COMPACT],
+    ["minimap-compact", MINIMAP_W_COMPACT],
+    ["axis-label-compact", AXIS_LABEL_W_COMPACT],
     ["hit-min", HIT_MIN],
     ["hit-comfort", HIT_COMFORT],
     ["topbar", TOPBAR_H],
@@ -86,8 +97,20 @@ describe("항목 높이의 성질", () => {
     expect(ITEM_H.lead * 3 + ITEM_GAP * 2).toBeGreaterThan(avail);
   });
 
-  it("축은 미니맵 + 라벨로 정확히 쪼개진다", () => {
+  it("축은 미니맵 + 라벨로 정확히 쪼개진다 — 넓은 화면·좁은 화면 둘 다", () => {
     expect(MINIMAP_W + AXIS_LABEL_W).toBe(AXIS_W);
+    expect(MINIMAP_W_COMPACT + AXIS_LABEL_W_COMPACT).toBe(AXIS_W_COMPACT);
+  });
+
+  it("좁은 화면 항목이 더 낮다 — 메타 줄을 접기 때문", () => {
+    expect(ITEM_H_COMPACT.lead).toBeLessThan(ITEM_H.lead);
+    expect(ITEM_H_COMPACT.plain).toBeLessThan(ITEM_H.plain);
+    expect(ITEM_H_COMPACT.lead).toBeGreaterThan(ITEM_H_COMPACT.plain);
+  });
+
+  it("390px 폰 십년 행(80px)에 좁은 항목 3건이 들어간다", () => {
+    const avail = 80 - CELL_PAD * 2;
+    expect(ITEM_H_COMPACT.lead * 3 + ITEM_GAP * 2).toBeLessThanOrEqual(avail);
   });
 
   it("배지 레인이 항목 오른쪽 여백보다 넓다 — 그래야 글줄을 실제로 비운다", () => {
