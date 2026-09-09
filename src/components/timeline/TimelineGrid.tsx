@@ -184,6 +184,17 @@ const FLAG: Record<RegionId, string> = { kr: "/flags/kr.svg", cn: "/flags/cn.svg
  */
 const lugVar = (i: number) => (i % 2 === 0 ? "var(--color-lug-a)" : "var(--color-lug-b)");
 
+/*
+ * 상세 패널의 출처 블록. 테두리 상자 대신 윗선 하나와 여백으로 나눈다 —
+ * 상자가 넷이면 패널이 서랍장이 되고, 안쪽 글이 상자 벽에 붙어 읽기가 나빠진다.
+ */
+const BLOCK = "border-t border-line py-5 first:border-t-0";
+const BLOCK_LABEL = "flex flex-wrap items-center gap-1.5 text-block-label font-semibold uppercase tracking-[.1em] text-fg-subtle";
+const BLOCK_BODY = "mt-1.5 text-body [text-wrap:pretty] [word-break:keep-all]";
+const BLOCK_META = "mt-1.5 text-item-meta text-fg-subtle";
+/** 원문이 어느 언어판인지 — 라벨 옆 작은 상자. 격자의 「원문 EN」과 같은 정보다. */
+const LANG_TAG = "rounded border border-line px-1 text-block-label tracking-normal text-fg-subtle";
+
 /** 그 해 그 열의 정치체. 밴드는 약 40개라 선형 탐색으로 충분하다. */
 const polityAt = (list: Polity[] | undefined, year: number): Polity | undefined =>
   list?.find((p) => p.y0 <= year && (p.y1 == null || year < p.y1));
@@ -939,110 +950,140 @@ export function TimelineGrid() {
         </div>
 
 
-        {/* 상세 패널 — §5-10. 지금은 push 한 모드만(폭 사다리는 다음) */}
+        {/*
+          상세 패널 — 폭 사다리(§5-10)와 데이터 흐름은 그대로, 안쪽만 1b로 다시 짰다.
+          <1024 바텀 시트(fixed) · 1024~1440 그리드 위 overlay(absolute, 열 폭 유지) · >1440 push(static)
+
+          머리·발은 고정이고 가운데만 스크롤한다. 출처 블록의 테두리 상자를 없애고
+          border-t + 20px 여백으로 나눈다 — 상자가 넷이면 패널이 서랍장이 된다.
+        */}
         {selected && (
-          // 폭 사다리(§5-10): <1024 바텀 시트(fixed) · 1024~1440 그리드 위 overlay(absolute, 열 폭 유지) · >1440 push(static)
           <aside
-            className={`fixed inset-x-0 bottom-0 z-30 ${sheetFull ? "h-[100dvh]" : "h-[50svh]"} min-h-[176px] overflow-y-auto rounded-t-xl border-t border-line bg-surface p-4 shadow-[var(--shadow-sheet)] lg:absolute lg:inset-x-auto lg:right-0 lg:top-0 lg:bottom-0 lg:h-auto lg:w-[400px] lg:rounded-none lg:border-l lg:border-t-0 lg:shadow-[var(--shadow-float)] wide:static wide:w-[clamp(320px,32vw,400px)] wide:shrink-0 wide:shadow-none`}
-            style={{ overscrollBehavior: "contain" }}
+            className={`fixed inset-x-0 bottom-0 z-30 flex flex-col ${sheetFull ? "h-[100dvh]" : "h-[50svh]"} min-h-[176px] rounded-t-2xl border-t border-line bg-surface shadow-[var(--shadow-sheet)] lg:absolute lg:inset-x-auto lg:right-0 lg:top-0 lg:bottom-0 lg:h-auto lg:w-[400px] lg:rounded-none lg:border-l lg:border-t-0 lg:shadow-[var(--shadow-float)] wide:static wide:w-[clamp(320px,32vw,400px)] wide:shrink-0 wide:shadow-none`}
             role="complementary"
             aria-label={t.detailAria}
           >
-            <button type="button" onClick={() => setSheetFull((f) => !f)} className="mx-auto mb-2 block h-1.5 w-10 rounded-full bg-line-strong lg:hidden" aria-label={sheetFull ? t.sheetCollapse : t.sheetExpand} />
-            <div className="mb-2 flex items-start justify-between gap-2">
-              {/* 제목: UI 언어의 사건 이름이 있으면 그것, 없으면 칩과 같은 라벨. 원문은 아래 본문에 */}
-              <h2 className="text-base font-semibold leading-snug">
-                {(() => { const l = eventLabel(selected.ev, locale); return l.name ?? l.text; })()}
-              </h2>
-              <button type="button" onClick={() => { setSelected(null); lastChip.current?.focus({ preventScroll: true }); }} className="rounded px-2 text-fg-subtle hover:bg-surface-hover" aria-label={t.close}>×</button>
+            <button type="button" onClick={() => setSheetFull((f) => !f)} className="mx-auto mt-2 block h-1 w-9 shrink-0 rounded-full bg-line-strong lg:hidden" aria-label={sheetFull ? t.sheetCollapse : t.sheetExpand} />
+
+            {/* 머리(고정) — 날짜·열은 명조체로, 제목은 굵게 */}
+            <div className="flex shrink-0 items-start justify-between gap-2 px-5 pt-4 pb-3">
+              <div className="min-w-0">
+                <div className="font-serif text-meta text-fg-muted">
+                  {yearLabel(selected.ev)} · {regionLabel(selected.ev.regions[0]?.r ?? "kr")}
+                </div>
+                <h2 className="mt-0.5 text-title font-bold [text-wrap:balance] [word-break:keep-all]">
+                  {(() => { const l = eventLabel(selected.ev, locale); return l.name ?? l.text; })()}
+                </h2>
+              </div>
+              <button type="button" onClick={() => { setSelected(null); lastChip.current?.focus({ preventScroll: true }); }} className="shrink-0 rounded p-1 text-fg-subtle hover:bg-surface-hover" aria-label={t.close}>✕</button>
             </div>
-            <div className="mb-3 text-[12px] text-fg-subtle">{yearLabel(selected.ev)} · {t.importance} {selected.ev.regions[0]?.imp}</div>
-            {selected.detail ? (
-              <>
-                {/* 공식 연표가 맞춰진 사건은 그쪽 본문이 앞에 선다(editorial-policy §1-7) */}
-                {selected.detail.official.map((o) => (
-                  <div key={o.id} className="mb-3 rounded border border-line bg-surface-sunken px-3 py-2">
-                    <div className="mb-1 text-[11px] text-fg-subtle">{t.nikh} · {o.db.replace(/^주제별연표_/, "")}{o.series ? ` (${o.series})` : ""} · {o.date_ko}</div>
-                    <p lang="ko" className="leading-relaxed [text-wrap:pretty] [word-break:keep-all]">{o.text}</p>
-                    {o.url && (
-                      <a href={o.url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-[11px] text-fg-subtle underline">{t.viewInDb}</a>
-                    )}
-                  </div>
-                ))}
-                {selected.detail.text_ko && (
-                  <>
-                    <p className="mb-1 text-[11px] text-fg-subtle">{t.mt}{selected.detail.mt && <span className="text-fg-subtle"> ({selected.detail.mt.model})</span>}</p>
-                    <p lang="ko" className="mb-3 leading-relaxed [text-wrap:pretty] [word-break:keep-all]">{selected.detail.text_ko}</p>
-                  </>
+
+            {/* 본문(스크롤) */}
+            <div className="min-h-0 flex-1 overflow-y-auto px-5" style={{ overscrollBehavior: "contain" }}>
+              {selected.detail ? (
+                <>
+                  {/* 공식 연표가 맞춰진 사건은 그쪽 본문이 앞에 선다(editorial-policy §1-7) */}
+                  {selected.detail.official.map((o) => (
+                    <section key={o.id} className={BLOCK}>
+                      <h3 className={BLOCK_LABEL}>{t.nikh} {o.db.replace(/^주제별연표_/, "")}{o.series ? ` (${o.series})` : ""}</h3>
+                      <p lang="ko" className={BLOCK_BODY}>{o.text}</p>
+                      <p className={BLOCK_META}>
+                        {o.date_ko}
+                        {o.url && <> · <a href={o.url} target="_blank" rel="noreferrer" className="underline">{t.viewInDb}</a></>}
+                      </p>
+                    </section>
+                  ))}
+                  {selected.detail.text_ko && (
+                    <section className={BLOCK}>
+                      <h3 className={BLOCK_LABEL}>{t.mt}{selected.detail.mt && ` (${selected.detail.mt.model})`}</h3>
+                      <p lang="ko" className={BLOCK_BODY}>{selected.detail.text_ko}</p>
+                    </section>
+                  )}
+                  {selected.detail.text && (
+                    <section className={BLOCK}>
+                      <h3 className={BLOCK_LABEL}>
+                        {t.wikiOriginal}
+                        {selected.detail.lang !== locale && <span className={LANG_TAG}>{selected.detail.lang.toUpperCase()}</span>}
+                      </h3>
+                      {/* 번역이 아직인 원문은 진하게 — 읽어야 할 것이 그것뿐이기 때문이다 */}
+                      <p lang={selected.detail.lang} className={`${BLOCK_BODY}${selected.detail.text_ko ? " text-fg-muted" : " text-fg-strong"}`}>{selected.detail.text}</p>
+                      <p className={BLOCK_META}>
+                        {locale === "ko" && !selected.detail.text_ko && `${t.notTranslated} · `}{selected.detail.license}
+                      </p>
+                    </section>
+                  )}
+                  {selected.detail.alt?.map((a) => (
+                    <section key={a.url + a.lang} className={BLOCK}>
+                      <h3 className={BLOCK_LABEL}>{t.sameEvent(a.lang)}</h3>
+                      <p lang={a.lang} className={`${BLOCK_BODY} text-fg-strong`}>{a.text}</p>
+                    </section>
+                  ))}
+                  {/* 설명 — 연결 문서의 한국어 위키백과 첫 문단. 표제어가 인물·왕조면 그 설명이라 "관련 문서"라 부른다 */}
+                  {selected.detail.about && (
+                    <section className={BLOCK}>
+                      <h3 className={BLOCK_LABEL}>
+                        {isEventName(selected.detail.about.title, "ko") ? t.description : t.related} · {LOCALE_LABEL.ko} Wikipedia
+                      </h3>
+                      <p lang="ko" className={BLOCK_BODY}>{selected.detail.about.text}</p>
+                      <p className={BLOCK_META}>
+                        <a href={selected.detail.about.url} target="_blank" rel="noreferrer" className="underline">{t.viewDoc}</a> ({selected.detail.about.license})
+                      </p>
+                    </section>
+                  )}
+                  {/* 이 사건을 부르는 이름 (§5-9) — 사이트링크 원문. 표가 아니라 라벨 + 값의 행이다 */}
+                  {COLUMNS.some((c) => selected.ev.names[c.id]?.nat) && (
+                    <section className={BLOCK}>
+                      <h3 className={BLOCK_LABEL}>{t.namesTitle}</h3>
+                      <dl className="mt-1.5 space-y-1.5">
+                        {COLUMNS.filter((c) => selected.ev.names[c.id]?.nat).map((c) => (
+                          <div key={c.id} className="flex gap-2">
+                            <dt className="w-[34px] shrink-0 text-item-meta leading-[1.6]" style={{ color: regionVar(c.id) }}>{regionLabel(c.id)}</dt>
+                            <dd className="min-w-0 text-item leading-[1.6]" lang={selected.ev.names[c.id]!.lang}>{selected.ev.names[c.id]!.nat}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </section>
+                  )}
+                  {/* 그 해 공식 연표 목록은 펼쳤을 때만 본문에 — 발의 버튼이 이것을 연다 */}
+                  {officialYear && selected.ev.regions[0]?.r === "kr" && (
+                    <section className={BLOCK}>
+                      <h3 className={BLOCK_LABEL}>
+                        {t.officialYear(formatYearL(officialYear.year, locale), officialYear.count)}
+                        {officialYear.count > officialYear.shown && t.officialShown(officialYear.shown)}
+                      </h3>
+                      <ul lang="ko" className="mt-1.5 space-y-1.5 text-item leading-[1.6]">
+                        {officialYear.entries.map((o) => (
+                          <li key={o.id} className="[word-break:keep-all]">
+                            <span className="text-fg-subtle tabular-nums">{o.date_ko.replace(/^.*?년\s*/, "") || t.unknownDate}</span>{" "}
+                            {o.text}
+                            {o.url && <a href={o.url} target="_blank" rel="noreferrer" className="ml-1 text-fg-subtle underline">↗</a>}
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                </>
+              ) : (
+                <p className="py-5 text-fg-subtle">{t.loading}</p>
+              )}
+            </div>
+
+            {/* 발(고정) — 그 해 공식 연표로 가는 버튼 + 출처·라이선스 */}
+            {selected.detail && (
+              <div className="shrink-0 border-t border-line bg-surface-sunken px-5 py-3">
+                {selected.ev.regions[0]?.r === "kr" && !officialYear && (
+                  <button type="button" onClick={() => openOfficialYear(selected.detail!.year)} className="mb-2 rounded border border-line-strong bg-surface px-2 py-1 text-item-meta hover:bg-surface-hover">
+                    {t.officialMore}
+                  </button>
                 )}
-                {selected.detail.text && (
-                  <>
-                    <p className="mb-1 text-[11px] text-fg-subtle">
-                      {t.wikiOriginal}{selected.detail.lang !== locale && <span> ({selected.detail.lang}){locale === "ko" && !selected.detail.text_ko && ` · ${t.notTranslated}`}</span>}
-                    </p>
-                    <p lang={selected.detail.lang} className={`mb-3 leading-relaxed [text-wrap:pretty] [word-break:keep-all]${selected.detail.text_ko ? " text-fg-muted" : ""}`}>{selected.detail.text}</p>
-                  </>
-                )}
-                {selected.detail.alt?.map((a) => (
-                  <div key={a.url + a.lang} className="mb-3">
-                    <p className="mb-1 text-[11px] text-fg-subtle">{t.sameEvent(a.lang)}</p>
-                    <p lang={a.lang} className="leading-relaxed text-fg-strong [text-wrap:pretty] [word-break:keep-all]">{a.text}</p>
-                  </div>
-                ))}
-                {/* 설명 — 연결 문서의 한국어 위키백과 첫 문단. 표제어가 인물·왕조면 그 설명이라 "관련 문서"라 부른다 */}
-                {selected.detail.about && (
-                  <div className="mb-3 rounded border border-line px-3 py-2">
-                    <div className="mb-1 text-[11px] text-fg-subtle">
-                      {isEventName(selected.detail.about.title, "ko") ? t.description : t.related} · {LOCALE_LABEL.ko} Wikipedia 「{selected.detail.about.title}」
-                    </div>
-                    <p lang="ko" className="leading-relaxed [text-wrap:pretty] [word-break:keep-all]">{selected.detail.about.text}</p>
-                    <a href={selected.detail.about.url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-[11px] text-fg-subtle underline">{t.viewDoc} ({selected.detail.about.license})</a>
-                  </div>
-                )}
-                {/* 이 사건을 부르는 이름 (§5-9) — 사이트링크 원문 */}
-                {COLUMNS.some((c) => selected.ev.names[c.id]?.nat) && (
-                  <table className="mb-3 w-full text-[12px]">
-                    <tbody>
-                      {COLUMNS.filter((c) => selected.ev.names[c.id]?.nat).map((c) => (
-                        <tr key={c.id} className="border-t border-line-hairline">
-                          <td className="py-1 pr-2" style={{ color: regionVar(c.id) }}>{regionLabel(c.id)}</td>
-                          <td className="py-1" lang={selected.ev.names[c.id]!.lang}>{selected.ev.names[c.id]!.nat}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-                {selected.ev.regions[0]?.r === "kr" && (
-                  <div className="mb-3">
-                    {officialYear ? (
-                      <div className="rounded border border-line">
-                        <div className="border-b border-line px-2 py-1 text-[11px] text-fg-subtle">
-                          {t.officialYear(formatYearL(officialYear.year, locale), officialYear.count)}
-                          {officialYear.count > officialYear.shown && t.officialShown(officialYear.shown)}
-                        </div>
-                        <ul lang="ko" className="max-h-72 overflow-y-auto text-[12px]" style={{ overscrollBehavior: "contain" }}>
-                          {officialYear.entries.map((o) => (
-                            <li key={o.id} className="border-t border-line-hairline px-2 py-1 [word-break:keep-all]">
-                              <span className="text-fg-subtle">{o.date_ko.replace(/^.*?년\s*/, "") || t.unknownDate}</span> {o.text}
-                              {o.url && <a href={o.url} target="_blank" rel="noreferrer" className="ml-1 text-fg-subtle underline">↗</a>}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : (
-                      <button type="button" onClick={() => openOfficialYear(selected.detail!.year)} className="rounded border border-line-strong px-2 py-1 text-[12px] hover:bg-surface-sunken">
-                        {t.officialMore}
-                      </button>
-                    )}
-                  </div>
-                )}
-                <div className="text-[11px] leading-relaxed text-fg-subtle">
+                <p className="text-item-meta leading-[1.6] text-fg-subtle">
                   {t.sourceLine} {selected.detail.official.length > 0 && <span>{t.nikhLicense}{selected.detail.src.length > 0 ? " · " : ""}</span>}
                   {selected.detail.src.map((s) => (
                     <a key={s.url} href={s.url} target="_blank" rel="noreferrer" className="underline">{new URL(s.url).hostname}</a>
                   ))}
-                  {selected.detail.src.length > 0 && ` (${selected.detail.license})`} · <a href={localePath(locale, "/sources")} className="underline">{t.licensePage}</a> ·{" "}
-                  <a href={localePath(locale, `/y/${selected.detail.year}`)} className="underline">{t.yearPage(formatYearL(selected.ev.y0, locale))}</a> ·{" "}
+                  {" · "}<a href={localePath(locale, "/sources")} className="underline">{t.licensePage}</a>
+                  {" · "}<a href={localePath(locale, `/y/${selected.detail.year}`)} className="underline">{t.yearPage(formatYearL(selected.ev.y0, locale))}</a>
+                  {" · "}
                   {/* 오류 신고(§11 C-8): 원문을 그대로 싣는 구조라 고칠 것은 "어느 줄을 어느 해·어느 열에"와 국사편찬위 대응뿐 */}
                   <a
                     href={`https://github.com/impactfounder/history/issues/new?${new URLSearchParams({
@@ -1055,10 +1096,8 @@ export function TimelineGrid() {
                   >
                     {t.report}
                   </a>
-                </div>
-              </>
-            ) : (
-              <p className="text-fg-subtle">{t.loading}</p>
+                </p>
+              </div>
             )}
           </aside>
         )}

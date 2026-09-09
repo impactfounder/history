@@ -104,11 +104,6 @@
   /* 연도 레벨의 기간 프레임 */
   --color-span-frame: var(--ink-400);
 
-  --color-region-kr: var(--region-kr);
-  --color-region-cn: var(--region-cn);
-  --color-region-jp: var(--region-jp);
-  --color-region-us: var(--region-us);
-
   --color-warn-surface: var(--amber-surface);
   --color-warn-text: var(--amber-text);
 
@@ -116,6 +111,9 @@
     타이포 — 2단 위계 + 메타. 크기와 줄간격을 한 클래스로 묶는다.
     Tailwind 기본 --text-xs/sm/base/lg는 재정의하지 않는다(문서 페이지가 쓴다).
   */
+  /* 상세 패널 출처 블록의 라벨. 자간을 넓혀 본문과 갈린다(README §화면 → 상세 패널) */
+  --text-block-label: 10.5px;
+  --text-block-label--line-height: 1.4;
   --text-item-meta: 11px;
   --text-item-meta--line-height: 1.3;
   --text-meta: 12.5px;
@@ -170,6 +168,18 @@
   다크에서 재대입이 통하지 않는다). 임의값 유틸리티로 var()를 직접 참조한다.
 */
 :root {
+  /*
+    나라 4색 — @theme이 아니라 여기 둔다. 컴포넌트가 template literal로
+    var(--color-region-${id})를 만들기 때문에 리터럴 이름이 소스에 없고,
+    Tailwind v4는 @theme의 "미사용" 토큰을 트리셰이킹으로 지운다.
+    2026-09-09에 실제로 지워져 열 헤더 이름·3px 밑선·상세의 관점별 명칭 라벨의
+    색이 통째로 죽었다(브라우저에서 :root 값이 빈 문자열임을 확인).
+  */
+  --color-region-kr: var(--region-kr);
+  --color-region-cn: var(--region-cn);
+  --color-region-jp: var(--region-jp);
+  --color-region-us: var(--region-us);
+
   --shadow-float: 0 4px 14px rgb(0 0 0 / 0.06);
   --shadow-sheet: 0 -10px 30px rgb(0 0 0 / 0.10);
 }

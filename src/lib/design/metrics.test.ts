@@ -124,6 +124,16 @@ describe("토큰 층 구조", () => {
     }
   });
 
+  it("인라인 var()로만 쓰는 토큰은 @theme 밖에 있다 — 트리셰이킹으로 지워진다", () => {
+    // 컴포넌트가 template literal로 var(--color-region-${id})를 만들면 리터럴 이름이 소스에
+    // 없어 Tailwind가 "미사용"으로 지운다. 2026-09-09에 실제로 지워져 나라 색이 통째로 죽었다.
+    const theme = code.slice(code.indexOf("@theme"), code.indexOf("}", code.indexOf("--radius-item")));
+    for (const r of ["kr", "cn", "jp", "us"]) {
+      expect(theme).not.toMatch(new RegExp(`--color-region-${r}:`));
+      expect(code).toMatch(new RegExp(`--color-region-${r}: var\\(--region-${r}\\)`));
+    }
+  });
+
   it("명조체 토큰이 있고 next/font 변수를 먼저 본다", () => {
     expect(code).toMatch(/--font-serif:\s*var\(--font-noto-serif-kr\)/);
   });

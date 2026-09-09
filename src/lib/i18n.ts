@@ -87,6 +87,8 @@ export interface Strings {
   moreCount: (n: number) => string;
   /** plain 항목의 메타 줄에 붙는 원문 표기. `원문 EN` */
   originalIn: (lang: string) => string;
+  /** 상세 패널의 관점별 명칭 블록 라벨. */
+  namesTitle: string;
   /** 국사편찬위원회 연표에 있는 항목의 메타 줄. ◆ 글리프를 대체한다. */
   nikhShort: string;
   /** 떠 있는 줌 컨트롤 안의 조작 힌트. 기존 siteHint(45자)를 대체한다. */
@@ -142,6 +144,7 @@ export const T: Record<Locale, Strings> = {
     accession: "즉위",
     moreCount: (n: number) => `${n.toLocaleString("ko-KR")}건 더`,
     originalIn: (lang: string) => `원문 ${lang.toUpperCase()}`,
+    namesTitle: "이 사건을 부르는 이름",
     nikhShort: "국사편찬위원회 연표",
     zoomHint: "Ctrl+휠",
   },
@@ -193,6 +196,7 @@ export const T: Record<Locale, Strings> = {
     accession: "accession",
     moreCount: (n: number) => `${n.toLocaleString("en-US")} more`,
     originalIn: (lang: string) => `verbatim ${lang.toUpperCase()}`,
+    namesTitle: "What this event is called",
     nikhShort: "NIKH chronology",
     zoomHint: "Ctrl+wheel",
   },
@@ -244,6 +248,7 @@ export const T: Record<Locale, Strings> = {
     accession: "即位",
     moreCount: (n: number) => `他 ${n.toLocaleString("ja-JP")}件`,
     originalIn: (lang: string) => `原文 ${lang.toUpperCase()}`,
+    namesTitle: "この出来事の呼び名",
     nikhShort: "国史編纂委員会 年表",
     zoomHint: "Ctrl+ホイール",
   },
@@ -295,6 +300,7 @@ export const T: Record<Locale, Strings> = {
     accession: "即位",
     moreCount: (n: number) => `另 ${n.toLocaleString("zh-CN")}条`,
     originalIn: (lang: string) => `原文 ${lang.toUpperCase()}`,
+    namesTitle: "这一事件的名称",
     nikhShort: "国史编纂委员会年表",
     zoomHint: "Ctrl+滚轮",
   },
