@@ -36,13 +36,13 @@ export const REGION_LABEL: Record<Locale, Record<RegionId, string>> = {
 };
 
 export interface Strings {
-  siteHint: string;
   badgePreview: (n: number) => string;
   badge: (n: number) => string;
   noData: string;
   recommended: string;
   sources: string;
-  railTitle: string;
+  /** 축 미니맵의 title. 레일이 10px 미니맵으로 줄면서 이름을 바꿨다. */
+  minimapTitle: string;
   timelineAria: string;
   addColumn: string;
   colLeft: (c: string) => string;
@@ -83,21 +83,24 @@ export interface Strings {
   language: string;
   /** 재위 시작 라벨 — 위키데이터 P39/P580에서 온 줄에 붙인다(구조 라벨, 우리가 쓴 문장이 아니다). */
   accession: string;
-  /** 첫 방문 1회 힌트(§5-7 착지) — 폰과 데스크톱 문구가 다르다. */
-  hintTouch: string;
-  hintDesktop: string;
-  hintClose: string;
+  /** `+26` → `26건 더`. 셀 오른쪽 아래 배지. */
+  moreCount: (n: number) => string;
+  /** plain 항목의 메타 줄에 붙는 원문 표기. `원문 EN` */
+  originalIn: (lang: string) => string;
+  /** 국사편찬위원회 연표에 있는 항목의 메타 줄. ◆ 글리프를 대체한다. */
+  nikhShort: string;
+  /** 떠 있는 줌 컨트롤 안의 조작 힌트. 기존 siteHint(45자)를 대체한다. */
+  zoomHint: string;
 }
 
 export const T: Record<Locale, Strings> = {
   ko: {
-    siteHint: "시간 이동은 스크롤 · 확대는 Ctrl+휠 또는 +/−",
     badgePreview: (n) => `미리보기 · ${n.toLocaleString("ko-KR")}건 · 원문 그대로 · 2025년까지`,
     badge: (n) => `${n.toLocaleString("ko-KR")}건 · 2025년까지 수록`,
     noData: "데이터 없음",
     recommended: "추천 연도",
     sources: "출처",
-    railTitle: "시대 레일 — 클릭하면 그 시대로 점프",
+    minimapTitle: "시대 미니맵 — 클릭하면 그 시대로",
     timelineAria: "시간축. 위아래 화살표로 이동, 칩에서 좌우 화살표로 옆 열, Enter로 상세, Esc로 닫기",
     addColumn: "+ 열",
     colLeft: (c) => `${c} 열 왼쪽으로`,
@@ -137,18 +140,18 @@ export const T: Record<Locale, Strings> = {
     ariaSheetHandle: "시트 크기",
     language: "언어",
     accession: "즉위",
-    hintTouch: "스크롤로 시간 이동 · 두 손가락으로 확대",
-    hintDesktop: "스크롤로 시간 이동 · Ctrl+휠로 확대",
-    hintClose: "닫기",
+    moreCount: (n: number) => `${n.toLocaleString("ko-KR")}건 더`,
+    originalIn: (lang: string) => `원문 ${lang.toUpperCase()}`,
+    nikhShort: "국사편찬위원회 연표",
+    zoomHint: "Ctrl+휠",
   },
   en: {
-    siteHint: "Scroll to move in time · Ctrl+wheel or +/− to zoom",
     badgePreview: (n) => `Preview · ${n.toLocaleString("en-US")} events · verbatim sources · through 2025`,
     badge: (n) => `${n.toLocaleString("en-US")} events · through 2025`,
     noData: "No data",
     recommended: "Suggested years",
     sources: "Sources",
-    railTitle: "Era rail — click to jump",
+    minimapTitle: "Era minimap — click to jump",
     timelineAria: "Timeline. Arrow keys to move; on a chip, left/right for the next column, Enter for details, Esc to close",
     addColumn: "+ Column",
     colLeft: (c) => `Move ${c} column left`,
@@ -188,18 +191,18 @@ export const T: Record<Locale, Strings> = {
     ariaSheetHandle: "Sheet size",
     language: "Language",
     accession: "accession",
-    hintTouch: "Scroll to move in time · pinch to zoom",
-    hintDesktop: "Scroll to move in time · Ctrl+wheel to zoom",
-    hintClose: "Close",
+    moreCount: (n: number) => `${n.toLocaleString("en-US")} more`,
+    originalIn: (lang: string) => `verbatim ${lang.toUpperCase()}`,
+    nikhShort: "NIKH chronology",
+    zoomHint: "Ctrl+wheel",
   },
   ja: {
-    siteHint: "スクロールで移動 · Ctrl+ホイールまたは +/− で拡大",
     badgePreview: (n) => `プレビュー · ${n.toLocaleString("ja-JP")}件 · 原文のまま · 2025年まで`,
     badge: (n) => `${n.toLocaleString("ja-JP")}件 · 2025年まで`,
     noData: "データなし",
     recommended: "おすすめの年",
     sources: "出典",
-    railTitle: "時代レール — クリックで移動",
+    minimapTitle: "時代ミニマップ — クリックで移動",
     timelineAria: "年表。上下矢印で移動、チップ上で左右矢印で隣の列、Enterで詳細、Escで閉じる",
     addColumn: "+ 列",
     colLeft: (c) => `${c}列を左へ`,
@@ -239,18 +242,18 @@ export const T: Record<Locale, Strings> = {
     ariaSheetHandle: "シートの大きさ",
     language: "言語",
     accession: "即位",
-    hintTouch: "スクロールで移動 · 二本指で拡大",
-    hintDesktop: "スクロールで移動 · Ctrl+ホイールで拡大",
-    hintClose: "閉じる",
+    moreCount: (n: number) => `他 ${n.toLocaleString("ja-JP")}件`,
+    originalIn: (lang: string) => `原文 ${lang.toUpperCase()}`,
+    nikhShort: "国史編纂委員会 年表",
+    zoomHint: "Ctrl+ホイール",
   },
   zh: {
-    siteHint: "滚动移动时间 · Ctrl+滚轮或 +/− 缩放",
     badgePreview: (n) => `预览 · ${n.toLocaleString("zh-CN")}条 · 原文照录 · 至2025年`,
     badge: (n) => `${n.toLocaleString("zh-CN")}条 · 收录至2025年`,
     noData: "无数据",
     recommended: "推荐年份",
     sources: "来源",
-    railTitle: "时代导轨 — 点击跳转",
+    minimapTitle: "时代缩略轴 — 点击跳转",
     timelineAria: "时间轴。上下方向键移动，在条目上按左右键切换到相邻列，Enter查看详情，Esc关闭",
     addColumn: "+ 列",
     colLeft: (c) => `将${c}列左移`,
@@ -290,9 +293,10 @@ export const T: Record<Locale, Strings> = {
     ariaSheetHandle: "面板大小",
     language: "语言",
     accession: "即位",
-    hintTouch: "滚动移动时间 · 双指缩放",
-    hintDesktop: "滚动移动时间 · Ctrl+滚轮缩放",
-    hintClose: "关闭",
+    moreCount: (n: number) => `另 ${n.toLocaleString("zh-CN")}条`,
+    originalIn: (lang: string) => `原文 ${lang.toUpperCase()}`,
+    nikhShort: "国史编纂委员会年表",
+    zoomHint: "Ctrl+滚轮",
   },
 };
 

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  body { margin: 0; background: #eceae6; font-family: "Pretendard Variable", Pretendard, -apple-system, system-ui, sans-serif; color: #171717; }
+  a { color: #737373; }
+  a:hover { color: #171717; }
+</style>
+</helmet>
+
+<div style="padding:56px 64px 96px;display:flex;flex-direction:column;gap:44px">
+
+  <div style="max-width:760px;display:flex;flex-direction:column;gap:14px">
+    <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8a8580;font-weight:600">현재 화면 재현 · 2026-09-09 발행 데이터</div>
+    <h1 style="margin:0;font-size:34px;line-height:1.25;font-weight:700;letter-spacing:-.02em">착지 화면(십년 레벨, 1980년 중앙)을 그대로 옮긴 것</h1>
+    <p style="margin:0;font-size:15px;line-height:1.7;color:#4a4642">칩 위치·티어·밴드 농도·숨김 건수는 실제 발행 청크에 <code style="font-family:ui-monospace,monospace;font-size:13px;background:#e3e0db;padding:1px 5px;border-radius:4px">rank.tierOf</code>와 <code style="font-family:ui-monospace,monospace;font-size:13px;background:#e3e0db;padding:1px 5px;border-radius:4px">layoutCell</code>을 돌려 얻은 값이다. 치수는 <code style="font-family:ui-monospace,monospace;font-size:13px;background:#e3e0db;padding:1px 5px;border-radius:4px">metrics.ts</code>, 색은 <code style="font-family:ui-monospace,monospace;font-size:13px;background:#e3e0db;padding:1px 5px;border-radius:4px">globals.css</code>의 토큰 값이다.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:#dcd8d2;border:1px solid #dcd8d2;margin-top:6px">
+      <div style="background:#f7f6f4;padding:14px 16px"><div style="font-size:26px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums">48</div><div style="font-size:12px;line-height:1.45;color:#6b6660;margin-top:3px">화면에 보이는 사건</div></div>
+      <div style="background:#f7f6f4;padding:14px 16px"><div style="font-size:26px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums">562</div><div style="font-size:12px;line-height:1.45;color:#6b6660;margin-top:3px">칸에 못 들어가 <span style="font-variant-numeric:tabular-nums">+N</span>으로 접힌 사건</div></div>
+      <div style="background:#f7f6f4;padding:14px 16px"><div style="font-size:26px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums">31%</div><div style="font-size:12px;line-height:1.45;color:#6b6660;margin-top:3px">한국어 UI인데 영·중 원문 그대로</div></div>
+      <div style="background:#f7f6f4;padding:14px 16px"><div style="font-size:26px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums">9</div><div style="font-size:12px;line-height:1.45;color:#6b6660;margin-top:3px">동시에 켜져 있는 시각 채널</div></div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start">
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <span style="font-size:13px;font-weight:700">데스크톱 1440×860</span>
+        <span style="font-size:12px;color:#8a8580">십년 레벨 s=8 · 상세 닫힘 · 첫 방문 힌트</span>
+      </div>
+
+      <div style="width:1440px;height:860px;background:#fff;border:1px solid #dcd8d2;box-shadow:0 12px 32px rgba(0,0,0,.07);overflow:hidden;position:relative;display:flex;flex-direction:column;font-size:13px;color:#171717">
+
+        <div style="height:56px;flex-shrink:0;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e5e5e5;padding:0 16px">
+          <span style="flex-shrink:0;font-weight:600;letter-spacing:-.025em">history</span>
+          <div style="display:flex;flex-shrink:0;gap:4px;font-size:11px">
+            <span style="width:62px;border-radius:9999px;border:1px solid #d4d4d4;padding:2px 8px;text-align:center;color:#525252;font-variant-numeric:tabular-nums;box-sizing:border-box">1592년</span>
+            <span style="width:62px;border-radius:9999px;border:1px solid #d4d4d4;padding:2px 8px;text-align:center;color:#525252;font-variant-numeric:tabular-nums;box-sizing:border-box">1882년</span>
+            <span style="width:62px;border-radius:9999px;border:1px solid #d4d4d4;padding:2px 8px;text-align:center;color:#525252;font-variant-numeric:tabular-nums;box-sizing:border-box">1945년</span>
+          </div>
+          <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#a3a3a3">11,615건 · 2025년까지 수록</span>
+          <span style="margin-left:auto;width:330px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;color:#737373">시간 이동은 스크롤 · 확대는 Ctrl+휠 또는 +/−</span>
+          <div style="display:flex;flex-shrink:0;gap:2px;font-size:11px">
+            <span style="width:28px;border-radius:4px;padding:2px 0;text-align:center;text-transform:uppercase;background:#171717;color:#fff">ko</span>
+            <span style="width:28px;border-radius:4px;padding:2px 0;text-align:center;text-transform:uppercase;color:#737373">en</span>
+            <span style="width:28px;border-radius:4px;padding:2px 0;text-align:center;text-transform:uppercase;color:#737373">ja</span>
+            <span style="width:28px;border-radius:4px;padding:2px 0;text-align:center;text-transform:uppercase;color:#737373">zh</span>
+          </div>
+          <span style="width:56px;flex-shrink:0;text-align:right;font-size:11px;color:#737373;text-decoration:underline">출처</span>
+        </div>
+
+        <div style="position:relative;display:flex;flex:1;min-height:0">
+
+          <div style="position:relative;width:64px;flex-shrink:0;border-right:1px solid #e5e5e5;background:#fafafa;overflow:hidden">
+            <sc-for list="{{ railBands }}" as="rb" hint-placeholder-count="8">
+              <div style="position:absolute;left:0;right:0;overflow:hidden;top:{{ rb.top }}px;height:{{ rb.h }}px;background:{{ rb.bg }};border-top:2px solid {{ rb.edge }}">
+                <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 4px;font-size:10px;line-height:14px;color:#737373;font-style:{{ rb.fst }}">{{ rb.label }}</div>
+              </div>
+            </sc-for>
+            <div style="position:absolute;left:4px;right:4px;top:735px;height:29px;border-radius:4px;background:rgba(163,163,163,.7)"></div>
+          </div>
+
+          <div style="position:relative;flex:1;min-width:0;overflow:hidden">
+
+            <div style="position:absolute;inset:0;display:flex;pointer-events:none">
+              <div style="width:56px;flex-shrink:0"></div>
+              <sc-for list="{{ colBands }}" as="cb" hint-placeholder-count="4">
+                <div style="position:relative;flex:1;min-width:0">
+                  <sc-for list="{{ cb.bands }}" as="b" hint-placeholder-count="2">
+                    <div style="position:absolute;left:0;right:0;top:{{ b.top }}px;height:{{ b.h }}px;background:{{ b.bg }};border-top:2px solid {{ b.edge }}"></div>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+
+            <sc-for list="{{ rows }}" as="row" hint-placeholder-count="10">
+              <div style="position:absolute;left:0;right:0;display:flex;border-top:1px solid rgba(229,229,229,.7);top:{{ row.top }}px;height:80px">
+                <div style="width:56px;flex-shrink:0;border-right:1px solid #e5e5e5;padding:0 4px;font-size:10px;line-height:1.15;color:#737373;font-variant-numeric:tabular-nums;overflow:hidden;word-break:keep-all">{{ row.label }}</div>
+                <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="4">
+                  <div style="position:relative;flex:1;min-width:0;overflow:hidden">
+                    <sc-for list="{{ cell.chips }}" as="chip" hint-placeholder-count="2">
+                      <div style="position:absolute;left:14px;right:6px;display:flex;align-items:center;border-radius:6px;padding:0 4px;top:{{ chip.top }}px;height:{{ chip.h }}px;font-size:{{ chip.fs }}px;font-weight:{{ chip.fw }};color:{{ chip.color }};line-height:{{ chip.lh }};font-style:{{ chip.fst }}">
+                        <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ chip.text }}<span style="color:#525252;font-variant-numeric:tabular-nums">{{ chip.span }}</span><span style="color:#a3a3a3">{{ chip.mark }}</span></span>
+                      </div>
+                    </sc-for>
+                    <sc-if value="{{ cell.hidden }}" hint-placeholder-val="{{ true }}">
+                      <span style="position:absolute;bottom:2px;right:4px;border-radius:4px;background:rgba(255,255,255,.85);padding:0 4px;font-size:11px;line-height:1.3;color:#737373;font-variant-numeric:tabular-nums">+{{ cell.hidden }}</span>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+
+            <div style="position:absolute;inset:0;z-index:5;display:flex;pointer-events:none">
+              <div style="width:56px;flex-shrink:0"></div>
+              <sc-for list="{{ colBands }}" as="cb2" hint-placeholder-count="4">
+                <div style="position:relative;flex:1;min-width:0">
+                  <sc-for list="{{ cb2.labels }}" as="lb" hint-placeholder-count="2">
+                    <div style="position:absolute;left:0;right:0;display:flex;justify-content:flex-end;top:{{ lb.top }}px;height:24px">
+                      <div style="display:flex;align-items:center;max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-radius:9999px;border:1px solid {{ lb.edge }};border-left:3px solid {{ lb.col }};background:rgba(255,255,255,.9);padding-left:6px;padding-right:8px;font-size:12px;line-height:1.4;font-weight:600;color:{{ lb.col }};margin:3px 4px 0 0;height:22px;box-sizing:border-box">{{ lb.label }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="position:absolute;top:0;left:0;right:0;z-index:10;display:flex;height:34px;border-bottom:1px solid #e5e5e5;background:rgba(255,255,255,.95);font-size:11px;font-weight:500;color:#525252">
+              <div style="width:56px;flex-shrink:0;border-right:1px solid #e5e5e5"></div>
+              <sc-for list="{{ headers }}" as="hd" hint-placeholder-count="4">
+                <div style="display:flex;flex:1;min-width:0;align-items:center;gap:8px;border-right:1px solid rgba(255,255,255,.4);padding:0 8px;color:#fff;background:{{ hd.col }}">
+                  <sc-if value="{{ hd.flag }}" hint-placeholder-val="{{ false }}">
+                    <img src="{{ hd.flag }}" alt="" style="height:16px;width:24px;flex-shrink:0;border-radius:2px;object-fit:cover;box-shadow:0 1px 2px rgba(0,0,0,.15)">
+                  </sc-if>
+                  <span style="flex-shrink:0;font-size:14px;font-weight:700;letter-spacing:-.025em">{{ hd.name }}</span>
+                  <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:400;color:rgba(255,255,255,.85)">{{ hd.polity }}</span>
+                  <span style="margin-left:auto;flex-shrink:0;display:flex;gap:2px;color:rgba(255,255,255,.7)"><span style="padding:0 4px">◂</span><span style="padding:0 4px">▸</span><span style="padding:0 4px">×</span></span>
+                </div>
+              </sc-for>
+            </div>
+
+          </div>
+
+          <div style="position:absolute;left:0;right:0;bottom:12px;z-index:20;display:flex;justify-content:center;padding:0 12px">
+            <div style="display:flex;align-items:center;gap:8px;border-radius:9999px;background:rgba(23,23,23,.9);padding:6px 12px;font-size:12px;color:#fff;box-shadow:0 8px 20px rgba(0,0,0,.2)">스크롤로 시간 이동 · Ctrl+휠로 확대<span style="color:rgba(255,255,255,.6)">✕</span></div>
+          </div>
+
+        </div>
+
+        <div style="height:40px;flex-shrink:0;display:flex;align-items:center;gap:12px;border-top:1px solid #e5e5e5;background:#fff;padding:0 12px;font-size:12px;color:#404040">
+          <div style="display:flex;align-items:center;gap:2px">
+            <span style="height:28px;width:28px;display:flex;align-items:center;justify-content:center;border-radius:4px;border:1px solid #d4d4d4">−</span>
+            <span style="height:28px;display:flex;align-items:center;padding:0 8px;border-radius:4px;color:#525252">세기</span>
+            <span style="height:28px;display:flex;align-items:center;padding:0 8px;border-radius:4px;background:#171717;color:#fff">십년</span>
+            <span style="height:28px;display:flex;align-items:center;padding:0 8px;border-radius:4px;color:#525252">연도</span>
+            <span style="height:28px;width:28px;display:flex;align-items:center;justify-content:center;border-radius:4px;border:1px solid #d4d4d4">+</span>
+          </div>
+          <span style="color:#737373">중앙 <b style="color:#171717">1980년</b></span>
+          <span style="color:#a3a3a3">1930년대 ~ 2020년대</span>
+        </div>
+
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <span style="font-size:13px;font-weight:700">상세 패널 400×764</span>
+        <span style="font-size:12px;color:#8a8580">1440px 이상에서 push 모드</span>
+      </div>
+      <div style="width:400px;height:764px;background:#fff;border:1px solid #dcd8d2;border-left:1px solid #e5e5e5;box-shadow:0 12px 32px rgba(0,0,0,.07);overflow:hidden;padding:16px;box-sizing:border-box;font-size:13px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">
+          <h2 style="margin:0;font-size:16px;font-weight:600;line-height:1.375">얄타 회담</h2>
+          <span style="border-radius:4px;padding:0 8px;color:#737373">×</span>
+        </div>
+        <div style="margin-bottom:12px;font-size:12px;color:#737373">1945년 · 중요도 5</div>
+
+        <div style="margin-bottom:12px;border-radius:4px;border:1px solid #e5e5e5;background:#fafafa;padding:8px 12px">
+          <div style="margin-bottom:4px;font-size:11px;color:#737373">국사편찬위원회 · 근대사연표 · 1945년 2월 11일</div>
+          <p style="margin:0;line-height:1.625;word-break:keep-all;text-wrap:pretty">美. 英. 蘇 수뇌 얄타회담. 원호처 독립운동사 9</p>
+          <span style="margin-top:4px;display:inline-block;font-size:11px;color:#737373;text-decoration:underline">한국사데이터베이스에서 보기</span>
+        </div>
+
+        <p style="margin:0 0 4px;font-size:11px;color:#737373">위키백과 연표 원문 (en) · 한글 옮김은 아직</p>
+        <p style="margin:0 0 12px;line-height:1.625;word-break:keep-all;text-wrap:pretty">8 February. At the Yalta Conference, Roosevelt secretly proposes to Joseph Stalin that Korea be placed under a three-way trusteeship, and Stalin mostly agrees.</p>
+
+        <div style="margin-bottom:12px;border-radius:4px;border:1px solid #e5e5e5;padding:8px 12px">
+          <div style="margin-bottom:4px;font-size:11px;color:#737373">설명 · 한국어 Wikipedia 「얄타 회담」</div>
+          <p style="margin:0;line-height:1.625;word-break:keep-all;text-wrap:pretty">얄타 회담( - 會談, 영어: Yalta Conference, 러시아어: Ялтинская конференция, 독일어: Konferenz von Jalta은 1945년 2월 4일부터 2월 11일까지 소련 흑해 연안에 있는 크림반도의 얄타에서 미국·영국·소련의 수뇌자들이 모여 나치 독일의 제2차 세계 대전의 패전과 그 관리에 대하여 의견을 나눈 회담이다.</p>
+          <span style="margin-top:4px;display:inline-block;font-size:11px;color:#737373;text-decoration:underline">문서 보기 (CC BY-SA 4.0)</span>
+        </div>
+
+        <table style="margin-bottom:12px;width:100%;font-size:12px;border-collapse:collapse">
+          <tbody>
+            <tr style="border-top:1px solid #f5f5f5"><td style="padding:4px 8px 4px 0;color:#0047a0">한국</td><td style="padding:4px 0">얄타 회담</td></tr>
+            <tr style="border-top:1px solid #f5f5f5"><td style="padding:4px 8px 4px 0;color:#c8102e">중국</td><td style="padding:4px 0">雅尔塔会议</td></tr>
+            <tr style="border-top:1px solid #f5f5f5"><td style="padding:4px 8px 4px 0;color:#6d28d9">일본</td><td style="padding:4px 0">ヤルタ会談</td></tr>
+            <tr style="border-top:1px solid #f5f5f5"><td style="padding:4px 8px 4px 0;color:#1f6e43">미국</td><td style="padding:4px 0">Yalta Conference</td></tr>
+          </tbody>
+        </table>
+
+        <div style="margin-bottom:12px"><span style="display:inline-block;border-radius:4px;border:1px solid #d4d4d4;padding:4px 8px;font-size:12px">이 해의 공식 연표 더 보기</span></div>
+
+        <div style="font-size:11px;line-height:1.625;color:#737373">출처 국사편찬위원회 연표(공공누리 · 제한 없음) · <span style="text-decoration:underline">en.wikipedia.org</span> (CC BY-SA 4.0) · <span style="text-decoration:underline">출처와 라이선스</span> · <span style="text-decoration:underline">1945년 페이지</span> · <span style="text-decoration:underline">오류 신고</span></div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <span style="font-size:13px;font-weight:700">모바일 390×844</span>
+        <span style="font-size:12px;color:#8a8580">2열 자동 축소 · 바텀 시트 50svh</span>
+      </div>
+      <div style="width:390px;height:844px;background:#fff;border:1px solid #dcd8d2;box-shadow:0 12px 32px rgba(0,0,0,.07);overflow:hidden;position:relative;display:flex;flex-direction:column;font-size:13px">
+
+        <div style="height:56px;flex-shrink:0;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e5e5e5;padding:0 16px;overflow:hidden">
+          <span style="flex-shrink:0;font-weight:600;letter-spacing:-.025em">history</span>
+          <div style="display:flex;flex-shrink:0;gap:4px;font-size:11px">
+            <span style="width:62px;border-radius:9999px;border:1px solid #d4d4d4;padding:2px 8px;text-align:center;color:#525252;font-variant-numeric:tabular-nums;box-sizing:border-box">1592년</span>
+            <span style="width:62px;border-radius:9999px;border:1px solid #d4d4d4;padding:2px 8px;text-align:center;color:#525252;font-variant-numeric:tabular-nums;box-sizing:border-box">1882년</span>
+            <span style="width:62px;border-radius:9999px;border:1px solid #d4d4d4;padding:2px 8px;text-align:center;color:#525252;font-variant-numeric:tabular-nums;box-sizing:border-box">1945년</span>
+          </div>
+          <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#a3a3a3">11,615건</span>
+          <div style="display:flex;flex-shrink:0;gap:2px;font-size:11px">
+            <span style="width:28px;border-radius:4px;padding:2px 0;text-align:center;text-transform:uppercase;background:#171717;color:#fff">ko</span>
+            <span style="width:28px;border-radius:4px;padding:2px 0;text-align:center;text-transform:uppercase;color:#737373">en</span>
+            <span style="width:28px;border-radius:4px;padding:2px 0;text-align:center;text-transform:uppercase;color:#737373">ja</span>
+            <span style="width:28px;border-radius:4px;padding:2px 0;text-align:center;text-transform:uppercase;color:#737373">zh</span>
+          </div>
+          <span style="width:56px;flex-shrink:0;text-align:right;font-size:11px;color:#737373;text-decoration:underline">출처</span>
+        </div>
+
+        <div style="position:relative;display:flex;flex:1;min-height:0">
+          <div style="position:relative;flex:1;min-width:0;overflow:hidden">
+
+            <div style="position:absolute;inset:0;display:flex;pointer-events:none">
+              <div style="width:48px;flex-shrink:0"></div>
+              <sc-for list="{{ mColBands }}" as="mb" hint-placeholder-count="2">
+                <div style="position:relative;flex:1;min-width:0">
+                  <sc-for list="{{ mb.bands }}" as="b2" hint-placeholder-count="2">
+                    <div style="position:absolute;left:0;right:0;top:{{ b2.top }}px;height:{{ b2.h }}px;background:{{ b2.bg }};border-top:2px solid {{ b2.edge }}"></div>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+
+            <sc-for list="{{ mRows }}" as="mrow" hint-placeholder-count="10">
+              <div style="position:absolute;left:0;right:0;display:flex;border-top:1px solid rgba(229,229,229,.7);top:{{ mrow.top }}px;height:80px">
+                <div style="width:48px;flex-shrink:0;border-right:1px solid #e5e5e5;padding:0 4px;font-size:10px;line-height:1.15;color:#737373;font-variant-numeric:tabular-nums;overflow:hidden;word-break:keep-all">{{ mrow.label }}</div>
+                <sc-for list="{{ mrow.cells }}" as="mcell" hint-placeholder-count="2">
+                  <div style="position:relative;flex:1;min-width:0;overflow:hidden">
+                    <sc-for list="{{ mcell.chips }}" as="mchip" hint-placeholder-count="2">
+                      <div style="position:absolute;left:14px;right:6px;display:flex;align-items:center;border-radius:6px;padding:0 4px;top:{{ mchip.top }}px;height:{{ mchip.h }}px;font-size:{{ mchip.fs }}px;font-weight:{{ mchip.fw }};color:{{ mchip.color }};line-height:{{ mchip.lh }};font-style:{{ mchip.fst }}">
+                        <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ mchip.text }}<span style="color:#525252;font-variant-numeric:tabular-nums">{{ mchip.span }}</span><span style="color:#a3a3a3">{{ mchip.mark }}</span></span>
+                      </div>
+                    </sc-for>
+                    <sc-if value="{{ mcell.hidden }}" hint-placeholder-val="{{ true }}">
+                      <span style="position:absolute;bottom:2px;right:4px;border-radius:4px;background:rgba(255,255,255,.85);padding:0 4px;font-size:11px;line-height:1.3;color:#737373;font-variant-numeric:tabular-nums">+{{ mcell.hidden }}</span>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+
+            <div style="position:absolute;inset:0;z-index:5;display:flex;pointer-events:none">
+              <div style="width:48px;flex-shrink:0"></div>
+              <sc-for list="{{ mColBands }}" as="mb2" hint-placeholder-count="2">
+                <div style="position:relative;flex:1;min-width:0">
+                  <sc-for list="{{ mb2.labels }}" as="ml" hint-placeholder-count="2">
+                    <div style="position:absolute;left:0;right:0;display:flex;justify-content:flex-end;top:{{ ml.top }}px;height:24px">
+                      <div style="display:flex;align-items:center;max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-radius:9999px;border:1px solid {{ ml.edge }};border-left:3px solid {{ ml.col }};background:rgba(255,255,255,.9);padding-left:6px;padding-right:8px;font-size:12px;line-height:1.4;font-weight:600;color:{{ ml.col }};margin:3px 4px 0 0;height:22px;box-sizing:border-box">{{ ml.label }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="position:absolute;top:0;left:0;right:0;z-index:10;display:flex;height:34px;border-bottom:1px solid #e5e5e5;background:rgba(255,255,255,.95);font-size:11px;font-weight:500">
+              <div style="width:48px;flex-shrink:0;border-right:1px solid #e5e5e5"></div>
+              <sc-for list="{{ mHeaders }}" as="mh" hint-placeholder-count="2">
+                <div style="display:flex;flex:1;min-width:0;align-items:center;gap:8px;border-right:1px solid rgba(255,255,255,.4);padding:0 8px;color:#fff;background:{{ mh.col }}">
+                  <sc-if value="{{ mh.flag }}" hint-placeholder-val="{{ false }}">
+                    <img src="{{ mh.flag }}" alt="" style="height:16px;width:24px;flex-shrink:0;border-radius:2px;object-fit:cover">
+                  </sc-if>
+                  <span style="flex-shrink:0;font-size:14px;font-weight:700;letter-spacing:-.025em">{{ mh.name }}</span>
+                  <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:400;color:rgba(255,255,255,.85)">{{ mh.polity }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="position:relative;width:16px;flex-shrink:0;border-right:1px solid #e5e5e5;background:#fafafa;overflow:hidden">
+            <sc-for list="{{ scrubBands }}" as="sb" hint-placeholder-count="8">
+              <div style="position:absolute;left:0;right:0;top:{{ sb.top }}px;height:{{ sb.h }}px;background:{{ sb.bg }};border-top:2px solid {{ sb.edge }}"></div>
+            </sc-for>
+            <div style="position:absolute;left:2px;right:2px;top:726px;height:16px;border-radius:4px;background:rgba(115,115,115,.7)"></div>
+          </div>
+        </div>
+
+        <div style="position:absolute;left:0;right:0;bottom:0;z-index:30;height:374px;border-top:1px solid #e5e5e5;border-radius:12px 12px 0 0;background:#fff;padding:16px;box-sizing:border-box;box-shadow:0 -8px 24px rgba(0,0,0,.08);overflow:hidden">
+          <div style="margin:0 auto 8px;height:6px;width:40px;border-radius:9999px;background:#d4d4d4"></div>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">
+            <h2 style="margin:0;font-size:16px;font-weight:600;line-height:1.375">얄타 회담</h2>
+            <span style="border-radius:4px;padding:0 8px;color:#737373">×</span>
+          </div>
+          <div style="margin-bottom:12px;font-size:12px;color:#737373">1945년 · 중요도 5</div>
+          <div style="margin-bottom:12px;border-radius:4px;border:1px solid #e5e5e5;background:#fafafa;padding:8px 12px">
+            <div style="margin-bottom:4px;font-size:11px;color:#737373">국사편찬위원회 · 근대사연표 · 1945년 2월 11일</div>
+            <p style="margin:0;line-height:1.625;word-break:keep-all">美. 英. 蘇 수뇌 얄타회담. 원호처 독립운동사 9</p>
+            <span style="margin-top:4px;display:inline-block;font-size:11px;color:#737373;text-decoration:underline">한국사데이터베이스에서 보기</span>
+          </div>
+          <p style="margin:0 0 4px;font-size:11px;color:#737373">위키백과 연표 원문 (en) · 한글 옮김은 아직</p>
+          <p style="margin:0;line-height:1.625;word-break:keep-all">8 February. At the Yalta Conference, Roosevelt secretly proposes to Joseph Stalin that Korea be placed under a three-way trusteeship, and Stalin mostly agrees.</p>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const TIER = { 1: [14, 600, '#171717', '1.15'], 2: [13, 500, '#262626', '1.15'], 3: [12, 400, '#525252', '1.4'] };
+const REG = { kr: '#0047a0', cn: '#c8102e', jp: '#6d28d9', us: '#1f6e43' };
+const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`; };
+
+/** [tier, top, h, text, span?, mark?, italic?] */
+const CELLS = {
+  kr: {
+    1930: [[[3, 20, 20, '훙커우 공원 사건'], [2, 56, 22, 'June. Kim Il Sung leads 150–200 guerrillas in the Battle of Pochonbo.']], 3],
+    1940: [[[1, 42.7, 26, '얄타 회담', '', ' ◆']], 15],
+    1950: [[[1, 5.3, 26, '6.25 전쟁', ' 1950–1953'], [1, 33.3, 26, '인천 상륙 작전', '', ' ◆']], 26],
+    1960: [[[1, 34, 26, '베트남 전쟁']], 4],
+    1970: [[[2, 4, 22, '새마을 운동'], [2, 54.7, 22, 'August. The Axe Murder Incident in Panmunjom, Joint Security Area. Triggers former North Korean leader Kim Il Sung\u2019s first official apology to the South.', '', ' ◆']], 5],
+    1980: [[[1, 4.7, 26, '5·18 광주 민주화 운동'], [1, 42, 26, 'A South Korean expedition team becomes the first Koreans to set foot in Antarctica.', '', ' ◆']], 3],
+    1990: [[[1, 15.3, 26, '9월 18일 남북한이 유엔(UN) 동시 가입', '', ' ◆'], [2, 43.3, 22, '고난의 행군']], 5],
+    2000: [[], 0], 2010: [[], 0], 2020: [[], 0],
+  },
+  cn: {
+    1930: [[[1, 40, 26, '장정']], 39],
+    1940: [[[1, 52, 26, 'July — Chinese Civil War: The NRA invaded PLA-held territory en masse.']], 28],
+    1950: [[[1, 5.3, 26, '6.25 전쟁', ' 1950–1953'], [1, 52, 26, '10월 혁명']], 53],
+    1960: [[[1, 45.3, 26, '베트남 전쟁']], 49],
+    1970: [[[1, 26.7, 26, '가족계획']], 49],
+    1980: [[[2, 4, 22, '月，中华人民共和国取代中华民国开始行使国际货币基金组织的中国代表权，并加入世界银行。'], [2, 41.3, 22, '月19日，中国国务院总理赵紫阳与英国首相撒切尔夫人签署了关于香港问题的《中英联合声明》。']], 42],
+    1990: [[[1, 18, 26, '月24日，中国和以色列建立外交关系。'], [1, 46, 26, '핵확산방지조약']], 35],
+    2000: [[], 0], 2010: [[], 0], 2020: [[], 0],
+  },
+  jp: {
+    1930: [[[2, 19.3, 22, '소련-일본 국경 분쟁'], [1, 52, 26, '방공 협정']], 6],
+    1940: [[[1, 21.3, 26, '미드웨이 해전'], [1, 49.3, 26, '이오지마 전투']], 31],
+    1950: [[[3, 15.3, 20, '미일안전보장조약', ' 1951–1960'], [3, 37.3, 20, '중일화평조약']], 0],
+    1960: [[[3, 37.3, 20, '니가타 지진']], 3],
+    1970: [[[3, 9.3, 20, '고자 폭동']], 0],
+    1980: [[[3, 28.7, 20, '동해 중부 지진'], [3, 58, 20, 'SOS 조난사건']], 0],
+    1990: [[[2, 42, 22, '효고현 남부 지진']], 5],
+    2000: [[], 0], 2010: [[], 0], 2020: [[], 0],
+  },
+  us: {
+    1930: [[[2, 15.3, 22, '일본의 만주 침공', ' 1931–1932'], [1, 39.3, 26, 'President Roosevelt establishes the New Deal, a response to the Great Depression, and focusing on what historians call the "3 Rs": relief, recovery and reform']], 18],
+    1940: [[[1, 17.3, 26, 'December 7, 1941 – Attack on Pearl Harbor; U.S. enters World War II by declaring war on Japan the next day ; and three days later against Germany and against Italy.'], [1, 45.3, 26, '테헤란 회담']], 35],
+    1950: [[[1, 5.3, 26, '6.25 전쟁', ' 1950–1953'], [1, 42, 26, 'Warsaw Pact, which establishes a mutual defense treaty subscribed to by eight communist states in Eastern Europe (including the USSR)']], 26],
+    1960: [[[1, 10, 26, '베트남 전쟁'], [1, 38, 26, 'Cuban Missile Crisis, the closest nuclear confrontation involving the U.S. and USSR']], 33],
+    1970: [[[1, 21.3, 26, '워터게이트 사건', ' 1972–1974'], [2, 49.3, 22, '로 대 웨이드 사건']], 20],
+    1980: [[[2, 2, 22, 'The United States boycotts the Summer Olympics in Moscow to protest the 1979 Soviet invasion of Afghanistan; also announces a grain embargo against the Soviet Union with the support of the European Commission.'], [2, 26, 22, 'January 20, 1981 – Reagan becomes the 40th president; Bush becomes the 43rd vice president. On the same day Iran releases hostages, marking the end of the Iran hostage crisis.'], [2, 56, 22, 'The animated television sitcom The Simpsons debuts on Fox.']], 17],
+    1990: [[[1, 10, 26, 'The Cold War ends as the USSR is dissolved. The United States becomes the only superpower in the world.'], [1, 38, 26, '걸프 전쟁']], 12],
+    2000: [[], 0], 2010: [[], 0], 2020: [[], 0],
+  },
+};
+
+const BUCKETS = [1930, 1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020];
+
+/** 실측 밴드(십년 레벨 농도 d): [top, h, alpha, label, labelTop] */
+const BANDS = {
+  kr: [[-178, 280, .05, '일제강점기 1910–1945', 37], [126, 632, .09, '대한민국 1948–', 129]],
+  cn: [[-162, 296, .025, '중화민국 1912–1949', 37], [134, 624, .05, '중화인민공화국 1949–', 137]],
+  jp: [[-50, 504, .05, '쇼와 시대 1926–1989', 37], [454, 240, .09, '헤이세이 시대 1989–2019', 457], [694, 64, .025, '레이와 시대 2019–', 697]],
+  us: [[-1250, 2008, .09, '미국 1776–', 37]],
+};
+const M_BANDS = {
+  kr: [[-186, 280, .05, '일제강점기 1910–1945', 37], [118, 632, .09, '대한민국 1948–', 121]],
+  cn: [[-170, 296, .025, '중화민국 1912–1949', 37], [126, 624, .05, '중화인민공화국 1949–', 129]],
+};
+
+/** 시대 레일(세기 농도 c): [top, h, alpha, label, italic] */
+const RAIL = [
+  [0, 118.6, .10, '고조선', 1], [134, 216.5, .16, '삼국 시대', 0], [362.1, 66.5, .05, '남북국 시대', 0],
+  [428.6, 143.3, .10, '고려', 0], [571.9, 152.7, .16, '조선', 0], [724.6, 4, .05, '', 0],
+  [728.6, 10.6, .10, '', 0], [740.1, 24.1, .16, '대한민국', 0],
+];
+const SCRUB = [[0, 116.1, .10], [131.2, 212, .16], [354.5, 65.1, .05], [419.6, 140.3, .10], [559.9, 149.5, .16], [709.4, 3.9, .05], [713.3, 10.4, .10], [724.6, 23.6, .16]];
+
+const HEAD = { kr: ['한국', '일제강점기 1910–1945'], cn: ['중국', '중화민국 1912–1949'], jp: ['일본', '쇼와 시대 1926–1989'], us: ['미국', '미국 1776–'] };
+const M_HEAD = { kr: ['한국', '일제강점기 1910–1945'], cn: ['중국', '중화민국 1912–1949'] };
+
+class Component extends DCLogic {
+  chip(c) {
+    const [fs, fw, color, lh] = TIER[c[0]];
+    return { top: c[1], h: c[2], text: c[3], span: c[4] || '', mark: c[5] || '', fs, fw, color, lh, fst: c[6] ? 'italic' : 'normal' };
+  }
+  rowsFor(regions, tops) {
+    return BUCKETS.map((b, i) => ({
+      label: `${b}년대`, top: tops[i],
+      cells: regions.map((r) => ({ chips: CELLS[r][b][0].map((c) => this.chip(c)), hidden: CELLS[r][b][1] })),
+    }));
+  }
+  bandsFor(regions, src) {
+    return regions.map((r) => ({
+      bands: src[r].map((b) => ({ top: b[0], h: b[1], bg: rgba(REG[r], b[2]), edge: rgba(REG[r], .5) })),
+      labels: src[r].filter((b) => b[1] >= 32).map((b) => ({ top: b[4], label: b[3], col: REG[r], edge: rgba(REG[r], .4) })),
+    }));
+  }
+  renderVals() {
+    const cols = ['kr', 'cn', 'jp', 'us'];
+    const mcols = ['kr', 'cn'];
+    return {
+      rows: this.rowsFor(cols, [-18, 62, 142, 222, 302, 382, 462, 542, 622, 702]),
+      mRows: this.rowsFor(mcols, [-26, 54, 134, 214, 294, 374, 454, 534, 614, 694]),
+      colBands: this.bandsFor(cols, BANDS),
+      mColBands: this.bandsFor(mcols, M_BANDS),
+      railBands: RAIL.map((b) => ({ top: b[0], h: b[1], bg: rgba(REG.kr, b[2]), edge: rgba(REG.kr, .5), label: b[1] >= 14 ? b[3] : '', fst: b[4] ? 'italic' : 'normal' })),
+      scrubBands: SCRUB.map((b) => ({ top: b[0], h: b[1], bg: rgba(REG.kr, b[2]), edge: rgba(REG.kr, .5) })),
+      headers: cols.map((r) => ({ col: REG[r], flag: `flags/${r}.svg`, name: HEAD[r][0], polity: HEAD[r][1] })),
+      mHeaders: mcols.map((r) => ({ col: REG[r], flag: `flags/${r}.svg`, name: M_HEAD[r][0], polity: M_HEAD[r][1] })),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

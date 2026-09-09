@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #eae7e1; font-family: "Pretendard Variable", Pretendard, -apple-system, system-ui, sans-serif; color: #191713; }
+  a { color: #56524b; }
+  a:hover { color: #191713; }
+</style>
+</helmet>
+
+<section style="padding:56px 64px 120px;display:flex;flex-direction:column;gap:48px">
+
+  <div style="max-width:840px;display:flex;flex-direction:column;gap:16px">
+    <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#6b6660;font-weight:600">제안 · 1차</div>
+    <h1 style="margin:0;font-family:'Noto Serif KR',serif;font-size:38px;line-height:1.3;font-weight:600;letter-spacing:-.01em">채널을 줄이고, 시간축을 한 줄로 모은다</h1>
+    <p style="margin:0;font-size:16px;line-height:1.75;color:#4a4640;word-break:keep-all;text-wrap:pretty">지금 화면이 지저분한 이유는 요소가 많아서가 아니라 <b>같은 자리에서 아홉 개 채널이 동시에 말하기</b> 때문이다. 나라색 바탕, 왕조 배경 농도 3단, 왕조 경계선, 스티키 라벨, 티어 3단, 행 격자선, ◆ 표식, +N, 이탤릭. 그중 다섯 개는 서로를 가린다 — 왕조 배경이 칩 대비를 깎고, 나라색 바탕이 왕조 라벨의 색과 겹치고, 행 격자선이 왕조 경계선과 같은 굵기로 싸운다.</p>
+    <p style="margin:0;font-size:16px;line-height:1.75;color:#4a4640;word-break:keep-all;text-wrap:pretty">세 방향 모두 같은 다섯 가지 규칙을 지킨다. 다른 것은 <b>열과 시간을 어떻게 나누느냐</b> 하나다.</p>
+
+    <ol style="margin:10px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:1px;background:#dcd8d2;border:1px solid #dcd8d2">
+      <li style="background:#fbfaf8;padding:14px 18px;display:flex;gap:14px;align-items:baseline"><span style="font-family:'Noto Serif KR',serif;font-size:14px;color:#6b6660;min-width:16px">1</span><span style="font-size:14.5px;line-height:1.6;word-break:keep-all;text-wrap:pretty"><b>격자 안은 무채색.</b> 왕조 배경 농도 교대를 없애고, 나라색은 열 헤더의 이름과 3px 밑선에만 남긴다.</span></li>
+      <li style="background:#fbfaf8;padding:14px 18px;display:flex;gap:14px;align-items:baseline"><span style="font-family:'Noto Serif KR',serif;font-size:14px;color:#6b6660;min-width:16px">2</span><span style="font-size:14.5px;line-height:1.6;word-break:keep-all;text-wrap:pretty"><b>시대는 색이 아니라 서체로.</b> 왕조·연도 라벨만 명조체로 두면 배경을 칠하지 않고도 시간 채널이 사건 채널과 분리된다.</span></li>
+      <li style="background:#fbfaf8;padding:14px 18px;display:flex;gap:14px;align-items:baseline"><span style="font-family:'Noto Serif KR',serif;font-size:14px;color:#6b6660;min-width:16px">3</span><span style="font-size:14.5px;line-height:1.6;word-break:keep-all;text-wrap:pretty"><b>위계는 3단에서 2단으로.</b> 12·13·14px 세 단계를 없애고 <b>이름이 있는 사건 15px 진하게</b> / <b>원문 문장 13px 흐리게</b> 두 단계만 둔다. 31%가 원문 그대로라는 사실이 소음이 아니라 신호가 된다.</span></li>
+      <li style="background:#fbfaf8;padding:14px 18px;display:flex;gap:14px;align-items:baseline"><span style="font-family:'Noto Serif KR',serif;font-size:14px;color:#6b6660;min-width:16px">4</span><span style="font-size:14.5px;line-height:1.6;word-break:keep-all;text-wrap:pretty"><b>레일과 연도 거터를 하나로.</b> 64px 레일 + 56px 거터 = 120px을 88px 한 축으로 합친다. 미니맵 10px이 그 안에 들어간다.</span></li>
+      <li style="background:#fbfaf8;padding:14px 18px;display:flex;gap:14px;align-items:baseline"><span style="font-family:'Noto Serif KR',serif;font-size:14px;color:#6b6660;min-width:16px">5</span><span style="font-size:14.5px;line-height:1.6;word-break:keep-all;text-wrap:pretty"><b>크롬은 44px 한 줄.</b> 상단바 56 + 줌바 40 = 96px을 44px로 줄이고, 줌·중앙 연도는 떠 있는 컨트롤로 옮긴다. 격자에 52px이 돌아온다.</span></li>
+    </ol>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:44px;align-items:flex-start">
+
+    <div id="1a" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:baseline;gap:12px">
+        <span style="font-family:'Noto Serif KR',serif;font-size:13px;font-weight:600;background:#191713;color:#fff;padding:3px 9px">1a</span>
+        <span style="font-size:17px;font-weight:700;letter-spacing:-.01em">축을 하나로</span>
+        <span style="font-size:13px;color:#6b6660">밴드를 걷고, 시대·연도·미니맵을 왼쪽 88px 축에 합친다</span>
+      </div>
+
+      <div style="width:1440px;height:860px;background:#fff;border:1px solid #dcd8d2;box-shadow:0 14px 36px rgba(0,0,0,.08);overflow:hidden;position:relative;display:flex;flex-direction:column">
+
+        <div style="height:44px;flex-shrink:0;display:flex;align-items:center;gap:20px;border-bottom:1px solid #eceae4;background:#fff;padding:0 18px">
+          <span style="font-size:15px;font-weight:700;letter-spacing:-.02em">history</span>
+          <div style="display:flex;gap:16px;font-size:12.5px;color:#6b6660;font-variant-numeric:tabular-nums"><span>1592</span><span>1882</span><span>1945</span></div>
+          <span style="margin-left:auto;font-size:12px;color:#7a746c;font-variant-numeric:tabular-nums">11,615건 · 2025년까지</span>
+          <div style="display:flex;gap:12px;font-size:12.5px;color:#7a746c"><span style="color:#191713;font-weight:600">한국어</span><span>EN</span><span>日</span><span>中</span></div>
+          <span style="font-size:12.5px;color:#6b6660;text-decoration:underline;text-decoration-color:#dad5cc;text-underline-offset:3px">출처</span>
+        </div>
+
+        <div style="position:relative;display:flex;flex:1;min-height:0">
+
+          <div style="position:relative;width:88px;flex-shrink:0;border-right:1px solid #eceae4;overflow:hidden">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:10px;background:#f4f2ee;border-right:1px solid #eceae4">
+              <sc-for list="{{ mini }}" as="m" hint-placeholder-count="8">
+                <div style="position:absolute;left:0;right:0;top:{{ m.top }}px;height:{{ m.h }}px;background:{{ m.bg }}"></div>
+              </sc-for>
+              <div style="position:absolute;left:0;right:0;top:783px;height:33px;border-top:1.5px solid #191713;border-bottom:1.5px solid #191713;background:rgba(25,23,19,.08)"></div>
+            </div>
+            <div style="position:absolute;left:10px;right:0;top:0;z-index:10;height:40px;display:flex;align-items:center;justify-content:flex-end;padding:0 8px;background:#fff;border-bottom:1px solid #dad5cc;box-sizing:border-box">
+              <span style="font-family:'Noto Serif KR',serif;font-size:12px;font-weight:600;color:#191713;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ curEra }}</span>
+            </div>
+            <sc-for list="{{ axisRows }}" as="ar" hint-placeholder-count="10">
+              <div style="position:absolute;left:10px;right:0;display:flex;align-items:flex-start;padding:5px 8px 0 10px;top:{{ ar.top }}px;height:80px;border-top:1px solid {{ ar.line }};box-sizing:border-box">
+                <span style="font-family:'Noto Serif KR',serif;font-size:13px;color:#56524b;font-variant-numeric:tabular-nums">{{ ar.label }}</span>
+              </div>
+            </sc-for>
+            <sc-for list="{{ axisEras }}" as="ae" hint-placeholder-count="2">
+              <div style="position:absolute;left:10px;right:0;top:{{ ae.top }}px;height:{{ ae.h }}px;border-top:1px solid #dad5cc;pointer-events:none"></div>
+            </sc-for>
+            <sc-for list="{{ axisEras }}" as="ae2" hint-placeholder-count="2">
+              <div style="position:absolute;left:10px;right:0;top:{{ ae2.labelTop }}px;padding:0 8px 0 10px;text-align:right;font-family:'Noto Serif KR',serif;font-size:12px;font-weight:600;color:#191713;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ ae2.label }}</div>
+            </sc-for>
+          </div>
+
+          <div style="position:relative;flex:1;min-width:0;overflow:hidden">
+
+            <sc-for list="{{ rowsA }}" as="row" hint-placeholder-count="10">
+              <div style="position:absolute;left:0;right:0;display:flex;top:{{ row.top }}px;height:80px;border-top:1px solid {{ row.line }}">
+                <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="4">
+                  <div style="position:relative;flex:1;min-width:0;overflow:hidden;border-right:1px solid #f4f2ee">
+                    <sc-for list="{{ cell.items }}" as="it" hint-placeholder-count="2">
+                      <div style="position:absolute;left:12px;right:10px;display:flex;align-items:center;gap:6px;top:{{ it.top }}px;height:{{ it.h }}px;padding-right:{{ it.right }}px">
+                        <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:{{ it.fs }}px;font-weight:{{ it.fw }};color:{{ it.color }};line-height:1.2;letter-spacing:-.005em">{{ it.text }}</span>
+                        <sc-if value="{{ it.meta }}" hint-placeholder-val="{{ true }}">
+                          <span style="flex-shrink:0;font-family:'Noto Serif KR',serif;font-size:11.5px;color:#7a746c;font-variant-numeric:tabular-nums;white-space:nowrap">{{ it.meta }}</span>
+                        </sc-if>
+                        <sc-if value="{{ it.tag }}" hint-placeholder-val="{{ true }}">
+                          <span style="flex-shrink:0;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#7a746c;border:1px solid #e7e3dc;border-radius:3px;padding:0 3px;line-height:14px">{{ it.tag }}</span>
+                        </sc-if>
+                        <sc-if value="{{ it.mark }}" hint-placeholder-val="{{ true }}">
+                          <span style="flex-shrink:0;width:4px;height:4px;border-radius:50%;background:#c3bcb0"></span>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                    <sc-if value="{{ cell.more }}" hint-placeholder-val="{{ true }}">
+                      <span style="position:absolute;bottom:3px;right:10px;background:#fff;padding:0 3px;font-size:11.5px;color:#7a746c;font-variant-numeric:tabular-nums;white-space:nowrap">{{ cell.more }}건 더</span>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+
+            <div style="position:absolute;top:0;left:0;right:0;z-index:10;display:flex;height:40px;background:#fff;border-bottom:1px solid #dad5cc">
+              <sc-for list="{{ headers }}" as="hd" hint-placeholder-count="4">
+                <div style="position:relative;display:flex;flex:1;min-width:0;align-items:center;gap:8px;padding:0 12px;border-right:1px solid #f4f2ee">
+                  <sc-if value="{{ hd.flag }}" hint-placeholder-val="{{ false }}">
+                    <img src="{{ hd.flag }}" alt="" style="height:13px;width:20px;flex-shrink:0;border-radius:2px;object-fit:cover;opacity:.9">
+                  </sc-if>
+                  <span style="flex-shrink:0;font-size:15px;font-weight:700;letter-spacing:-.02em;color:{{ hd.col }}">{{ hd.name }}</span>
+                  <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'Noto Serif KR',serif;font-size:12px;color:#6b6660">{{ hd.era }}</span>
+                  <span style="position:absolute;left:0;right:0;bottom:-1px;height:3px;background:{{ hd.col }}"></span>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="position:absolute;right:16px;bottom:16px;z-index:20;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.95);border:1px solid #dad5cc;border-radius:8px;padding:6px 8px;box-shadow:0 4px 14px rgba(0,0,0,.06)">
+              <span style="font-family:'Noto Serif KR',serif;font-size:12.5px;color:#56524b;padding-left:4px;font-variant-numeric:tabular-nums">1975년</span>
+              <span style="width:1px;height:16px;background:#eceae4"></span>
+              <div style="display:flex;gap:2px;font-size:12px">
+                <span style="padding:4px 9px;border-radius:5px;color:#6b6660">세기</span>
+                <span style="padding:4px 9px;border-radius:5px;background:#191713;color:#fff">십년</span>
+                <span style="padding:4px 9px;border-radius:5px;color:#6b6660">연도</span>
+              </div>
+              <span style="font-size:11px;color:#7a746c;padding-right:4px">Ctrl+휠</span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="1b" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:baseline;gap:12px">
+        <span style="font-family:'Noto Serif KR',serif;font-size:13px;font-weight:600;background:#191713;color:#fff;padding:3px 9px">1b</span>
+        <span style="font-size:17px;font-weight:700;letter-spacing:-.01em">카드 열</span>
+        <span style="font-size:13px;color:#6b6660">열을 색이 아니라 여백으로 나누고, 한 건에 두 줄을 준다</span>
+      </div>
+
+      <div style="width:1440px;height:860px;background:#f4f2ee;border:1px solid #dcd8d2;box-shadow:0 14px 36px rgba(0,0,0,.08);overflow:hidden;position:relative;display:flex;flex-direction:column">
+
+        <div style="height:44px;flex-shrink:0;display:flex;align-items:center;gap:20px;border-bottom:1px solid #e4e0d9;background:#fff;padding:0 18px">
+          <span style="font-size:15px;font-weight:700;letter-spacing:-.02em">history</span>
+          <div style="display:flex;gap:16px;font-size:12.5px;color:#6b6660;font-variant-numeric:tabular-nums"><span>1592</span><span>1882</span><span>1945</span></div>
+          <span style="margin-left:auto;font-size:12px;color:#7a746c;font-variant-numeric:tabular-nums">11,615건 · 2025년까지</span>
+          <div style="display:flex;gap:12px;font-size:12.5px;color:#7a746c"><span style="color:#191713;font-weight:600">한국어</span><span>EN</span><span>日</span><span>中</span></div>
+          <span style="font-size:12.5px;color:#6b6660;text-decoration:underline;text-decoration-color:#dad5cc;text-underline-offset:3px">출처</span>
+        </div>
+
+        <div style="position:relative;display:flex;flex:1;min-height:0;padding:0 12px 0 0">
+
+          <div style="position:relative;width:86px;flex-shrink:0;overflow:hidden">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:10px;background:#eae7e1">
+              <sc-for list="{{ mini }}" as="m2" hint-placeholder-count="8">
+                <div style="position:absolute;left:0;right:0;top:{{ m2.top }}px;height:{{ m2.h }}px;background:{{ m2.bg }}"></div>
+              </sc-for>
+              <div style="position:absolute;left:0;right:0;top:783px;height:33px;border-top:1.5px solid #191713;border-bottom:1.5px solid #191713;background:rgba(25,23,19,.08)"></div>
+            </div>
+            <sc-for list="{{ axisRows }}" as="ar2" hint-placeholder-count="10">
+              <div style="position:absolute;left:10px;right:0;display:flex;align-items:flex-start;justify-content:flex-end;padding:6px 10px 0 0;top:{{ ar2.top }}px;height:80px;box-sizing:border-box">
+                <span style="font-family:'Noto Serif KR',serif;font-size:13px;color:#6b6660;font-variant-numeric:tabular-nums;white-space:nowrap">{{ ar2.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+
+          <sc-for list="{{ colsB }}" as="colb" hint-placeholder-count="4">
+            <div style="position:relative;flex:1;min-width:0;margin-left:10px;background:#fff;border:1px solid #e4e0d9;border-radius:10px;overflow:hidden">
+              <sc-for list="{{ colb.lugs }}" as="lg" hint-placeholder-count="2">
+                <div style="position:absolute;left:0;width:3px;top:{{ lg.top }}px;height:{{ lg.h }}px;background:{{ lg.bg }}"></div>
+              </sc-for>
+              <sc-for list="{{ colb.rows }}" as="rb" hint-placeholder-count="10">
+                <div style="position:absolute;left:3px;right:0;top:{{ rb.top }}px;height:80px;border-top:1px solid {{ rb.line }}">
+                  <sc-for list="{{ rb.items }}" as="ib" hint-placeholder-count="2">
+                    <div style="position:absolute;left:14px;right:12px;top:{{ ib.top }}px;height:{{ ib.h }}px;padding-right:{{ ib.right }}px;display:flex;flex-direction:column;justify-content:center;gap:1px">
+                      <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:{{ ib.fs }}px;font-weight:{{ ib.fw }};color:{{ ib.color }};line-height:1.25;letter-spacing:-.005em">{{ ib.text }}</span>
+                      <span style="font-size:11px;color:#7a746c;font-variant-numeric:tabular-nums;letter-spacing:.01em">{{ ib.sub }}</span>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ rb.more }}" hint-placeholder-val="{{ true }}">
+                    <span style="position:absolute;bottom:3px;right:12px;background:#fff;padding:0 3px;font-size:11.5px;color:#7a746c;font-variant-numeric:tabular-nums;white-space:nowrap">{{ rb.more }}건 더</span>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-for list="{{ colb.eras }}" as="eb" hint-placeholder-count="2">
+                <div style="position:absolute;left:3px;width:20px;top:{{ eb.top }}px;border-top:1px solid #b6ada0;pointer-events:none"></div>
+              </sc-for>
+              <div style="position:absolute;top:0;left:0;right:0;z-index:10;display:flex;align-items:center;gap:8px;height:44px;padding:0 14px;background:#fff;border-bottom:1px solid #e4e0d9">
+                <sc-if value="{{ colb.flag }}" hint-placeholder-val="{{ false }}">
+                  <img src="{{ colb.flag }}" alt="" style="height:13px;width:20px;flex-shrink:0;border-radius:2px;object-fit:cover;opacity:.9">
+                </sc-if>
+                <span style="flex-shrink:0;font-size:15px;font-weight:700;letter-spacing:-.02em;color:{{ colb.col }}">{{ colb.name }}</span>
+                <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'Noto Serif KR',serif;font-size:12px;color:#6b6660">{{ colb.era }}</span>
+              </div>
+            </div>
+          </sc-for>
+
+          <div style="position:absolute;right:28px;bottom:16px;z-index:20;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.95);border:1px solid #dad5cc;border-radius:8px;padding:6px 8px;box-shadow:0 4px 14px rgba(0,0,0,.06)">
+            <span style="font-family:'Noto Serif KR',serif;font-size:12.5px;color:#56524b;padding-left:4px;font-variant-numeric:tabular-nums">1975년</span>
+            <span style="width:1px;height:16px;background:#eceae4"></span>
+            <div style="display:flex;gap:2px;font-size:12px">
+              <span style="padding:4px 9px;border-radius:5px;color:#6b6660">세기</span>
+              <span style="padding:4px 9px;border-radius:5px;background:#191713;color:#fff">십년</span>
+              <span style="padding:4px 9px;border-radius:5px;color:#6b6660">연도</span>
+            </div>
+            <span style="font-size:11px;color:#7a746c;padding-right:4px">Ctrl+휠</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="1c" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:baseline;gap:12px">
+        <span style="font-family:'Noto Serif KR',serif;font-size:13px;font-weight:600;background:#191713;color:#fff;padding:3px 9px">1c</span>
+        <span style="font-size:17px;font-weight:700;letter-spacing:-.01em">십년 스트립</span>
+        <span style="font-size:13px;color:#6b6660">행을 카드로 — 격자선 없이 리듬이 생기고, 그 십년의 네 나라가 한 덩이로 읽힌다</span>
+      </div>
+
+      <div style="width:1440px;height:860px;background:#eae7e1;border:1px solid #dcd8d2;box-shadow:0 14px 36px rgba(0,0,0,.08);overflow:hidden;position:relative;display:flex;flex-direction:column">
+
+        <div style="height:44px;flex-shrink:0;display:flex;align-items:center;gap:20px;border-bottom:1px solid #dcd8d2;background:#fff;padding:0 18px">
+          <span style="font-size:15px;font-weight:700;letter-spacing:-.02em">history</span>
+          <div style="display:flex;gap:16px;font-size:12.5px;color:#6b6660;font-variant-numeric:tabular-nums"><span>1592</span><span>1882</span><span>1945</span></div>
+          <span style="margin-left:auto;font-size:12px;color:#7a746c;font-variant-numeric:tabular-nums">11,615건 · 2025년까지</span>
+          <div style="display:flex;gap:12px;font-size:12.5px;color:#7a746c"><span style="color:#191713;font-weight:600">한국어</span><span>EN</span><span>日</span><span>中</span></div>
+          <span style="font-size:12.5px;color:#6b6660;text-decoration:underline;text-decoration-color:#dad5cc;text-underline-offset:3px">출처</span>
+        </div>
+
+        <div style="position:relative;display:flex;flex:1;min-height:0">
+          <div style="position:relative;width:14px;flex-shrink:0;background:#e2ded7">
+            <sc-for list="{{ mini }}" as="m3" hint-placeholder-count="8">
+              <div style="position:absolute;left:0;right:0;top:{{ m3.top }}px;height:{{ m3.h }}px;background:{{ m3.bg }}"></div>
+            </sc-for>
+            <div style="position:absolute;left:0;right:0;top:783px;height:33px;border-top:1.5px solid #191713;border-bottom:1.5px solid #191713;background:rgba(25,23,19,.1)"></div>
+          </div>
+
+          <div style="position:relative;flex:1;min-width:0;overflow:hidden">
+            <sc-for list="{{ rowsC }}" as="rc" hint-placeholder-count="10">
+              <div style="position:absolute;left:12px;right:12px;top:{{ rc.top }}px;height:74px;background:#fff;border:1px solid {{ rc.border }};border-radius:8px;display:flex;overflow:hidden">
+                <div style="width:152px;flex-shrink:0;padding:10px 0 0 14px;box-sizing:border-box;border-right:1px solid #f4f2ee">
+                  <div style="font-family:'Noto Serif KR',serif;font-size:19px;font-weight:600;letter-spacing:-.01em;line-height:1.1;font-variant-numeric:tabular-nums">{{ rc.label }}</div>
+                  <sc-if value="{{ rc.eras }}" hint-placeholder-val="{{ true }}">
+                    <div style="margin-top:7px;padding-right:14px;font-size:10.5px;line-height:1.35;max-height:29px;overflow:hidden;color:#7a746c;word-break:keep-all">{{ rc.eras }}</div>
+                  </sc-if>
+                </div>
+                <sc-for list="{{ rc.cells }}" as="cc" hint-placeholder-count="4">
+                  <div style="position:relative;flex:1;min-width:0;padding:8px 12px 0;box-sizing:border-box;border-right:1px solid #f4f2ee;overflow:hidden">
+                    <sc-for list="{{ cc.items }}" as="ic" hint-placeholder-count="3">
+                      <div style="display:flex;align-items:center;gap:6px;height:{{ ic.h }}px;margin-bottom:2px;padding-right:{{ ic.pr }}px">
+                        <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:{{ ic.fs }}px;font-weight:{{ ic.fw }};color:{{ ic.color }};line-height:1.2;letter-spacing:-.005em">{{ ic.text }}</span>
+                        <sc-if value="{{ ic.meta }}" hint-placeholder-val="{{ true }}">
+                          <span style="flex-shrink:0;font-family:'Noto Serif KR',serif;font-size:11px;color:#7a746c;font-variant-numeric:tabular-nums;white-space:nowrap">{{ ic.meta }}</span>
+                        </sc-if>
+                        <sc-if value="{{ ic.tag }}" hint-placeholder-val="{{ true }}">
+                          <span style="flex-shrink:0;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#7a746c;border:1px solid #e7e3dc;border-radius:3px;padding:0 3px;line-height:13px">{{ ic.tag }}</span>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                    <sc-if value="{{ cc.more }}" hint-placeholder-val="{{ true }}">
+                      <span style="position:absolute;bottom:4px;right:12px;background:#fff;padding:0 3px;font-size:11px;color:#7a746c;font-variant-numeric:tabular-nums;white-space:nowrap">{{ cc.more }}건 더</span>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+
+            <div style="position:absolute;top:0;left:0;right:0;z-index:10;display:flex;height:40px;background:#eae7e1;padding:0 12px;box-sizing:border-box">
+              <div style="width:152px;flex-shrink:0"></div>
+              <sc-for list="{{ headers }}" as="hc" hint-placeholder-count="4">
+                <div style="display:flex;flex:1;min-width:0;align-items:center;gap:8px;padding:0 12px">
+                  <span style="flex-shrink:0;font-size:14.5px;font-weight:700;letter-spacing:-.02em;color:{{ hc.col }}">{{ hc.name }}</span>
+                  <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'Noto Serif KR',serif;font-size:11.5px;color:#6b6660">{{ hc.era }}</span>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="position:absolute;right:24px;bottom:16px;z-index:20;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.96);border:1px solid #dad5cc;border-radius:8px;padding:6px 8px;box-shadow:0 4px 14px rgba(0,0,0,.06)">
+              <span style="font-family:'Noto Serif KR',serif;font-size:12.5px;color:#56524b;padding-left:4px;font-variant-numeric:tabular-nums">1975년</span>
+              <span style="width:1px;height:16px;background:#eceae4"></span>
+              <div style="display:flex;gap:2px;font-size:12px">
+                <span style="padding:4px 9px;border-radius:5px;color:#6b6660">세기</span>
+                <span style="padding:4px 9px;border-radius:5px;background:#191713;color:#fff">십년</span>
+                <span style="padding:4px 9px;border-radius:5px;color:#6b6660">연도</span>
+              </div>
+              <span style="font-size:11px;color:#7a746c;padding-right:4px">Ctrl+휠</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="max-width:840px;display:flex;flex-direction:column;gap:14px">
+    <h2 style="margin:0;font-family:'Noto Serif KR',serif;font-size:24px;font-weight:600;letter-spacing:-.01em">세 방향의 맞바꿈</h2>
+    <div style="display:flex;flex-direction:column;gap:1px;background:#dcd8d2;border:1px solid #dcd8d2">
+      <div style="background:#fbfaf8;padding:16px 18px"><div style="font-size:14px;font-weight:700;margin-bottom:4px">1a 축을 하나로</div><div style="font-size:13.5px;line-height:1.65;color:#4a4640">얻는 것 — 격자에 52px + 32px이 돌아오고, 열 안이 완전히 비어 사건만 남는다. 잃는 것 — 왕조는 홈 열 하나만 축에서 읽히고, 나머지 세 열의 시대는 헤더 한 줄로만 안다. <b>지금 코드에서 가장 적게 고친다.</b></div></div>
+      <div style="background:#fbfaf8;padding:16px 18px"><div style="font-size:14px;font-weight:700;margin-bottom:4px">1b 카드 열</div><div style="font-size:13.5px;line-height:1.65;color:#4a4640">얻는 것 — 색 없이도 열이 완전히 분리되고, 한 건에 두 줄(제목 + 날짜·출처)을 줄 수 있다. 열별 왕조가 러그와 명조 라벨로 남는다. 잃는 것 — 카드 간 여백 10px×3 + 테두리로 열 폭이 340→322px, 밀도가 조금 떨어진다.</div></div>
+      <div style="background:#fbfaf8;padding:16px 18px"><div style="font-size:14px;font-weight:700;margin-bottom:4px">1c 십년 스트립</div><div style="font-size:13.5px;line-height:1.65;color:#4a4640">얻는 것 — "그 해, 그 나라에" 질문에 가장 직접적이다. 격자선이 아예 필요 없고, 십년 단위 리듬이 스크롤에 생긴다. 잃는 것 — 칸 안의 시점 위치 배치(1950년 6월이 칸 위쪽)를 포기한다. 스트립 높이 74 + 간격 6으로 8px/년 축은 그대로다.</div></div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:44px;align-items:flex-start">
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:baseline;gap:12px">
+        <span style="font-size:15px;font-weight:700">상세 패널</span>
+        <span style="font-size:13px;color:#6b6660">400×816 · <a href="#1a">1a</a> 기준</span>
+      </div>
+      <div style="width:400px;height:816px;background:#fff;border:1px solid #dcd8d2;box-shadow:0 14px 36px rgba(0,0,0,.08);overflow:hidden;box-sizing:border-box;display:flex;flex-direction:column">
+        <div style="flex-shrink:0;padding:20px 22px 16px;border-bottom:1px solid #eceae4">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+            <div style="flex:1;min-width:0">
+              <div style="font-family:'Noto Serif KR',serif;font-size:12.5px;color:#6b6660;font-variant-numeric:tabular-nums;margin-bottom:5px;white-space:nowrap">1945년 2월 · 한국</div>
+              <h2 style="margin:0;font-size:21px;font-weight:700;line-height:1.3;letter-spacing:-.015em">얄타 회담</h2>
+            </div>
+            <span style="flex-shrink:0;font-size:16px;color:#7a746c;line-height:1">✕</span>
+          </div>
+        </div>
+        <div style="flex:1;min-height:0;overflow:hidden;padding:0 22px">
+          <div style="padding:18px 0 0">
+            <div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#7a746c;font-weight:600;margin-bottom:7px">국사편찬위원회 근대사연표</div>
+            <p style="margin:0 0 6px;font-size:14.5px;line-height:1.7;word-break:keep-all;text-wrap:pretty">美. 英. 蘇 수뇌 얄타회담. 원호처 독립운동사 9</p>
+            <div style="font-size:11.5px;color:#7a746c">1945년 2월 11일 · <span style="text-decoration:underline;text-decoration-color:#dad5cc;text-underline-offset:2px">한국사데이터베이스</span></div>
+          </div>
+          <div style="margin-top:20px;padding-top:20px;border-top:1px solid #eceae4">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px">
+              <span style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#7a746c;font-weight:600;white-space:nowrap">위키백과 연표 원문</span>
+              <span style="font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#7a746c;border:1px solid #e7e3dc;border-radius:3px;padding:0 3px;line-height:14px">en</span>
+            </div>
+            <p style="margin:0 0 6px;font-size:14px;line-height:1.7;color:#56524b">8 February. At the Yalta Conference, Roosevelt secretly proposes to Joseph Stalin that Korea be placed under a three-way trusteeship, and Stalin mostly agrees.</p>
+            <div style="font-size:11.5px;color:#7a746c">한글 옮김은 아직 · CC BY-SA 4.0</div>
+          </div>
+          <div style="margin-top:20px;padding-top:20px;border-top:1px solid #eceae4">
+            <div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#7a746c;font-weight:600;margin-bottom:7px">설명 · 한국어 위키백과</div>
+            <p style="margin:0;font-size:14px;line-height:1.7;color:#4a4640;word-break:keep-all;text-wrap:pretty">얄타 회담( - 會談, 영어: Yalta Conference, 러시아어: Ялтинская конференция, 독일어: Konferenz von Jalta은 1945년 2월 4일부터 2월 11일까지 소련 흑해 연안에 있는 크림반도의 얄타에서 미국·영국·소련의 수뇌자들이 모여 나치 독일의 제2차 세계 대전의 패전과 그 관리에 대하여 의견을 나눈 회담이다.</p>
+          </div>
+          <div style="margin-top:20px;padding-top:20px;border-top:1px solid #eceae4">
+            <div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#7a746c;font-weight:600;margin-bottom:10px">이 사건을 부르는 이름</div>
+            <div style="display:flex;flex-direction:column;gap:7px;font-size:13.5px">
+              <div style="display:flex;gap:12px;white-space:nowrap"><span style="width:34px;flex-shrink:0;color:#0047a0;font-weight:600;font-size:12px">한국</span><span>얄타 회담</span></div>
+              <div style="display:flex;gap:12px;white-space:nowrap"><span style="width:34px;flex-shrink:0;color:#c8102e;font-weight:600;font-size:12px">중국</span><span>雅尔塔会议</span></div>
+              <div style="display:flex;gap:12px;white-space:nowrap"><span style="width:34px;flex-shrink:0;color:#6d28d9;font-weight:600;font-size:12px">일본</span><span>ヤルタ会談</span></div>
+              <div style="display:flex;gap:12px;white-space:nowrap"><span style="width:34px;flex-shrink:0;color:#1f6e43;font-weight:600;font-size:12px">미국</span><span>Yalta Conference</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="flex-shrink:0;display:flex;flex-direction:column;gap:10px;padding:16px 22px;border-top:1px solid #eceae4;background:#fbfaf8">
+          <span style="align-self:flex-start;font-size:12.5px;border:1px solid #dad5cc;border-radius:6px;padding:6px 12px;background:#fff;white-space:nowrap">1945년 공식 연표 전체 보기</span>
+          <div style="font-size:11.5px;line-height:1.7;color:#7a746c">출처 국사편찬위원회(공공누리 제1유형) · en.wikipedia.org · <span style="text-decoration:underline;text-decoration-color:#dad5cc;text-underline-offset:2px">1945년 페이지</span> · <span style="text-decoration:underline;text-decoration-color:#dad5cc;text-underline-offset:2px">오류 신고</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:baseline;gap:12px">
+        <span style="font-size:15px;font-weight:700">모바일</span>
+        <span style="font-size:13px;color:#6b6660">390×844 · 2열 · 시트 반높이</span>
+      </div>
+      <div style="width:390px;height:844px;background:#fff;border:1px solid #dcd8d2;box-shadow:0 14px 36px rgba(0,0,0,.08);overflow:hidden;position:relative;display:flex;flex-direction:column">
+        <div style="height:44px;flex-shrink:0;display:flex;align-items:center;gap:12px;border-bottom:1px solid #eceae4;padding:0 14px">
+          <span style="font-size:15px;font-weight:700;letter-spacing:-.02em">history</span>
+          <span style="margin-left:auto;flex-shrink:0;font-size:12.5px;color:#6b6660;white-space:nowrap">한국어</span>
+          <span style="font-size:16px;color:#6b6660;line-height:1">⌕</span>
+          <span style="font-size:16px;color:#6b6660;line-height:1">☰</span>
+        </div>
+        <div style="position:relative;display:flex;flex:1;min-height:0">
+          <div style="position:relative;width:64px;flex-shrink:0;border-right:1px solid #eceae4;overflow:hidden">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:8px;background:#f4f2ee">
+              <sc-for list="{{ miniM }}" as="mm" hint-placeholder-count="8">
+                <div style="position:absolute;left:0;right:0;top:{{ mm.top }}px;height:{{ mm.h }}px;background:{{ mm.bg }}"></div>
+              </sc-for>
+              <div style="position:absolute;left:0;right:0;top:756px;height:24px;border-top:1.5px solid #191713;border-bottom:1.5px solid #191713;background:rgba(25,23,19,.08)"></div>
+            </div>
+            <sc-for list="{{ axisRowsM }}" as="am" hint-placeholder-count="10">
+              <div style="position:absolute;left:8px;right:0;padding:5px 6px 0 8px;top:{{ am.top }}px;height:80px;border-top:1px solid {{ am.line }};box-sizing:border-box">
+                <span style="font-family:'Noto Serif KR',serif;font-size:12px;color:#56524b;font-variant-numeric:tabular-nums">{{ am.label }}</span>
+              </div>
+            </sc-for>
+            <sc-for list="{{ axisErasM }}" as="aem" hint-placeholder-count="2">
+              <div style="position:absolute;left:8px;right:0;top:{{ aem.labelTop }}px;padding:0 4px 0 8px;font-family:'Noto Serif KR',serif;font-size:11px;font-weight:600;color:#191713;letter-spacing:-.01em;line-height:1.3;word-break:keep-all">{{ aem.short }}</div>
+            </sc-for>
+          </div>
+          <div style="position:relative;flex:1;min-width:0;overflow:hidden">
+            <sc-for list="{{ rowsM }}" as="rm" hint-placeholder-count="10">
+              <div style="position:absolute;left:0;right:0;display:flex;top:{{ rm.top }}px;height:80px;border-top:1px solid {{ rm.line }}">
+                <sc-for list="{{ rm.cells }}" as="cm" hint-placeholder-count="2">
+                  <div style="position:relative;flex:1;min-width:0;overflow:hidden;border-right:1px solid #f4f2ee">
+                    <sc-for list="{{ cm.items }}" as="im" hint-placeholder-count="2">
+                      <div style="position:absolute;left:10px;right:8px;display:flex;align-items:center;gap:5px;top:{{ im.top }}px;height:{{ im.h }}px;padding-right:{{ im.right }}px">
+                        <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:{{ im.fs }}px;font-weight:{{ im.fw }};color:{{ im.color }};line-height:1.2">{{ im.text }}</span>
+                        <sc-if value="{{ im.tag }}" hint-placeholder-val="{{ true }}">
+                          <span style="flex-shrink:0;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#7a746c;border:1px solid #e7e3dc;border-radius:3px;padding:0 2px;line-height:13px">{{ im.tag }}</span>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                    <sc-if value="{{ cm.more }}" hint-placeholder-val="{{ true }}">
+                      <span style="position:absolute;bottom:3px;right:8px;background:#fff;padding:0 3px;font-size:11px;color:#7a746c;font-variant-numeric:tabular-nums">{{ cm.more }}</span>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+            <div style="position:absolute;top:0;left:0;right:0;z-index:10;display:flex;height:36px;background:#fff;border-bottom:1px solid #dad5cc">
+              <sc-for list="{{ headersM }}" as="hm" hint-placeholder-count="2">
+                <div style="position:relative;display:flex;flex:1;min-width:0;align-items:center;gap:6px;padding:0 10px;border-right:1px solid #f4f2ee">
+                  <sc-if value="{{ hm.flag }}" hint-placeholder-val="{{ false }}">
+                    <img src="{{ hm.flag }}" alt="" style="height:11px;width:17px;flex-shrink:0;border-radius:2px;object-fit:cover;opacity:.9">
+                  </sc-if>
+                  <span style="flex-shrink:0;font-size:14px;font-weight:700;letter-spacing:-.02em;color:{{ hm.col }}">{{ hm.name }}</span>
+                  <span style="position:absolute;left:0;right:0;bottom:-1px;height:3px;background:{{ hm.col }}"></span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="position:absolute;left:0;right:0;bottom:0;z-index:30;height:396px;border-top:1px solid #dad5cc;border-radius:16px 16px 0 0;background:#fff;box-sizing:border-box;box-shadow:0 -10px 30px rgba(0,0,0,.1);overflow:hidden;display:flex;flex-direction:column">
+          <div style="flex-shrink:0;padding:10px 0 0"><div style="margin:0 auto;height:4px;width:36px;border-radius:9999px;background:#dad5cc"></div></div>
+          <div style="flex-shrink:0;padding:14px 20px 14px;border-bottom:1px solid #eceae4">
+            <div style="font-family:'Noto Serif KR',serif;font-size:12px;color:#6b6660;margin-bottom:4px;font-variant-numeric:tabular-nums;white-space:nowrap">1945년 2월 · 한국</div>
+            <h2 style="margin:0;font-size:20px;font-weight:700;line-height:1.3;letter-spacing:-.015em">얄타 회담</h2>
+          </div>
+          <div style="flex:1;min-height:0;overflow:hidden;padding:16px 20px">
+            <div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#7a746c;font-weight:600;margin-bottom:6px">국사편찬위원회 근대사연표</div>
+            <p style="margin:0 0 5px;font-size:15px;line-height:1.7;word-break:keep-all">美. 英. 蘇 수뇌 얄타회담. 원호처 독립운동사 9</p>
+            <div style="font-size:11.5px;color:#7a746c">1945년 2월 11일</div>
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid #eceae4">
+              <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px">
+                <span style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#7a746c;font-weight:600;white-space:nowrap">위키백과 연표 원문</span>
+                <span style="font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#7a746c;border:1px solid #e7e3dc;border-radius:3px;padding:0 3px;line-height:14px">en</span>
+              </div>
+              <p style="margin:0;font-size:14px;line-height:1.7;color:#56524b">8 February. At the Yalta Conference, Roosevelt secretly proposes to Joseph Stalin that Korea be placed under a three-way trusteeship, and Stalin mostly agrees.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:baseline;gap:12px">
+        <span style="font-size:15px;font-weight:700">연도 페이지 /y/1592</span>
+        <span style="font-size:13px;color:#6b6660">1024×816 · 본문 폭 max-w-5xl</span>
+      </div>
+      <div style="width:1024px;height:816px;background:#fff;border:1px solid #dcd8d2;box-shadow:0 14px 36px rgba(0,0,0,.08);overflow:hidden;box-sizing:border-box;padding:44px 48px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;font-size:12px;color:#6b6660;margin-bottom:28px">
+          <div style="display:flex;gap:16px;font-variant-numeric:tabular-nums"><span style="text-decoration:underline;text-decoration-color:#dad5cc;text-underline-offset:3px">그리드에서 1592년 보기</span><span>1591</span><span>1593</span></div>
+          <div style="display:flex;gap:12px;color:#7a746c"><span style="color:#191713;font-weight:600">한국어</span><span>EN</span><span>日</span><span>中</span></div>
+        </div>
+        <h1 style="margin:0 0 10px;font-family:'Noto Serif KR',serif;font-size:40px;font-weight:600;letter-spacing:-.02em;line-height:1.15;font-variant-numeric:tabular-nums">1592년</h1>
+        <p style="margin:0 0 8px;font-size:16px;line-height:1.7;color:#4a4640;word-break:keep-all;text-wrap:pretty">한국 열은 임진왜란으로 한 해에 18건이 몰린다. 중국 열은 명나라의 오르도스 원정과 조선 파병이, 일본 열은 도요토미 히데요시의 조선 침공이 같은 해에 놓인다.</p>
+        <p style="margin:0 0 30px;font-size:12.5px;color:#7a746c">그 해 30건 · 앞뒤 2년은 문맥으로 흐리게 · <span style="text-decoration:underline;text-decoration-color:#dad5cc;text-underline-offset:2px">출처와 라이선스</span></p>
+
+        <div style="display:flex;gap:0;border-top:1px solid #dad5cc">
+          <div style="flex:1;min-width:0;padding:16px 20px 0 0;border-right:1px solid #f4f2ee">
+            <div style="margin-bottom:14px">
+              <div style="font-size:14.5px;font-weight:700;color:#0047a0">한국</div>
+              <div style="font-family:'Noto Serif KR',serif;font-size:11.5px;color:#6b6660;margin-top:2px">조선</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:7px;font-size:13.5px;line-height:1.45">
+              <div style="font-weight:600">임진왜란</div>
+              <div style="font-weight:600">부산진 전투</div>
+              <div style="font-weight:600">상주 전투</div>
+              <div style="font-weight:600">임진강 전투</div>
+              <div>탄금대 전투</div>
+              <div>북관대첩</div>
+              <div>이치 전투</div>
+              <div>용인 전투</div>
+              <div>연안 전투</div>
+              <div>제2차 평양성 전투</div>
+              <div>청주 전투</div>
+              <div>한산도 대첩 <span style="color:#7a746c">외 1</span></div>
+              <div style="color:#56524b">평양성(平壤城) 함락. 선조 의주(義州)로 피난</div>
+              <div style="color:#56524b">동래성이 함락되고 부사 송상현(宋象賢) <span style="color:#7a746c">외 1</span></div>
+              <div style="color:#7a746c;font-size:12.5px">4건 더</div>
+              <div style="margin-top:6px;padding-top:10px;border-top:1px solid #f4f2ee;color:#7a746c;font-size:12.5px;line-height:1.6">
+                <div><span style="font-variant-numeric:tabular-nums">1591</span> 영천군수 이한(李澣) 부임</div>
+                <div><span style="font-variant-numeric:tabular-nums">1593</span> 행주대첩</div>
+              </div>
+            </div>
+          </div>
+          <div style="flex:1;min-width:0;padding:16px 20px 0;border-right:1px solid #f4f2ee">
+            <div style="margin-bottom:14px">
+              <div style="font-size:14.5px;font-weight:700;color:#c8102e">중국</div>
+              <div style="font-family:'Noto Serif KR',serif;font-size:11.5px;color:#6b6660;margin-top:2px">명나라</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:7px;font-size:13.5px;line-height:1.45">
+              <div style="color:#56524b">March — Ordos Campaign: Liu Dongyang and Pubei rebel in Ningxia <span style="font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#7a746c;border:1px solid #e7e3dc;border-radius:3px;padding:0 3px;white-space:nowrap">en</span></div>
+              <div style="color:#56524b">日本丰臣秀吉出兵朝鲜，朝鮮向明朝求援，萬曆朝鮮之役始。 <span style="font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#7a746c;border:1px solid #e7e3dc;border-radius:3px;padding:0 3px;white-space:nowrap">zh</span></div>
+              <div style="color:#56524b">Japanese invasions of Korea: Some two hundred thousand Japanese troops invaded Joseon. <span style="font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#7a746c;border:1px solid #e7e3dc;border-radius:3px;padding:0 3px;white-space:nowrap">en</span></div>
+              <div style="color:#56524b">October — Ordos Campaign: The north wall collapses and the rebellion is defeated <span style="font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#7a746c;border:1px solid #e7e3dc;border-radius:3px;padding:0 3px;white-space:nowrap">en</span></div>
+              <div style="color:#7a746c;font-size:12.5px">7건 더</div>
+              <div style="margin-top:6px;padding-top:10px;border-top:1px solid #f4f2ee;color:#7a746c;font-size:12.5px;line-height:1.6">
+                <div><span style="font-variant-numeric:tabular-nums">1590</span> Wu Cheng'en wrote Journey to the West.</div>
+                <div><span style="font-variant-numeric:tabular-nums">1593</span> 제4차 평양성 전투</div>
+                <div><span style="font-variant-numeric:tabular-nums">1593</span> 구러산 전투</div>
+              </div>
+            </div>
+          </div>
+          <div style="flex:1;min-width:0;padding:16px 20px 0;border-right:1px solid #f4f2ee">
+            <div style="margin-bottom:14px">
+              <div style="font-size:14.5px;font-weight:700;color:#6d28d9">일본</div>
+              <div style="font-family:'Noto Serif KR',serif;font-size:11.5px;color:#6b6660;margin-top:2px">아즈치모모야마 시대</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:7px;font-size:13.5px;line-height:1.45">
+              <div style="font-weight:600">인소령</div>
+              <div style="color:#56524b">May — Toyotomi Hideyoshi, acting as kampaku (regent) in lieu of Oda Nobukatsu, invaded Korea. <span style="font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#7a746c;border:1px solid #e7e3dc;border-radius:3px;padding:0 3px;white-space:nowrap">en</span></div>
+              <div style="margin-top:6px;padding-top:10px;border-top:1px solid #f4f2ee;color:#7a746c;font-size:12.5px;line-height:1.6">
+                <div><span style="font-variant-numeric:tabular-nums">1590</span> 오다와라 정벌</div>
+                <div><span style="font-variant-numeric:tabular-nums">1591</span> 구노헤 정벌</div>
+                <div><span style="font-variant-numeric:tabular-nums">1593</span> 文禄の役</div>
+              </div>
+            </div>
+          </div>
+          <div style="flex:1;min-width:0;padding:16px 0 0 20px">
+            <div style="margin-bottom:14px">
+              <div style="font-size:14.5px;font-weight:700;color:#1f6e43">미국</div>
+            </div>
+            <div style="font-size:12.5px;line-height:1.65;color:#7a746c;word-break:keep-all">미국 열은 1776년부터 수록한다.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="max-width:840px;display:flex;flex-direction:column;gap:14px">
+    <h2 style="margin:0;font-family:'Noto Serif KR',serif;font-size:24px;font-weight:600;letter-spacing:-.01em">세 방향이 공유하는 값</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:1px;background:#dcd8d2;border:1px solid #dcd8d2">
+      <div style="background:#fbfaf8;padding:16px 18px">
+        <div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#7a746c;font-weight:600;margin-bottom:10px">서체</div>
+        <div style="font-size:13px;line-height:1.75;color:#4a4640">사건·UI — Pretendard<br>시대·연도 — Noto Serif KR<br>사건 이름 15px/600 · 원문 13px/400<br>축 라벨 13px · 메타 11.5px</div>
+      </div>
+      <div style="background:#fbfaf8;padding:16px 18px">
+        <div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#7a746c;font-weight:600;margin-bottom:10px">잉크</div>
+        <div style="font-size:13px;line-height:1.75;color:#4a4640">본문 #191713 (17.4:1) · 보조 #56524b (8.0:1)<br>흐린 #6b6660 (5.7:1) · 메타 #7a746c (4.6:1)<br>실선 #dad5cc · 실낱 #f4f2ee<br>바탕 #fff · 캔버스 #f4f2ee<br><span style="color:#6b6660">네 단계 모두 흰 바탕 4.5:1 이상</span></div>
+      </div>
+      <div style="background:#fbfaf8;padding:16px 18px">
+        <div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#7a746c;font-weight:600;margin-bottom:10px">나라색이 나타나는 곳</div>
+        <div style="font-size:13px;line-height:1.75;color:#4a4640">열 헤더 이름 · 3px 밑선<br>상세의 관점별 명칭 라벨<br>1b의 3px 세로 러그<br>그 밖에는 없다</div>
+      </div>
+      <div style="background:#fbfaf8;padding:16px 18px">
+        <div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#7a746c;font-weight:600;margin-bottom:10px">치수</div>
+        <div style="font-size:13px;line-height:1.75;color:#4a4640">크롬 44px (56+40 → 44)<br>축 88px (64+56 → 88)<br>행 80px · 이름 24px · 원문 20px<br>열 헤더 40px</div>
+      </div>
+    </div>
+    <p style="margin:6px 0 0;font-size:13.5px;line-height:1.7;color:#6b6660;word-break:keep-all;text-wrap:pretty">출처 페이지 <code style="font-family:ui-monospace,monospace;font-size:12.5px;background:#e3e0db;padding:1px 5px;border-radius:4px">/sources</code>는 위 문서 규칙(명조 제목 + 16px 본문 + 실낱 구분선)을 그대로 따르므로 방향이 정해진 뒤에 함께 그린다. 세기·연도 레벨도 같은 규칙에서 행 높이(200px·40px)와 표시 개수만 달라진다.</p>
+  </div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1600,&quot;height&quot;:1000}}">
+const REG = { kr: '#0047a0', cn: '#c8102e', jp: '#6d28d9', us: '#1f6e43' };
+const NAME = { kr: '한국', cn: '중국', jp: '일본', us: '미국' };
+const ERA_NOW = { kr: '일제강점기 1910–1945', cn: '중화민국 1912–1949', jp: '쇼와 시대 1926–1989', us: '미국 1776–' };
+const LEAD = { fs: 15, fw: 600, color: '#191713' };
+const PLAIN = { fs: 13, fw: 400, color: '#6b6660' };
+
+/** [kind(1=이름 있는 사건, 0=원문 문장), 실측 top, 본문, 기간, 언어태그, 공식표식] */
+const CELLS = {
+  kr: {
+    1930: [[[1, 20, '훙커우 공원 사건'], [0, 56, 'June. Kim Il Sung leads 150–200 guerrillas in the Battle of Pochonbo.', '', 'en']], 3],
+    1940: [[[1, 42.7, '얄타 회담', '', '', 1]], 15],
+    1950: [[[1, 5.3, '6.25 전쟁', '1950–1953'], [1, 33.3, '인천 상륙 작전', '', '', 1]], 26],
+    1960: [[[1, 34, '베트남 전쟁']], 4],
+    1970: [[[1, 4, '새마을 운동'], [0, 54.7, 'August. The Axe Murder Incident in Panmunjom, Joint Security Area. Triggers former North Korean leader Kim Il Sung\u2019s first official apology to the South.', '', 'en', 1]], 5],
+    1980: [[[1, 4.7, '5·18 광주 민주화 운동'], [0, 42, 'A South Korean expedition team becomes the first Koreans to set foot in Antarctica.', '', 'en', 1]], 3],
+    1990: [[[1, 15.3, '9월 18일 남북한이 유엔(UN) 동시 가입', '', '', 1], [1, 43.3, '고난의 행군']], 5],
+    2000: [[], 0], 2010: [[], 0], 2020: [[], 0],
+  },
+  cn: {
+    1930: [[[1, 40, '장정']], 39],
+    1940: [[[0, 52, 'July — Chinese Civil War: The NRA invaded PLA-held territory en masse.', '', 'en']], 28],
+    1950: [[[1, 5.3, '6.25 전쟁', '1950–1953'], [1, 52, '10월 혁명']], 53],
+    1960: [[[1, 45.3, '베트남 전쟁']], 49],
+    1970: [[[1, 26.7, '가족계획']], 49],
+    1980: [[[0, 4, '月，中华人民共和国取代中华民国开始行使国际货币基金组织的中国代表权，并加入世界银行。', '', 'zh'], [0, 41.3, '月19日，中国国务院总理赵紫阳与英国首相撒切尔夫人签署了关于香港问题的《中英联合声明》。', '', 'zh']], 42],
+    1990: [[[0, 18, '月24日，中国和以色列建立外交关系。', '', 'zh'], [1, 46, '핵확산방지조약']], 35],
+    2000: [[], 0], 2010: [[], 0], 2020: [[], 0],
+  },
+  jp: {
+    1930: [[[1, 19.3, '소련-일본 국경 분쟁'], [1, 52, '방공 협정']], 6],
+    1940: [[[1, 21.3, '미드웨이 해전'], [1, 49.3, '이오지마 전투']], 31],
+    1950: [[[1, 15.3, '미일안전보장조약', '1951–1960'], [1, 37.3, '중일화평조약']], 0],
+    1960: [[[1, 37.3, '니가타 지진']], 3],
+    1970: [[[1, 9.3, '고자 폭동']], 0],
+    1980: [[[1, 28.7, '동해 중부 지진'], [1, 58, 'SOS 조난사건']], 0],
+    1990: [[[1, 42, '효고현 남부 지진']], 5],
+    2000: [[], 0], 2010: [[], 0], 2020: [[], 0],
+  },
+  us: {
+    1930: [[[1, 15.3, '일본의 만주 침공', '1931–1932'], [0, 39.3, 'President Roosevelt establishes the New Deal, a response to the Great Depression, and focusing on what historians call the "3 Rs": relief, recovery and reform', '', 'en']], 18],
+    1940: [[[0, 17.3, 'December 7, 1941 – Attack on Pearl Harbor; U.S. enters World War II by declaring war on Japan the next day ; and three days later against Germany and against Italy.', '', 'en'], [1, 45.3, '테헤란 회담']], 35],
+    1950: [[[1, 5.3, '6.25 전쟁', '1950–1953'], [0, 42, 'Warsaw Pact, which establishes a mutual defense treaty subscribed to by eight communist states in Eastern Europe (including the USSR)', '', 'en']], 26],
+    1960: [[[1, 10, '베트남 전쟁'], [0, 38, 'Cuban Missile Crisis, the closest nuclear confrontation involving the U.S. and USSR', '', 'en']], 33],
+    1970: [[[1, 21.3, '워터게이트 사건', '1972–1974'], [1, 49.3, '로 대 웨이드 사건']], 20],
+    1980: [[[0, 2, 'The United States boycotts the Summer Olympics in Moscow to protest the 1979 Soviet invasion of Afghanistan; also announces a grain embargo against the Soviet Union with the support of the European Commission.', '', 'en'], [0, 26, 'January 20, 1981 – Reagan becomes the 40th president; Bush becomes the 43rd vice president. On the same day Iran releases hostages, marking the end of the Iran hostage crisis.', '', 'en'], [0, 56, 'The animated television sitcom The Simpsons debuts on Fox.', '', 'en']], 17],
+    1990: [[[0, 10, 'The Cold War ends as the USSR is dissolved. The United States becomes the only superpower in the world.', '', 'en'], [1, 38, '걸프 전쟁']], 12],
+    2000: [[], 0], 2010: [[], 0], 2020: [[], 0],
+  },
+};
+
+const BUCKETS = [1930, 1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020];
+/** 크롬 44px → viewportH 816, padTop 408, scrollTop 19832(1980 중앙) */
+const TOPS = [48, 128, 208, 288, 368, 448, 528, 608, 688, 768];
+/** 모바일: 크롬 44 + 시트 396 아래 */
+const TOPS_M = [40, 120, 200, 280, 360, 440, 520, 600, 680, 760];
+
+/** 열별 왕조 경계(뷰 좌표, padTop 408): [top, h, 라벨] */
+const ERAS = {
+  kr: [[-112, 280, '일제강점기'], [192, 632, '대한민국']],
+  cn: [[-96, 296, '중화민국'], [200, 624, '중화인민공화국']],
+  jp: [[16, 504, '쇼와'], [520, 240, '헤이세이'], [760, 64, '레이와']],
+  us: [[-1184, 2008, '미국']],
+};
+/** 십년별 네 나라 왕조 요약(1c 스트립 왼쪽) */
+const ERA_ROW = {
+  1930: '', 1940: '한국 → 대한민국 · 중국 → 중화인민공화국', 1950: '', 1960: '', 1970: '',
+  1980: '일본 → 헤이세이', 1990: '', 2000: '', 2010: '일본 → 레이와', 2020: '',
+};
+
+/** 시대 미니맵 — 홈 열(한국) 왕조를 무채색 계단으로. [연 시작, 연 끝] */
+const MINI_ERAS = [[-499, -107], [-56, 660], [698, 918], [918, 1392], [1392, 1897], [1897, 1910], [1910, 1945], [1948, 2027]];
+const MINI_STEP = ['#e6e2db', '#d6d1c8', '#ebe8e2', '#ded9d1', '#d0cac0', '#ebe8e2', '#dcd7ce', '#b9b3a8'];
+
+class Component extends DCLogic {
+  /** 높이 예산 안에 시간 순서대로 놓는다. 넘치면 '더 보기'로 넘긴다. */
+  place(items, hLead, hPlain, avail, pad) {
+    const out = [];
+    let cursor = pad, dropped = 0;
+    for (const it of items) {
+      const h = it[0] ? hLead : hPlain;
+      const want = Math.min(it[1], avail - h);
+      const top = Math.max(cursor, want);
+      if (top + h > avail) { dropped++; continue; }
+      const tone = it[0] ? LEAD : PLAIN;
+      out.push({ top, h, right: 0, text: it[2], meta: it[3] || '', sub: [it[3] || '', it[5] ? '국사편찬위원회 연표' : '', it[4] ? `원문 ${it[4].toUpperCase()}` : ''].filter(Boolean).join(' · '), tag: it[4] || '', mark: it[5] ? '◆' : '', fs: tone.fs, fw: tone.fw, color: tone.color });
+      cursor = top + h + 2;
+    }
+    return { items: out, dropped };
+  }
+  /** 'N건 더' 배지가 앉는 아래쪽 띠(높이 20px)와 겹치는 항목만 오른쪽을 비운다 — 글줄과 배지가 겹치지 않게. */
+  reserve(items, more, avail, lane) {
+    if (more <= 0) return items;
+    for (const it of items) if (it.top + it.h > avail - 20) it.right = lane;
+    return items;
+  }
+  build(cols, tops, hLead, hPlain, avail, pad, lane) {
+    return BUCKETS.map((b, i) => ({
+      label: `${b}년대`, top: tops[i], line: b % 100 === 0 ? '#dad5cc' : '#f4f2ee',
+      border: b % 100 === 0 ? '#dad5cc' : '#e7e3dc', eras: ERA_ROW[b],
+      cells: cols.map((r) => {
+        const [items, more] = CELLS[r][b];
+        const p = this.place(items, hLead, hPlain, avail, pad);
+        const total = more + p.dropped;
+        return { items: this.reserve(p.items, total, avail, lane), more: total };
+      }),
+    }));
+  }
+  listRows(cols) {
+    return BUCKETS.map((b, i) => ({
+      label: `${b}년대`, top: TOPS[i], border: b % 100 === 0 ? '#dad5cc' : '#e7e3dc', eras: ERA_ROW[b],
+      cells: cols.map((r) => {
+        const [items, more] = CELLS[r][b];
+        const keep = items.slice(0, 3);
+        const total = more + (items.length - keep.length);
+        return {
+          more: total,
+          items: keep.map((it, k) => { const t = it[0] ? LEAD : PLAIN; return { h: it[0] ? 20 : 18, pr: total > 0 && k === keep.length - 1 && keep.length >= 3 ? 52 : 0, text: it[2], meta: it[3] || '', tag: it[4] || '', fs: it[0] ? 14 : 12.5, fw: t.fw, color: t.color }; }),
+        };
+      }),
+    }));
+  }
+  mini(h) {
+    const span = 2526, y0 = -499;
+    return MINI_ERAS.map((e, i) => ({ top: ((e[0] - y0) / span) * h, h: ((e[1] - e[0]) / span) * h, bg: MINI_STEP[i] }));
+  }
+  renderVals() {
+    const cols = ['kr', 'cn', 'jp', 'us'];
+    const rowsA = this.build(cols, TOPS, 24, 20, 78, 2, 62);
+    return {
+      rowsA,
+      rowsC: this.listRows(cols),
+      rowsM: this.build(['kr', 'cn'], TOPS_M, 24, 20, 78, 2, 30),
+      axisRows: BUCKETS.map((b, i) => ({ label: `${b}년대`, top: TOPS[i], line: b % 100 === 0 ? '#dad5cc' : '#f4f2ee' })),
+      axisRowsM: BUCKETS.map((b, i) => ({ label: `${b}`, top: TOPS_M[i], line: b % 100 === 0 ? '#dad5cc' : '#f4f2ee' })),
+      curEra: '일제강점기',
+      axisEras: ERAS.kr.filter((e) => e[0] > 50).map((e) => ({ top: e[0], h: e[1], label: e[2], labelTop: e[0] + 4 })),
+      axisErasM: ERAS.kr.filter((e) => e[0] > 46).map((e) => ({ short: e[2], labelTop: e[0] + 4 })),
+      mini: this.mini(816),
+      miniM: this.mini(788),
+      headers: cols.map((r) => ({ col: REG[r], flag: `flags/${r}.svg`, name: NAME[r], era: ERA_NOW[r] })),
+      headersM: ['kr', 'cn'].map((r) => ({ col: REG[r], flag: `flags/${r}.svg`, name: NAME[r] })),
+      colsB: cols.map((r) => ({
+        col: REG[r], flag: `flags/${r}.svg`, name: NAME[r], era: ERA_NOW[r],
+        lugs: ERAS[r].map((e, i) => ({ top: e[0], h: e[1], bg: i % 2 ? '#eae7e1' : '#cec8bd' })),
+        rows: BUCKETS.map((b, i) => {
+          const [items, more] = CELLS[r][b];
+          const p = this.place(items, 34, 28, 78, 2);
+          const total = more + p.dropped;
+          return { top: TOPS[i], line: b % 100 === 0 ? '#dad5cc' : '#f4f2ee', items: this.reserve(p.items, total, 78, 64), more: total };
+        }),
+        eras: ERAS[r].filter((e) => e[0] > 56).map((e) => ({ top: e[0] })),
+      })),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

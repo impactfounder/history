@@ -26,6 +26,23 @@ import {
   type Axis,
   type Level,
 } from "@/lib/timeline/axis";
+import { assignLanes, baseTier, SPAN_MIN_PX, tierOf, type Tier } from "@/lib/timeline/rank";
+import { layoutCell } from "@/lib/timeline/layout-cell";
+import { originalTag } from "@/lib/timeline/item-kind";
+import {
+  AXIS_LABEL_W,
+  CARD_GAP,
+  CELL_PAD,
+  COLUMN_HEADER_H,
+  ERA_TICK_W,
+  ITEM_H,
+  ITEM_INSET_END,
+  ITEM_INSET_START,
+  LUG_W,
+  MINIMAP_W,
+  TOPBAR_H,
+  ZOOM_FLOAT_INSET,
+} from "@/lib/design/metrics";
 import { LOCALES, LOCALE_LABEL, LOCALE_REGION, REGION_LABEL, T, eventLabel, formatRowLabelL, formatYearL, isEventName, isLocale, localePath, nameIn, type Locale } from "@/lib/i18n";
 
 /** 기본 4열 (PRD §5-2). */
@@ -39,47 +56,11 @@ type RegionId = (typeof COLUMNS)[number]["id"];
 
 /** 셀당 최대 칩 수(PRD §5-3). 넘치면 `+N`. */
 /**
- * 칩 높이(px). 위계는 색이 아니라 **크기**로(대표 제안 2026-09-05): 5는 크고 굵게, 4는 중간, 3 이하는 작게.
- * 검은 바탕 칩은 격자를 바둑판처럼 만들고 원문 텍스트를 가린다 — 흰 바탕에 글자 크기·굵기·테두리만 다르다.
+ * 발행 데이터에 티어가 아직 안 붙은 경우(첫 페인트)의 폴백.
+ * 티어는 이제 **글자 크기에 쓰지 않는다**(그건 itemKind가 맡는다). 남은 쓰임은 둘 —
+ * 셀 안 선별 순서(청크 정렬)와 기간 프레임 자격("티어 3은 프레임을 갖지 못한다").
  */
-const CHIP_H: Record<number, number> = { 5: 26, 4: 22 };
-const chipH = (imp: number) => CHIP_H[imp] ?? 20;
-const CHIP_GAP = 2;
-const CELL_PAD = 2;
-
-interface PlacedChip { ev: PublishedEvent; top: number; h: number }
-
-/**
- * 셀 안 배치(2026-09-05, "행이 넓어지면 아래가 빈다"에 대한 답). 두 단계:
- *  1) 중요도 순(청크 순서)으로 행 높이 예산에 들어갈 만큼 고른다 — 개수 상한이 아니라 높이 상한.
- *  2) 고른 것을 시간 순으로 실제 시점 위치(연·월 오프셋)에 놓되, 앞 칩과 겹치면 아래로 민다.
- * 행이 낮으면(십년 80px) 지금처럼 위에서 쌓이고, 행이 높으면(십년 400px·연도 399px) 시간을 따라
- * 퍼져서 빈 자리가 "사건 없는 시간"으로 읽힌다. 월은 원문 표기가 있을 때만(m).
- */
-function layoutCell(evs: PublishedEvent[], h: number, b: number, unit: number): { placed: PlacedChip[]; hidden: number } {
-  const avail = h - CELL_PAD * 2;
-  const chosen: PublishedEvent[] = [];
-  let used = 0;
-  for (const ev of evs) {
-    const ch = chipH(ev.regions[0]?.imp ?? 3);
-    if (used + ch > avail) break;
-    chosen.push(ev);
-    used += ch + CHIP_GAP;
-  }
-  const at = (ev: PublishedEvent) => ev.y0 + ((ev.m ?? 1) - 1) / 12;
-  chosen.sort((a, c) => at(a) - at(c) || (c.regions[0]?.imp ?? 0) - (a.regions[0]?.imp ?? 0));
-  const placed: PlacedChip[] = [];
-  let cursor = CELL_PAD;
-  for (const ev of chosen) {
-    const ch = chipH(ev.regions[0]?.imp ?? 3);
-    const want = CELL_PAD + ((at(ev) - b) / unit) * h;
-    const top = Math.max(cursor, Math.min(want, h - CELL_PAD - ch)); // 시점 위치, 단 바닥을 넘기지 않는다
-    if (top + ch > h - CELL_PAD) break;
-    placed.push({ ev, top, h: ch });
-    cursor = top + ch + CHIP_GAP;
-  }
-  return { placed, hidden: evs.length - placed.length };
-}
+const tierOfEvent = (ev: PublishedEvent): Tier => ev.tier ?? baseTier(ev.regions[0]?.imp ?? 3);
 
 /** 행 안 보조선: 십년 행은 연 단위, 연도 행은 월 단위. 행이 이만큼 높을 때만(선 사이 20px 이상). */
 const subdivisions = (level: Level, h: number): number => (level === "decade" && h >= 200 ? 10 : level === "year" && h >= 240 ? 12 : 0);
@@ -117,6 +98,12 @@ interface PublishedEvent {
   date_ko: string;
   /** 국사편찬위 연표에 맞춰진 공식 항목 수(한국 열). */
   official?: number;
+  /**
+   * 표시 등급 1~3. 발행 데이터에는 없고 **청크가 도착할 때 한 번** 계산해 박아 둔다
+   * (lib/timeline/rank.ts). 렌더 중에는 읽기만 하므로 비용이 0이고, 스크롤·줌 사이에
+   * 같은 칩의 굵기가 흔들리지 않는다.
+   */
+  tier?: Tier;
 }
 interface Chunk { events: PublishedEvent[] }
 /** 국사편찬위원회 연표 한 항목 — 원문 그대로. */
@@ -156,10 +143,7 @@ interface Polity {
 type Polities = Partial<Record<RegionId, Polity[]>>;
 
 const DATA = "/data/v1";
-/** 정치체 스티키 헤더 라벨 높이(px). 밴드가 이보다 얕으면 라벨 없이 색 띠만(PRD §5-10 조건 ④). */
-const BAND_LABEL_H = 22;
-/** 스크롤 컨테이너 상단의 열 헤더 높이(px). 밴드 라벨은 그 아래에 붙는다. */
-const COLUMN_HEADER_H = 34;
+// BAND_LABEL_H · COLUMN_HEADER_H는 lib/design/metrics.ts가 원본이다(globals.css가 사본, 테스트가 계약).
 
 /** 착지(§5-7, C-1 권고안): 십년 레벨로 최근 수십 년. 1980을 중앙에 두면 766px 뷰포트에 1930년대~현재가 든다. */
 const LANDING_YEAR = 1980;
@@ -186,28 +170,19 @@ function readUrlState(): { y: number | null; s: number | null; r: RegionId[] | n
 }
 
 /**
- * 열 색(대표 지시 2026-09-05: "나라가 한눈에 구분돼야"). 칩·본문은 흑백 그대로, 열 헤더의 나라 이름과
- * 윗선에만 쓴다. 브랜드 팔레트(A-3)는 미정이라 나라 구분용 4색만 — 흔한 연상(한국 파랑·중국 빨강)을 따르고
- * 일본·미국은 겹치지 않는 보라·초록.
+ * 나라 색은 이제 **세 곳에만** 나온다 — 열 헤더의 이름, 그 아래 3px 밑선, 상세의 관점별 명칭 라벨.
+ * 격자 안은 무채색이다(README 규칙 1). 값은 globals.css의 --color-region-* 토큰이고
+ * 여기서는 var() 문자열만 만든다 — 컴포넌트에 hex를 쓰지 않는다(AGENTS.md).
  */
-const REGION_COLOR: Record<RegionId, string> = { kr: "#0047A0", cn: "#C8102E", jp: "#6D28D9", us: "#1F6E43" };
+const regionVar = (id: RegionId) => `var(--color-region-${id})`;
 /** 국기(public/flags, 위키미디어 공용의 공유 저작물). 윈도우는 국기 이모지를 못 그려서 SVG로. */
 const FLAG: Record<RegionId, string> = { kr: "/flags/kr.svg", cn: "/flags/cn.svg", jp: "/flags/jp.svg", us: "/flags/us.svg" };
 
-const rgba = (hex: string, a: number) => {
-  const n = parseInt(hex.slice(1), 16);
-  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
-};
 /**
- * 정치체 밴드 배경(대표 제안 2026-09-05: "왕조마다 배경을 다르게"). 열 색의 농도만 번갈아 쓴다 —
- * 왕조마다 다른 색을 주면 네 열이 무지개가 되고, 흰 칩 위의 글자 대비도 흔들린다. 농도 세 단계를
- * 돌려 이웃한 왕조가 언제나 다르게 보이게 하고, 경계에는 진한 선을 긋는다.
+ * 왕조 러그 — 배경 밴드를 대신한다(README 7-4). 색이 아니라 명암 두 톤이므로 네 열이
+ * 무지개가 되지 않고, 3px 폭이라 글자 대비를 깎지도 않는다. 이름은 열 헤더(sticky)에만 나온다.
  */
-const BAND_ALPHA = [0.045, 0.1, 0.02];
-const bandStyle = (region: RegionId, i: number) => ({
-  background: rgba(REGION_COLOR[region], BAND_ALPHA[i % BAND_ALPHA.length]!),
-  borderTop: `1px solid ${rgba(REGION_COLOR[region], 0.35)}`,
-});
+const lugVar = (i: number) => (i % 2 === 0 ? "var(--color-lug-a)" : "var(--color-lug-b)");
 
 /** 그 해 그 열의 정치체. 밴드는 약 40개라 선형 탐색으로 충분하다. */
 const polityAt = (list: Polity[] | undefined, year: number): Polity | undefined =>
@@ -249,17 +224,6 @@ export function TimelineGrid() {
   /** <1024px 바텀 시트의 반 높이(50svh) ↔ 전체(100dvh) 토글(PRD §5-7 §4-3). */
   const [sheetFull, setSheetFull] = useState(false);
   /** 첫 방문 1회 힌트(§5-7 착지). 본 적 있으면 안 띄운다 — 브라우저에만 남기는 값이다. */
-  const [hint, setHint] = useState<null | "touch" | "desktop">(null);
-  useEffect(() => {
-    try {
-      if (localStorage.getItem("history:hintSeen")) return;
-    } catch { /* 사생활 보호 모드 — 힌트는 띄우되 기억하지 않는다 */ }
-    setHint(matchMedia("(pointer: coarse)").matches ? "touch" : "desktop");
-  }, []);
-  const dismissHint = () => {
-    setHint(null);
-    try { localStorage.setItem("history:hintSeen", "1"); } catch { /* 무시 */ }
-  };
 
   const [polities, setPolities] = useState<Polities>({});
   /** UI 언어(대표 지시 2026-09-05). 한국어 기본, URL ?lang=로 왕복. 사건 라벨·열 이름·연도 표기·문구가 바뀐다. */
@@ -326,7 +290,13 @@ export function TimelineGrid() {
     inflight.current.add(path);
     fetch(withV(path))
       .then((r) => (r.ok ? (r.json() as Promise<Chunk>) : null))
-      .then((c) => chunks.current.set(path, c?.events ?? null)) // 404도 기록 — 빈 구간은 다시 묻지 않는다
+      .then((c) => {
+        const evs = c?.events ?? null;
+        // 표시 등급을 여기서 한 번 계산해 박는다. 청크는 발행 시 `imp desc → sl desc`로 정렬돼
+        // 있으므로 배열 인덱스가 곧 순위다 — 재발행 없이 레벨 안 상대 위계를 얻는다(rank.ts).
+        if (evs) for (let i = 0; i < evs.length; i++) evs[i]!.tier = tierOf(evs[i]!.regions[0]?.imp ?? 3, i, evs.length);
+        chunks.current.set(path, evs); // 404도 기록 — 빈 구간은 다시 묻지 않는다
+      })
       .catch(() => chunks.current.set(path, null))
       .finally(() => {
         inflight.current.delete(path);
@@ -619,27 +589,25 @@ export function TimelineGrid() {
 
   return (
     <div className="flex h-full flex-col text-[13px]">
-      {/* 상단바 — PRD §5-10, 56px */}
-      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-neutral-200 px-4">
-        {/* 자리 고정(대표 지시 2026-09-05): 언어를 바꿔도 문구 길이가 달라지는 것은 배지·안내문뿐이고,
-            추천 연도 칩과 오른쪽 언어·출처는 늘 같은 자리다. 배지는 truncate, 안내문은 고정 폭 상자 */}
+      {/* 상단바 — 44px 한 줄(README 7-1). 알약·사각 버튼을 걷어내고 텍스트 링크로 낮췄다.
+          「자리 고정」 규약은 유지한다 — 언어를 바꿔도 각 조각의 폭이 변하지 않아야 한다 */}
+      <header className="flex shrink-0 items-center gap-4 border-b border-line px-4" style={{ height: TOPBAR_H }}>
         <span className="shrink-0 font-semibold tracking-tight">history</span>
-        {/* 추천 연도 칩(§11 C-1) — 네 열이 동시에 촘촘한 해. 조작을 배우기 전에 제품의 답을 먼저 보여준다 */}
-        <nav className="flex shrink-0 gap-1 text-[11px]" aria-label={t.recommended}>
+        {/* 추천 연도(§11 C-1) — 네 열이 동시에 촘촘한 해. 조작을 배우기 전에 제품의 답을 먼저 보여준다 */}
+        <nav className="flex shrink-0 gap-4 text-meta" aria-label={t.recommended}>
           {[1592, 1882, 1945].map((y) => (
-            <button key={y} type="button" onClick={() => goTo(y)} className="w-[62px] rounded-full border border-neutral-300 px-2 py-0.5 text-center text-neutral-600 tabular-nums hover:bg-neutral-100">
+            <button key={y} type="button" onClick={() => goTo(y)} className="text-fg-subtle tabular-nums hover:text-fg">
               {formatYearL(y, locale)}
             </button>
           ))}
         </nav>
         {manifest?.stage === "preview" ? (
-          <span className="min-w-0 truncate rounded bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-800">{t.badgePreview(manifest.counts.events)}</span>
+          <span className="ml-auto min-w-0 truncate rounded bg-warn-surface px-1.5 py-0.5 text-meta text-warn-text">{t.badgePreview(manifest.counts.events)}</span>
         ) : (
-          <span className="min-w-0 truncate text-neutral-400">{manifest ? t.badge(manifest.counts.events) : t.noData}</span>
+          <span className="ml-auto min-w-0 truncate text-meta text-fg-subtle">{manifest ? t.badge(manifest.counts.events) : t.noData}</span>
         )}
-        <span className="ml-auto hidden w-[330px] shrink-0 truncate text-right text-neutral-500 lg:inline">{t.siteHint}</span>
-        {/* 언어(대표 지시 2026-09-05): 한국어 기본, URL ?lang=. 사건 이름은 위키데이터 4개 언어판 표제어에서 */}
-        <nav className="flex shrink-0 gap-0.5 text-[11px]" aria-label={t.language}>
+        {/* 언어(대표 지시 2026-09-05): 한국어 기본, URL ?lang=. 현재 언어만 진하게 */}
+        <nav className="flex shrink-0 gap-3 text-meta" aria-label={t.language}>
           {LOCALES.map((l) => (
             <button
               key={l}
@@ -647,40 +615,52 @@ export function TimelineGrid() {
               onClick={() => setLocale(l)}
               aria-pressed={locale === l}
               title={LOCALE_LABEL[l]}
-              className={`w-7 rounded py-0.5 text-center uppercase ${locale === l ? "bg-neutral-900 text-white" : "text-neutral-500 hover:bg-neutral-100"}`}
+              className={locale === l ? "font-semibold text-fg" : "text-fg-subtle hover:text-fg"}
             >
-              {l}
+              {l === "ko" ? "한국어" : l === "en" ? "EN" : l === "ja" ? "日" : "中"}
             </button>
           ))}
         </nav>
-        {/* 언어마다 길이가 다른 마지막 조각(출처/Sources/出典/来源)도 고정 폭 — 아니면 왼쪽 언어 버튼이 밀린다 */}
-        <a href={localePath(locale, "/sources")} className="w-14 shrink-0 truncate text-right text-[11px] text-neutral-500 underline">{t.sources}</a>
+        {/* 언어마다 길이가 다른 마지막 조각(출처/Sources/出典/来源)도 고정 폭 — 아니면 왼쪽 언어 묶음이 밀린다 */}
+        <a href={localePath(locale, "/sources")} className="w-14 shrink-0 truncate text-right text-meta text-fg-subtle underline">{t.sources}</a>
       </header>
 
-      <div className="relative flex min-h-0 flex-1">
-        {/* 시대 레일 — 네이티브 스크롤바를 대신한다(§5-10) */}
+      {/* 중간 영역. 배경이 캔버스라 열 카드 사이 10px으로 드러난다(README 7-3) */}
+      <div className="relative flex min-h-0 flex-1 bg-canvas">
+        {/* 시대 미니맵 10px — 레일 64 + 거터 56 = 120px을 86px 한 축으로 합친 그 왼쪽 끝(README 7-2).
+            라벨은 없앴다. 왕조 이름은 열 헤더(sticky)가 맡는다 */}
         <div
           ref={railRef}
           onPointerDown={(e) => jumpFromRail(e.clientY)}
-          // 폭 사다리: <768 숨김(모바일 스크러버는 다음) · ~1440 40px · >1440 64px
-          className="relative hidden w-10 shrink-0 cursor-grab border-r border-neutral-200 bg-neutral-50 select-none md:block wide:w-16"
-          title={t.railTitle}
+          className="relative hidden shrink-0 cursor-grab bg-surface-sunken select-none md:block"
+          style={{ width: MINIMAP_W }}
+          title={t.minimapTitle}
         >
-          {/* 홈 열(첫 열) 정치체 색 띠 — 연도 도메인으로 매핑한다(§5-5A: 스크롤 비율이 아니다) */}
+          {/* 홈 열(첫 열) 왕조를 무채색 두 톤 계단으로 — 연도 도메인으로 매핑한다(§5-5A: 스크롤 비율이 아니다) */}
           {(polities[cols[0] ?? "kr"] ?? []).map((p, i) => {
             const y0 = Math.max(p.y0, AXIS_YEAR_START);
             const y1 = Math.min(p.y1 ?? AXIS_YEAR_END + 1, AXIS_YEAR_END + 1);
             if (y1 <= y0) return null;
             const top = railY(y0, railH);
-            const h = railY(y1, railH) - top;
-            return (
-              <div key={p.id} className="absolute inset-x-0 overflow-hidden" style={{ top, height: h, ...bandStyle(cols[0] ?? "kr", i) }} title={polityLabel(p)}>
-                {h >= 14 && <div className="truncate px-1 text-[10px] leading-[14px] text-neutral-500">{polityName(p)}</div>}
-              </div>
-            );
+            return <div key={p.id} className="absolute inset-x-0" style={{ top, height: railY(y1, railH) - top, background: lugVar(i) }} title={polityLabel(p)} />;
           })}
-          <div className="absolute inset-x-1 rounded bg-neutral-400/70" style={{ top: win.top, height: win.height }} />
+          {/* 뷰포트 창 — 위아래 실선 + 옅은 채움 */}
+          <div className="absolute inset-x-0 border-y-[1.5px] border-fg bg-fg/[.08]" style={{ top: win.top, height: win.height }} />
         </div>
+
+        {/* 격자 — 카드 프레임 층(스크롤 안 함) 위에 스크롤러가 얹힌다 */}
+        <div className="relative min-w-0 flex-1">
+          {/*
+            열 카드 테두리는 **스크롤하지 않는 층**에 그린다(README 7-3). 스크롤 컨테이너가 시간축
+            그 자체이고 스페이서가 2만 px을 넘으므로, 카드를 스크롤 콘텐츠 안에 두면 둥근 모서리가
+            축의 양 끝에서만 보인다. 이 층은 뷰포트 높이에 고정이라 위아래 모서리가 늘 보인다.
+          */}
+          <div className="pointer-events-none absolute inset-0 z-0 flex" aria-hidden>
+            <div className="shrink-0" style={{ width: AXIS_LABEL_W }} />
+            {shown.map((c) => (
+              <div key={c.id} className="min-w-0 flex-1 rounded-card border border-line bg-surface" style={{ marginLeft: CARD_GAP }} />
+            ))}
+          </div>
 
         {/* 스크롤 컨테이너 = 시간축 그 자체 (§5-5A) */}
         <div
@@ -690,19 +670,19 @@ export function TimelineGrid() {
           tabIndex={0}
           role="region"
           aria-label={t.timelineAria}
-          className="relative min-w-0 flex-1 overflow-y-auto outline-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="relative z-10 h-full overflow-y-auto bg-transparent outline-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           style={{ overflowAnchor: "none", overscrollBehaviorY: "contain", touchAction: "pan-y" }}
         >
-          {/* 열 헤더 — 열 이름 + 뷰포트 상단 연도의 정치체(파생 표시). 밴드가 얕아 sticky 라벨이
-              숨는 구간에서도 어느 시대인지 안다(PRD §5-10 조건 ④의 보완) */}
-          <div className="sticky top-0 z-10 flex border-b border-neutral-200 bg-white/95 text-[11px] font-medium text-neutral-600 backdrop-blur" style={{ height: COLUMN_HEADER_H }}>
-            <div className="w-12 shrink-0 wide:w-14 border-r border-neutral-200" />
+          {/* 열 헤더 = 카드의 머리(README 7-3). 나라색 바탕을 없애고 흰 면 + 이름의 색 + 3px 밑선으로.
+              polityAt(뷰포트 상단 연도)를 보므로 스크롤하면 왕조 이름이 저절로 바뀐다 —
+              별도의 스티키 라벨 층이 필요 없어지는 이유다 */}
+          <div className="sticky top-0 z-20 flex" style={{ height: COLUMN_HEADER_H }}>
+            <div className="shrink-0" style={{ width: AXIS_LABEL_W }} />
             {shown.map((c, i) => {
               const p = polityAt(polities[c.id], yToYear(scrollTop + COLUMN_HEADER_H, axis));
-              const btn = "rounded px-1 leading-none text-white/70 hover:bg-white/25 hover:text-white disabled:invisible";
+              const btn = "rounded px-1 leading-none text-fg-subtle hover:bg-surface-hover hover:text-fg disabled:invisible";
               const label = regionLabel(c.id);
               return (
-                // 나라 구분(대표 지시): 윗선과 이름에 열 색. 드래그로 순서 바꾸기(HTML5 DnD) — 놓는 열의 자리로 옮긴다
                 <div
                   key={c.id}
                   draggable
@@ -710,33 +690,35 @@ export function TimelineGrid() {
                   onDragOver={(e) => { if (dragCol.current && dragCol.current !== c.id) { e.preventDefault(); e.dataTransfer.dropEffect = "move"; } }}
                   onDrop={(e) => { e.preventDefault(); if (dragCol.current) moveColTo(dragCol.current, c.id); dragCol.current = null; }}
                   onDragEnd={() => { dragCol.current = null; }}
-                  // 나라 헤더는 본문보다 크고 진하게(대표 지시): 나라 색 바탕 + 국기 + 흰 글씨. 열이 어느 나라인지 한눈에
-                  className="group flex min-w-0 flex-1 cursor-grab items-center gap-2 border-r border-white/40 px-2 text-white active:cursor-grabbing"
-                  style={{ background: REGION_COLOR[c.id] }}
+                  className="group relative flex min-w-0 flex-1 cursor-grab items-center gap-2 rounded-t-card border-b border-line bg-surface px-3 active:cursor-grabbing"
+                  style={{ marginLeft: CARD_GAP }}
                 >
-                  <img src={FLAG[c.id]} alt="" width={24} height={16} className="h-4 w-6 shrink-0 rounded-[2px] object-cover shadow-sm" draggable={false} />
-                  <span className="shrink-0 text-[14px] font-bold tracking-tight">{label}</span>
-                  {p && <span className="min-w-0 truncate text-[12px] font-normal text-white/85">{polityLabel(p)}</span>}
-                  {/* 열 조작(§4-1): 순서 ◂ ▸, 빼기 ×. 마우스를 올렸을 때만. 마지막 한 열은 뺄 수 없다 */}
-                  <span className="ml-auto flex shrink-0 gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100">
+                  <img src={FLAG[c.id]} alt="" width={20} height={14} className="h-[14px] w-5 shrink-0 rounded-[2px] object-cover opacity-90" draggable={false} />
+                  <span className="shrink-0 text-col font-bold tracking-tight" style={{ color: regionVar(c.id) }}>{label}</span>
+                  {/* 시대는 색이 아니라 서체로(README 규칙 2) */}
+                  {p && <span className="min-w-0 truncate font-serif text-meta text-fg-muted">{polityLabel(p)}</span>}
+                  {/* 열 조작(§4-1): 순서 ◂ ▸, 빼기 ×. 마지막 한 열은 뺄 수 없다 */}
+                  <span className="ml-auto flex shrink-0 gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100">
                     <button type="button" className={btn} disabled={i === 0} onClick={() => moveCol(c.id, -1)} aria-label={t.colLeft(label)}>◂</button>
                     <button type="button" className={btn} disabled={i === shown.length - 1} onClick={() => moveCol(c.id, 1)} aria-label={t.colRight(label)}>▸</button>
                     <button type="button" className={btn} disabled={shown.length === 1} onClick={() => removeCol(c.id)} aria-label={t.colRemove(label)}>×</button>
                   </span>
+                  {/* 나라색이 남는 두 곳 중 하나 — 이름과 이 3px 밑선 */}
+                  <span className="absolute inset-x-0 bottom-0 h-[3px]" style={{ background: regionVar(c.id) }} aria-hidden />
                 </div>
               );
             })}
             {/* 열 넣기 — 행과 폭을 맞추기 위해 헤더 오른쪽 끝에 얹는다(셀을 추가하면 열 폭이 어긋난다) */}
             {hiddenCols.length > 0 && (
-              <details className="absolute right-1 top-0.5 z-20 text-[11px]">
-                <summary className="cursor-pointer list-none rounded border border-neutral-300 bg-white px-1.5 leading-[18px] text-neutral-600 hover:bg-neutral-100">{t.addColumn}</summary>
-                <div className="absolute right-0 mt-1 flex flex-col rounded border border-neutral-200 bg-white py-1 shadow">
+              <details className="absolute right-1 top-1 z-20 text-meta">
+                <summary className="cursor-pointer list-none rounded border border-line-strong bg-surface px-1.5 leading-[18px] text-fg-muted hover:bg-surface-hover">{t.addColumn}</summary>
+                <div className="absolute right-0 mt-1 flex flex-col rounded border border-line bg-surface py-1 shadow-[var(--shadow-float)]">
                   {hiddenCols.map((c) => (
                     <button
                       key={c.id}
                       type="button"
-                      className="px-3 py-1 text-left hover:bg-neutral-100"
-                      style={{ color: REGION_COLOR[c.id] }}
+                      className="px-3 py-1 text-left hover:bg-surface-hover"
+                      style={{ color: regionVar(c.id) }}
                       onClick={(e) => { addCol(c.id); (e.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open"); }}
                     >
                       {regionLabel(c.id)}
@@ -749,45 +731,66 @@ export function TimelineGrid() {
 
           {/* 스페이서 */}
           <div className="relative w-full" style={{ height: contentHeight(axis) }}>
-            {/* 정치체 밴드 — 색 띠 층. 행 아래에 깔린다. 약 40개라 가상화하지 않는다(§5-5A 레이어, 조건 ⑤) */}
+            {/* 왕조 — 배경 밴드를 지우고 러그(3px)와 틱(20px)으로(README 7-4).
+                배경 농도 교대는 글자 대비를 깎으면서 그 대가로 아무 이름도 알려주지 않았다.
+                이름은 열 헤더가 맡고, 여기서는 "언제 바뀌었나"만 말한다.
+                약 40개라 가상화하지 않는다(§5-5A 레이어) */}
             <div className="pointer-events-none absolute inset-0 flex" aria-hidden>
-              <div className="w-12 shrink-0 wide:w-14" />
+              <div className="shrink-0" style={{ width: AXIS_LABEL_W }} />
               {shown.map((c) => (
-                <div key={c.id} className="relative min-w-0 flex-1">
+                <div key={c.id} className="relative min-w-0 flex-1" style={{ marginLeft: CARD_GAP }}>
                   {(polities[c.id] ?? []).map((p, i) => {
                     const y0 = Math.max(p.y0, AXIS_YEAR_START);
                     const y1 = Math.min(p.y1 ?? AXIS_YEAR_END + 1, AXIS_YEAR_END + 1);
                     if (y1 <= y0) return null;
+                    const top = yearToY(y0, axis);
                     return (
-                      <div key={p.id} className="absolute inset-x-0" style={{ top: yearToY(y0, axis), height: (y1 - y0) * axis.s, ...bandStyle(c.id, i) }} />
+                      <span key={p.id}>
+                        <span className="absolute left-0" style={{ top, height: (y1 - y0) * axis.s, width: LUG_W, background: lugVar(i) }} />
+                        {/* 전체 폭 실선은 쓰지 않는다 — 시안 첫 판에서 얄타 회담의 메타 줄을 가로질렀다 */}
+                        <span className="absolute border-t border-era-tick" style={{ top, left: LUG_W, width: ERA_TICK_W }} />
+                      </span>
                     );
                   })}
                 </div>
               ))}
             </div>
-            {/* 기간 막대 층 — 끝 연도(y1)가 있는 사건은 칩 시작점부터 끝까지 열 오른쪽 가장자리에 세로 막대(PRD §5-5 "기간 막대").
-                행 셀은 overflow hidden이라 행을 넘는 기간은 여기서 그린다. 칩 높이보다 짧은 기간은 그리지 않는다 */}
+            {/* 기간 프레임 층(②a) — 지속을 **세로 범위**로 그린다(2026-09-09).
+                이전에는 열 왼쪽 여백의 3px 실선이었는데, 그러면 지속이 시간축 위의 길이가 아니라
+                한낱 표시가 된다. 이제 사건을 그 연도 수만큼 실제로 감싼다 — 시점 사건은 구조적으로
+                흉내낼 수 없으므로 혼동이 없다. 채움 없이 테두리만 쓴다("빈 셀은 비어 있다"를 지키려면
+                프레임이 열 배경을 바꾸면 안 된다).
+                행 셀은 overflow hidden이라 행을 넘는 기간은 여기서 그린다. 프레임의 머리는 같은 사건의
+                칩 그 자체다 — 칩이 이름을 대고 프레임이 범위를 댄다. 그래서 별도 라벨도, 셀에서 빼는
+                처리도, 클릭 통과 문제도 생기지 않는다.
+                60px보다 짧으면 프레임을 포기하고 칩 라벨의 "1592–1598"로 넘긴다(rank.SPAN_MIN_PX) */}
             <div className="pointer-events-none absolute inset-0 flex" aria-hidden>
-              <div className="w-12 shrink-0 wide:w-14" />
+              <div className="shrink-0" style={{ width: AXIS_LABEL_W }} />
               {shown.map((c) => {
-                const spans = chunkKeys
+                const cand = chunkKeys
                   .flatMap((key) => chunks.current.get(`${DATA}/events/${c.id}/${key}.json`) ?? [])
-                  .filter((ev) => ev.y1 !== undefined && ev.y1 > ev.y0 && (ev.y1 + 1 - ev.y0) * axis.s > chipH(ev.regions[0]?.imp ?? 3) + 8)
-                  .sort((a, b) => a.y0 - b.y0);
+                  // 티어 3은 프레임을 갖지 못한다. 프레임은 "이 안의 일들이 그 기간에 일어났다"는 강한 주장인데,
+                  // 셀을 이끌 만하지 않은 항목이 그 주장을 하면 사실관계를 왜곡한다. 실제로 오파싱된
+                  // "프룬제 아카데미아 …(1980–1994, 실제 1992년)"이 5·18 광주 민주화 운동을 감싸고 있었다
+                  .filter((ev) => ev.y1 !== undefined && ev.y1 > ev.y0 && tierOfEvent(ev) <= 2)
+                  .map((ev) => {
+                    const top = yearToY(ev.y0 + ((ev.m ?? 1) - 1) / 12, axis) + CELL_PAD;
+                    return { ev, top, bottom: yearToY(ev.y1! + 1, axis) };
+                  })
+                  .filter((s) => s.bottom - s.top >= SPAN_MIN_PX)
+                  .sort((a, b) => a.top - b.top);
+                const lanes = assignLanes(cand);
                 return (
-                  <div key={c.id} className="relative min-w-0 flex-1">
-                    {spans.map((ev, i) => {
-                      const y0 = ev.y0 + ((ev.m ?? 1) - 1) / 12;
-                      const top = yearToY(y0, axis) + CELL_PAD;
-                      const h = yearToY(ev.y1! + 1, axis) - top;
-                      const imp = ev.regions[0]?.imp ?? 3;
-                      // 칩 왼쪽 여백(14px)에 3px 막대 세 줄까지. 오른쪽에 두면 "+N" 배지와 겹쳐 무슨 선인지 알 수 없었다(2026-09-05)
+                  <div key={c.id} className="relative min-w-0 flex-1" style={{ marginLeft: CARD_GAP }}>
+                    {cand.map((s, i) => {
+                      const lane = lanes[i]!;
+                      if (lane < 0) return null; // 레인 초과 — 텍스트 표기로 떨어진다
                       return (
                         <div
-                          key={ev.id}
-                          className="absolute rounded-full"
-                          style={{ top, height: h, left: 2 + (i % 3) * 4, width: 3, background: rgba(REGION_COLOR[c.id], imp >= 5 ? 0.55 : imp === 4 ? 0.4 : 0.28) }}
-                          title={`${ev.title} · ${ev.y0}–${ev.y1}`}
+                          key={s.ev.id}
+                          className="absolute rounded-chip border"
+                          style={{ top: s.top, height: s.bottom - s.top, left: 2 + lane * 4, right: 2, borderColor: "var(--color-span-frame)" }}
+                          title={`${s.ev.title} · ${s.ev.y0}–${s.ev.y1}`}
                         />
                       );
                     })}
@@ -800,80 +803,78 @@ export function TimelineGrid() {
               const h = rows.unit * axis.s;
               const sub = subdivisions(rows.level, h);
               return (
-                <div key={b} className="absolute inset-x-0 flex border-t border-neutral-200/70" style={{ top, height: h }}>
-                  {/* 연도 거터 (§5-10). 행이 높으면 보조선 눈금(연·월)도 */}
-                  {/* 연도 거터. 라벨이 행 높이를 넘으면 잘라 다음 행과 겹치지 않게(2026-09-05) */}
-                  <div className="relative w-12 shrink-0 overflow-hidden wide:w-14 border-r border-neutral-200 px-1 leading-[1.15] text-neutral-500 tabular-nums" style={{ fontSize: 10 }}>
-                    <span className="[word-break:keep-all]">{formatRowLabelL(b, rows.level, locale)}</span>
+                <div key={b} className="absolute inset-x-0 flex border-t border-line-hairline" style={{ top, height: h }}>
+                  {/* 연도 라벨 76px — 오른쪽 정렬 + 명조체(README 7-2). 시대·연도는 서체로 사건과 갈린다.
+                      라벨이 행 높이를 넘으면 잘라 다음 행과 겹치지 않게(2026-09-05) */}
+                  <div
+                    className="relative shrink-0 overflow-hidden pr-2 text-right font-serif text-axis text-fg-muted tabular-nums"
+                    style={{ width: AXIS_LABEL_W }}
+                  >
+                    <span className="whitespace-nowrap">{formatRowLabelL(b, rows.level, locale)}</span>
                     {sub > 0 &&
                       Array.from({ length: sub - 1 }, (_, i) => (
-                        <span key={i} className="absolute left-1 text-[10px] text-neutral-300" style={{ top: ((i + 1) / sub) * h - 6 }}>
+                        <span key={i} className="absolute right-2 text-item-meta text-fg-subtle" style={{ top: ((i + 1) / sub) * h - 6 }}>
                           {rows.level === "decade" ? b + i + 1 : locale === "ko" ? `${i + 2}월` : locale === "en" ? ["Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][i] : `${i + 2}月`}
                         </span>
                       ))}
                   </div>
                   {shown.map((c) => {
                     const evs = cellEvents(c.id, b);
-                    const { placed, hidden } = layoutCell(evs, h, b, rows.unit);
+                    const { placed, hidden } = layoutCell(evs, h, b, rows.unit, locale);
+                    // 같은 셀에 같은 표제어가 둘 이상이면(도요토미 히데요시 ×3) 라벨에 원문을 덧붙인다
+                    const seen = new Map<string, number>();
+                    for (const pl of placed) { const n = nameIn(pl.ev, locale); if (n) seen.set(n, (seen.get(n) ?? 0) + 1); }
+                    const dup = new Set([...seen].filter(([, k]) => k > 1).map(([n]) => n));
                     return (
-                      // 세로 구분선은 없앤다 — 가로 격자선·정치체 띠와 겹쳐 어수선했다. 열 사이는 칩 여백으로 구분
-                      <div key={c.id} className="relative min-w-0 flex-1 overflow-hidden">
+                      // 세로 구분선은 없다 — 카드 사이 10px 여백이 그 일을 한다
+                      <div key={c.id} className="relative min-w-0 flex-1 overflow-hidden" style={{ marginLeft: CARD_GAP }}>
                         {sub > 0 &&
                           Array.from({ length: sub - 1 }, (_, i) => (
-                            <div key={i} className="pointer-events-none absolute inset-x-0 border-t border-neutral-100" style={{ top: ((i + 1) / sub) * h }} aria-hidden />
+                            <div key={i} className="pointer-events-none absolute inset-x-0 border-t border-line-hairline" style={{ top: ((i + 1) / sub) * h }} aria-hidden />
                           ))}
-                        {placed.map(({ ev, top: chipTop, h: ch }, idx) => {
-                          // 시각 위계(§5-10)는 크기로: 5 크고 굵게 > 4 중간 > 3 이하 작게. 전승은 기울임.
-                          const imp = ev.regions[0]?.imp ?? 3;
-                          // 위계는 세 층(대표 지적 2026-09-05 "사건 간 구분이 있어야"): 5 = 굵은 카드, 4 = 얇은 카드,
-                          // 3 이하 = 상자 없는 글줄. 카드가 전부면 도표가 되고, 글줄이 전부면 위계가 사라진다
-                          const tone =
-                            imp >= 5
-                              ? "rounded-md border border-neutral-300 bg-white px-2 text-[14px] font-semibold text-neutral-900 shadow-[0_1px_3px_rgba(0,0,0,.10)]"
-                              : imp === 4
-                                ? "rounded-md border border-neutral-200 bg-white px-2 text-[13px] font-medium text-neutral-800"
-                                : "px-1 text-[12px] text-neutral-600 hover:bg-neutral-100/70";
+                        {placed.map(({ ev, kind, top: itemTop, h: ih, laneEnd }, idx) => {
+                          /*
+                            위계가 2단이다(README 규칙 3). 등급의 축이 중요도가 아니라 **UI 언어로 읽히는가**다 —
+                            실측에서 화면의 31%가 한국어 UI인데 영·중 원문이었고, 그 15건이 지저분함의 가장 큰
+                            단일 원인이었다. 중요도 티어(rank.ts)는 셀 안 선별 순서와 기간 프레임 자격에 남지만
+                            글자 크기에는 더 이상 쓰지 않는다.
+                            번역이 채워지면 plain이 저절로 lead로 올라간다 — 디자인이 데이터 품질의 계기판이 된다.
+                          */
+                          const label = eventLabel(ev, locale, dup);
+                          const tag = originalTag(ev, locale);
+                          const meta = [
+                            ev.y1 !== undefined && ev.y1 > ev.y0 ? `${ev.y0}–${ev.y1}` : "",
+                            ev.official ? t.nikhShort : "",
+                            tag ? t.originalIn(ev.lang) : "",
+                          ].filter(Boolean).join(" · ");
                           return (
                             <button
                               key={ev.id}
                               type="button"
-                              // 같은 칩을 다시 누르면 닫는다(토글, 대표 지시 2026-09-05). 다른 칩이면 바꿔 연다
+                              // 같은 항목을 다시 누르면 닫는다(토글, 대표 지시 2026-09-05). 다른 항목이면 바꿔 연다
                               onClick={(e) => { lastChip.current = e.currentTarget; if (selected?.ev.id === ev.id) setSelected(null); else openDetail(ev); }}
                               aria-pressed={selected?.ev.id === ev.id}
                               title={ev.desc && locale === "ko" ? `${yearLabel(ev)} · ${ev.desc}` : yearLabel(ev)}
                               data-col={c.id}
                               data-b={b}
                               data-i={idx}
-                              style={{ top: chipTop, height: ch }}
-                              className={`absolute left-3.5 right-1.5 flex items-center rounded-md text-left focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 ${tone}${ev.hist === "traditional" ? " italic" : ""}${selected?.ev.id === ev.id ? " ring-2 ring-neutral-800 ring-offset-1" : ""}`}
+                              style={{ top: itemTop, height: ih, left: ITEM_INSET_START, right: ITEM_INSET_END, paddingRight: laneEnd }}
+                              className={`absolute flex flex-col justify-center gap-px rounded-item px-1 text-left hover:bg-surface-hover/60 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus${selected?.ev.id === ev.id ? " bg-surface-hover ring-2 ring-selected-ring" : ""}`}
                             >
-                              {imp <= 3 && <span className="mr-1.5 shrink-0 text-neutral-300" aria-hidden>•</span>}
-                              <span className="min-w-0 truncate">
-                                {/* 칩은 짧게(대표 지시 2026-09-05): UI 언어의 사건 이름(사이트링크)이 있으면 그것만, 원문은 상세에.
-                                    같은 셀에 같은 이름이 둘 이상이면(도요토미 히데요시 ×3) 구분을 위해 원문을 덧붙인다 — i18n.eventLabel */}
-                                {(() => {
-                                  const seen = new Map<string, number>();
-                                  for (const p of placed) { const n = nameIn(p.ev, locale); if (n) seen.set(n, (seen.get(n) ?? 0) + 1); }
-                                  const dup = new Set([...seen].filter(([, k]) => k > 1).map(([n]) => n));
-                                  const l = eventLabel(ev, locale, dup);
-                                  return l.name && l.text ? (
-                                    <>
-                                      <span className="font-medium">{l.name}</span>
-                                      <span className="opacity-50"> · </span>
-                                      {l.text}
-                                    </>
-                                  ) : (
-                                    l.name ?? l.text
-                                  );
-                                })()}
-                                {ev.hist === "traditional" && <span className="text-neutral-400"> {t.traditional}</span>}
-                                {ev.official ? <span className="text-neutral-400" title={t.officialMark}> ◆</span> : null}
+                              <span
+                                className={`min-w-0 truncate ${kind === "lead" ? "text-item-lead font-semibold text-fg" : "text-item text-fg-muted"}${ev.hist === "traditional" ? " italic" : ""}`}
+                              >
+                                {label.name ?? label.text}
                               </span>
+                              {meta && <span className="min-w-0 truncate text-item-meta text-fg-subtle tabular-nums">{meta}</span>}
                             </button>
                           );
                         })}
+                        {/* `+26` → `26건 더`. 줄바꿈 금지 · 불투명 — 잘린 글줄 위에 겹쳐 찍히면 읽을 수 없다 */}
                         {hidden > 0 && (
-                          <span className="pointer-events-none absolute bottom-0.5 right-1 rounded bg-white/90 px-1 text-[11px] text-neutral-500">+{hidden}</span>
+                          <span className="pointer-events-none absolute bottom-[3px] whitespace-nowrap bg-surface px-[3px] text-item-meta text-fg-subtle tabular-nums" style={{ right: ITEM_INSET_END }}>
+                            {t.moreCount(hidden)}
+                          </span>
                         )}
                       </div>
                     );
@@ -881,32 +882,40 @@ export function TimelineGrid() {
                 </div>
               );
             })}
-            {/* 정치체 스티키 라벨 층 — 행 위에 얹힌다. 밴드 박스(absolute)의 자식이 sticky(조건 ①),
-                박스에 overflow 없음(②), 조상에 transform 없음(③), 얕은 밴드는 라벨 생략(④) */}
-            <div className="pointer-events-none absolute inset-0 z-[5] flex" aria-hidden>
-              <div className="w-12 shrink-0 wide:w-14" />
-              {shown.map((c) => (
-                <div key={c.id} className="relative min-w-0 flex-1">
-                  {(polities[c.id] ?? []).map((p) => {
-                    const y0 = Math.max(p.y0, AXIS_YEAR_START);
-                    const y1 = Math.min(p.y1 ?? AXIS_YEAR_END + 1, AXIS_YEAR_END + 1);
-                    const h = (y1 - y0) * axis.s;
-                    if (y1 <= y0 || h < BAND_LABEL_H + 8) return null;
-                    return (
-                      // 라벨은 오른쪽에 붙인다 — 칩은 왼쪽에서 흐르므로 첫 행과 덜 겹친다
-                      <div key={p.id} className="absolute inset-x-0 flex items-start justify-end" style={{ top: yearToY(y0, axis), height: h }}>
-                        <div
-                          className="sticky max-w-[70%] truncate rounded-full border bg-white/90 px-2 text-[11px] leading-[18px] backdrop-blur"
-                          style={{ top: COLUMN_HEADER_H + 3, margin: "3px 4px 0 0", height: BAND_LABEL_H - 2, color: REGION_COLOR[c.id], borderColor: rgba(REGION_COLOR[c.id], 0.4) }}
-                        >
-                          {p.hist === "traditional" ? <i>{polityLabel(p)}</i> : polityLabel(p)}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+          </div>
+          </div>
+
+          {/* 떠 있는 줌 컨트롤(README 7-7) — 하단 40px 줌 바를 없애고 격자 위에 얹었다.
+              레이아웃 높이를 먹지 않으므로 격자에 세로 52px이 돌아온다.
+              조작 힌트도 여기 상시 있다 — 첫 방문 1회 알약과 상단바 안내문을 대신한다 */}
+          <div className="absolute z-20 flex items-center gap-2 rounded-lg border border-line-strong bg-surface/95 px-2 py-1.5 shadow-[var(--shadow-float)] backdrop-blur" style={{ right: ZOOM_FLOAT_INSET, bottom: ZOOM_FLOAT_INSET }}>
+            <span className="font-serif text-meta text-fg-strong tabular-nums">{formatYearL(Math.round(centerYear(scrollTop, axis)), locale)}</span>
+            <span className="h-4 w-px bg-line" aria-hidden />
+            <div className="flex items-center gap-0.5" role="group" aria-label={t.zoomGroup}>
+              {LEVEL_STOPS.map((st) => (
+                <button
+                  key={st.level}
+                  type="button"
+                  onClick={() => zoomCenterTo(st.s)}
+                  aria-pressed={rows.level === st.level}
+                  className={`rounded px-2 py-0.5 text-meta ${rows.level === st.level ? "bg-surface-inverse text-fg-inverse" : "text-fg-muted hover:bg-surface-hover"}`}
+                >
+                  {t.level[st.level as Exclude<Level, "month">]}
+                </button>
               ))}
             </div>
+            <span className="h-4 w-px bg-line" aria-hidden />
+            <span className="text-item-meta text-fg-subtle">{t.zoomHint}</span>
+            {process.env.NODE_ENV === "development" && (
+              <details className="font-mono text-item-meta text-fg-subtle">
+                <summary className="cursor-pointer select-none">계측</summary>
+                <div className="absolute right-0 bottom-9 z-30 flex w-max flex-col gap-0.5 rounded border border-line bg-surface p-2 shadow-[var(--shadow-float)]">
+                  <span>레벨 {rows.level}{levelOf(axis.s) !== rows.level && <span className="text-warn-text"> (이력 유지)</span>} · s {axis.s.toFixed(2)} px/년 ({bounds.min.toFixed(2)}–{bounds.max})</span>
+                  <span>스페이서 {Math.round(contentHeight(axis)).toLocaleString("ko-KR")} px · scrollTop {Math.round(scrollTop).toLocaleString("ko-KR")}</span>
+                  <span>보이는 행 {buckets.length} · 청크 {chunkKeys.length}키 · 캐시 {loadedChunks} · 뷰포트 {axis.viewportH}px</span>
+                </div>
+              </details>
+            )}
           </div>
         </div>
 
@@ -916,91 +925,78 @@ export function TimelineGrid() {
           ref={scrubRef}
           onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); jumpFromScrub(e.clientY); }}
           onPointerMove={(e) => { if (e.buttons || e.pointerType === "touch") jumpFromScrub(e.clientY); }}
-          className="relative w-4 shrink-0 touch-none border-r border-neutral-200 bg-neutral-50 select-none md:hidden"
-          title={t.railTitle}
+          className="relative w-4 shrink-0 touch-none border-l border-line bg-surface-sunken select-none md:hidden"
+          title={t.minimapTitle}
         >
           {(polities[cols[0] ?? "kr"] ?? []).map((p, i) => {
             const y0 = Math.max(p.y0, AXIS_YEAR_START);
             const y1 = Math.min(p.y1 ?? AXIS_YEAR_END + 1, AXIS_YEAR_END + 1);
             if (y1 <= y0) return null;
             const top = railY(y0, scrubH);
-            return <div key={p.id} className="absolute inset-x-0" style={{ top, height: railY(y1, scrubH) - top, ...bandStyle(cols[0] ?? "kr", i) }} />;
+            return <div key={p.id} className="absolute inset-x-0" style={{ top, height: railY(y1, scrubH) - top, background: lugVar(i) }} />;
           })}
-          <div className="absolute inset-x-0.5 rounded bg-neutral-500/70" style={{ top: railY(centerYear(scrollTop, axis), scrubH) - 8, height: 16 }} />
+          <div className="absolute inset-x-0.5 rounded bg-fg/70" style={{ top: railY(centerYear(scrollTop, axis), scrubH) - 8, height: 16 }} />
         </div>
 
-        {/* 첫 방문 힌트(§5-7 착지) — 한 번 보면 다시 안 뜬다 */}
-        {hint && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 flex justify-center px-3">
-            <button
-              type="button"
-              onClick={dismissHint}
-              className="pointer-events-auto flex items-center gap-2 rounded-full bg-neutral-900/90 px-3 py-1.5 text-[12px] text-white shadow-lg backdrop-blur"
-            >
-              {hint === "touch" ? t.hintTouch : t.hintDesktop}
-              <span className="text-white/60" aria-label={t.hintClose}>✕</span>
-            </button>
-          </div>
-        )}
 
         {/* 상세 패널 — §5-10. 지금은 push 한 모드만(폭 사다리는 다음) */}
         {selected && (
           // 폭 사다리(§5-10): <1024 바텀 시트(fixed) · 1024~1440 그리드 위 overlay(absolute, 열 폭 유지) · >1440 push(static)
           <aside
-            className={`fixed inset-x-0 bottom-0 z-30 ${sheetFull ? "h-[100dvh]" : "h-[50svh]"} min-h-[176px] overflow-y-auto rounded-t-xl border-t border-neutral-200 bg-white p-4 shadow-[0_-8px_24px_rgba(0,0,0,.08)] lg:absolute lg:inset-x-auto lg:right-0 lg:top-0 lg:bottom-0 lg:h-auto lg:w-[400px] lg:rounded-none lg:border-l lg:border-t-0 lg:shadow-xl wide:static wide:w-[clamp(320px,32vw,400px)] wide:shrink-0 wide:shadow-none`}
+            className={`fixed inset-x-0 bottom-0 z-30 ${sheetFull ? "h-[100dvh]" : "h-[50svh]"} min-h-[176px] overflow-y-auto rounded-t-xl border-t border-line bg-surface p-4 shadow-[var(--shadow-sheet)] lg:absolute lg:inset-x-auto lg:right-0 lg:top-0 lg:bottom-0 lg:h-auto lg:w-[400px] lg:rounded-none lg:border-l lg:border-t-0 lg:shadow-[var(--shadow-float)] wide:static wide:w-[clamp(320px,32vw,400px)] wide:shrink-0 wide:shadow-none`}
             style={{ overscrollBehavior: "contain" }}
             role="complementary"
             aria-label={t.detailAria}
           >
-            <button type="button" onClick={() => setSheetFull((f) => !f)} className="mx-auto mb-2 block h-1.5 w-10 rounded-full bg-neutral-300 lg:hidden" aria-label={sheetFull ? t.sheetCollapse : t.sheetExpand} />
+            <button type="button" onClick={() => setSheetFull((f) => !f)} className="mx-auto mb-2 block h-1.5 w-10 rounded-full bg-line-strong lg:hidden" aria-label={sheetFull ? t.sheetCollapse : t.sheetExpand} />
             <div className="mb-2 flex items-start justify-between gap-2">
               {/* 제목: UI 언어의 사건 이름이 있으면 그것, 없으면 칩과 같은 라벨. 원문은 아래 본문에 */}
               <h2 className="text-base font-semibold leading-snug">
                 {(() => { const l = eventLabel(selected.ev, locale); return l.name ?? l.text; })()}
               </h2>
-              <button type="button" onClick={() => { setSelected(null); lastChip.current?.focus({ preventScroll: true }); }} className="rounded px-2 text-neutral-500 hover:bg-neutral-100" aria-label={t.close}>×</button>
+              <button type="button" onClick={() => { setSelected(null); lastChip.current?.focus({ preventScroll: true }); }} className="rounded px-2 text-fg-subtle hover:bg-surface-hover" aria-label={t.close}>×</button>
             </div>
-            <div className="mb-3 text-[12px] text-neutral-500">{yearLabel(selected.ev)} · {t.importance} {selected.ev.regions[0]?.imp}</div>
+            <div className="mb-3 text-[12px] text-fg-subtle">{yearLabel(selected.ev)} · {t.importance} {selected.ev.regions[0]?.imp}</div>
             {selected.detail ? (
               <>
                 {/* 공식 연표가 맞춰진 사건은 그쪽 본문이 앞에 선다(editorial-policy §1-7) */}
                 {selected.detail.official.map((o) => (
-                  <div key={o.id} className="mb-3 rounded border border-neutral-200 bg-neutral-50 px-3 py-2">
-                    <div className="mb-1 text-[11px] text-neutral-500">{t.nikh} · {o.db.replace(/^주제별연표_/, "")}{o.series ? ` (${o.series})` : ""} · {o.date_ko}</div>
+                  <div key={o.id} className="mb-3 rounded border border-line bg-surface-sunken px-3 py-2">
+                    <div className="mb-1 text-[11px] text-fg-subtle">{t.nikh} · {o.db.replace(/^주제별연표_/, "")}{o.series ? ` (${o.series})` : ""} · {o.date_ko}</div>
                     <p lang="ko" className="leading-relaxed [text-wrap:pretty] [word-break:keep-all]">{o.text}</p>
                     {o.url && (
-                      <a href={o.url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-[11px] text-neutral-500 underline">{t.viewInDb}</a>
+                      <a href={o.url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-[11px] text-fg-subtle underline">{t.viewInDb}</a>
                     )}
                   </div>
                 ))}
                 {selected.detail.text_ko && (
                   <>
-                    <p className="mb-1 text-[11px] text-neutral-500">{t.mt}{selected.detail.mt && <span className="text-neutral-400"> ({selected.detail.mt.model})</span>}</p>
+                    <p className="mb-1 text-[11px] text-fg-subtle">{t.mt}{selected.detail.mt && <span className="text-fg-subtle"> ({selected.detail.mt.model})</span>}</p>
                     <p lang="ko" className="mb-3 leading-relaxed [text-wrap:pretty] [word-break:keep-all]">{selected.detail.text_ko}</p>
                   </>
                 )}
                 {selected.detail.text && (
                   <>
-                    <p className="mb-1 text-[11px] text-neutral-500">
+                    <p className="mb-1 text-[11px] text-fg-subtle">
                       {t.wikiOriginal}{selected.detail.lang !== locale && <span> ({selected.detail.lang}){locale === "ko" && !selected.detail.text_ko && ` · ${t.notTranslated}`}</span>}
                     </p>
-                    <p lang={selected.detail.lang} className={`mb-3 leading-relaxed [text-wrap:pretty] [word-break:keep-all]${selected.detail.text_ko ? " text-neutral-600" : ""}`}>{selected.detail.text}</p>
+                    <p lang={selected.detail.lang} className={`mb-3 leading-relaxed [text-wrap:pretty] [word-break:keep-all]${selected.detail.text_ko ? " text-fg-muted" : ""}`}>{selected.detail.text}</p>
                   </>
                 )}
                 {selected.detail.alt?.map((a) => (
                   <div key={a.url + a.lang} className="mb-3">
-                    <p className="mb-1 text-[11px] text-neutral-500">{t.sameEvent(a.lang)}</p>
-                    <p lang={a.lang} className="leading-relaxed text-neutral-700 [text-wrap:pretty] [word-break:keep-all]">{a.text}</p>
+                    <p className="mb-1 text-[11px] text-fg-subtle">{t.sameEvent(a.lang)}</p>
+                    <p lang={a.lang} className="leading-relaxed text-fg-strong [text-wrap:pretty] [word-break:keep-all]">{a.text}</p>
                   </div>
                 ))}
                 {/* 설명 — 연결 문서의 한국어 위키백과 첫 문단. 표제어가 인물·왕조면 그 설명이라 "관련 문서"라 부른다 */}
                 {selected.detail.about && (
-                  <div className="mb-3 rounded border border-neutral-200 px-3 py-2">
-                    <div className="mb-1 text-[11px] text-neutral-500">
+                  <div className="mb-3 rounded border border-line px-3 py-2">
+                    <div className="mb-1 text-[11px] text-fg-subtle">
                       {isEventName(selected.detail.about.title, "ko") ? t.description : t.related} · {LOCALE_LABEL.ko} Wikipedia 「{selected.detail.about.title}」
                     </div>
                     <p lang="ko" className="leading-relaxed [text-wrap:pretty] [word-break:keep-all]">{selected.detail.about.text}</p>
-                    <a href={selected.detail.about.url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-[11px] text-neutral-500 underline">{t.viewDoc} ({selected.detail.about.license})</a>
+                    <a href={selected.detail.about.url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-[11px] text-fg-subtle underline">{t.viewDoc} ({selected.detail.about.license})</a>
                   </div>
                 )}
                 {/* 이 사건을 부르는 이름 (§5-9) — 사이트링크 원문 */}
@@ -1008,8 +1004,8 @@ export function TimelineGrid() {
                   <table className="mb-3 w-full text-[12px]">
                     <tbody>
                       {COLUMNS.filter((c) => selected.ev.names[c.id]?.nat).map((c) => (
-                        <tr key={c.id} className="border-t border-neutral-100">
-                          <td className="py-1 pr-2 text-neutral-500" style={{ color: REGION_COLOR[c.id] }}>{regionLabel(c.id)}</td>
+                        <tr key={c.id} className="border-t border-line-hairline">
+                          <td className="py-1 pr-2" style={{ color: regionVar(c.id) }}>{regionLabel(c.id)}</td>
                           <td className="py-1" lang={selected.ev.names[c.id]!.lang}>{selected.ev.names[c.id]!.nat}</td>
                         </tr>
                       ))}
@@ -1019,28 +1015,28 @@ export function TimelineGrid() {
                 {selected.ev.regions[0]?.r === "kr" && (
                   <div className="mb-3">
                     {officialYear ? (
-                      <div className="rounded border border-neutral-200">
-                        <div className="border-b border-neutral-200 px-2 py-1 text-[11px] text-neutral-500">
+                      <div className="rounded border border-line">
+                        <div className="border-b border-line px-2 py-1 text-[11px] text-fg-subtle">
                           {t.officialYear(formatYearL(officialYear.year, locale), officialYear.count)}
                           {officialYear.count > officialYear.shown && t.officialShown(officialYear.shown)}
                         </div>
                         <ul lang="ko" className="max-h-72 overflow-y-auto text-[12px]" style={{ overscrollBehavior: "contain" }}>
                           {officialYear.entries.map((o) => (
-                            <li key={o.id} className="border-t border-neutral-100 px-2 py-1 [word-break:keep-all]">
-                              <span className="text-neutral-500">{o.date_ko.replace(/^.*?년\s*/, "") || t.unknownDate}</span> {o.text}
-                              {o.url && <a href={o.url} target="_blank" rel="noreferrer" className="ml-1 text-neutral-400 underline">↗</a>}
+                            <li key={o.id} className="border-t border-line-hairline px-2 py-1 [word-break:keep-all]">
+                              <span className="text-fg-subtle">{o.date_ko.replace(/^.*?년\s*/, "") || t.unknownDate}</span> {o.text}
+                              {o.url && <a href={o.url} target="_blank" rel="noreferrer" className="ml-1 text-fg-subtle underline">↗</a>}
                             </li>
                           ))}
                         </ul>
                       </div>
                     ) : (
-                      <button type="button" onClick={() => openOfficialYear(selected.detail!.year)} className="rounded border border-neutral-300 px-2 py-1 text-[12px] hover:bg-neutral-50">
+                      <button type="button" onClick={() => openOfficialYear(selected.detail!.year)} className="rounded border border-line-strong px-2 py-1 text-[12px] hover:bg-surface-sunken">
                         {t.officialMore}
                       </button>
                     )}
                   </div>
                 )}
-                <div className="text-[11px] leading-relaxed text-neutral-500">
+                <div className="text-[11px] leading-relaxed text-fg-subtle">
                   {t.sourceLine} {selected.detail.official.length > 0 && <span>{t.nikhLicense}{selected.detail.src.length > 0 ? " · " : ""}</span>}
                   {selected.detail.src.map((s) => (
                     <a key={s.url} href={s.url} target="_blank" rel="noreferrer" className="underline">{new URL(s.url).hostname}</a>
@@ -1062,45 +1058,12 @@ export function TimelineGrid() {
                 </div>
               </>
             ) : (
-              <p className="text-neutral-400">{t.loading}</p>
+              <p className="text-fg-subtle">{t.loading}</p>
             )}
           </aside>
         )}
       </div>
 
-      {/* 하단 줌 바 자리 + 계측 HUD */}
-      {/* 하단 줌 바(§5-10 40px): 뷰포트 중앙 기준 −/+, 레벨 정류장, 중앙 연도. 계측은 개발 모드에서만 */}
-      <footer className="flex h-10 shrink-0 items-center gap-3 border-t border-neutral-200 bg-white px-3 text-[12px] text-neutral-700">
-        <div className="flex items-center gap-0.5" role="group" aria-label={t.zoomGroup}>
-          <button type="button" onClick={() => zoomCenterTo(axisRef.current.s / 1.6)} disabled={axis.s <= bounds.min} className="h-7 w-7 rounded border border-neutral-300 leading-none hover:bg-neutral-100 disabled:opacity-30" aria-label={t.zoomOut}>−</button>
-          {LEVEL_STOPS.map((st) => (
-            <button
-              key={st.level}
-              type="button"
-              onClick={() => zoomCenterTo(st.s)}
-              aria-pressed={rows.level === st.level}
-              className={`h-7 rounded px-2 ${rows.level === st.level ? "bg-neutral-900 text-white" : "text-neutral-600 hover:bg-neutral-100"}`}
-            >
-              {t.level[st.level as Exclude<Level, "month">]}
-            </button>
-          ))}
-          <button type="button" onClick={() => zoomCenterTo(axisRef.current.s * 1.6)} disabled={axis.s >= bounds.max} className="h-7 w-7 rounded border border-neutral-300 leading-none hover:bg-neutral-100 disabled:opacity-30" aria-label={t.zoomIn}>+</button>
-        </div>
-        <span className="text-neutral-500">
-          {t.center} <b className="text-neutral-900">{formatYearL(Math.round(centerYear(scrollTop, axis)), locale)}</b>
-        </span>
-        <span className="hidden text-neutral-400 sm:inline">{formatRowLabelL(rows.from, rows.level, locale)} ~ {formatRowLabelL(rows.to, rows.level, locale)}</span>
-        {process.env.NODE_ENV === "development" && (
-          <details className="ml-auto font-mono text-[11px] text-neutral-500">
-            <summary className="cursor-pointer select-none">계측</summary>
-            <div className="absolute right-2 bottom-10 z-30 flex flex-col gap-0.5 rounded border border-neutral-200 bg-white p-2 shadow">
-              <span>레벨 {rows.level}{levelOf(axis.s) !== rows.level && <span className="text-amber-700"> (이력 유지)</span>} · s {axis.s.toFixed(2)} px/년 ({bounds.min.toFixed(2)}–{bounds.max})</span>
-              <span>스페이서 {Math.round(contentHeight(axis)).toLocaleString("ko-KR")} px · scrollTop {Math.round(scrollTop).toLocaleString("ko-KR")}</span>
-              <span>보이는 행 {buckets.length} · 청크 {chunkKeys.length}키 · 캐시 {loadedChunks} · 뷰포트 {axis.viewportH}px</span>
-            </div>
-          </details>
-        )}
-      </footer>
     </div>
   );
 }
