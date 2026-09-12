@@ -220,6 +220,24 @@ export function TimelineGrid() {
    * 열 축소(<360 1열 · <600 2열)는 착지 때 한 번뿐이지만, 이 값은 회전·리사이즈를 따라간다.
    */
   const [narrow, setNarrow] = useState(false);
+  /**
+   * 로빙 tabindex의 활성 항목. 칩이 전부 tabIndex=0이면 상단바에서 하단까지 탭이 100번 넘게
+   * 걸린다 — 격자 안에서는 **하나만** 탭 정류장이고 나머지는 화살표로 옮겨 다닌다(ARIA grid).
+   */
+  const [active, setActive] = useState<{ col: RegionId; b: number; i: number } | null>(null);
+  /**
+   * 상세 패널이 밀어내기(push)인가. 폭 사다리에서 >1440만 비모달이고, 그 아래(오버레이·바텀 시트)는
+   * 격자를 덮으므로 **모달**이어야 한다 — role·포커스 트랩·inert가 여기서 갈린다.
+   */
+  const [pushMode, setPushMode] = useState(false);
+  useEffect(() => {
+    const mq = matchMedia("(min-width: 90rem)"); // --breakpoint-wide
+    const sync = () => setPushMode(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
   /** 의미 레벨은 스케일에서 바로 나오지 않는다 — 경계 왕복을 막는 이력이 있다(§5-3). */
   const [level, setLevel] = useState<Level>(() => levelOf(8));
   const [railH, setRailH] = useState(800);
@@ -241,6 +259,18 @@ export function TimelineGrid() {
   const [, bump] = useState(0);
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const [selected, setSelected] = useState<{ ev: PublishedEvent; detail: Detail | null } | null>(null);
+  /** 패널이 격자를 덮는가 — 덮으면 모달이고, 격자는 inert가 된다. */
+  const modalPanel = selected !== null && !pushMode;
+  /** 상세 제목 — 모달로 열릴 때 포커스가 여기로 간다. */
+  const panelRef = useRef<HTMLElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  /**
+   * 패널을 닫은 뒤 포커스를 마지막 항목으로 되돌릴지. **즉시 focus()를 부르면 안 된다** —
+   * 모달일 때 격자에 inert가 걸려 있고, 그 해제는 다음 렌더에 일어난다. inert 안쪽으로의
+   * focus()는 조용히 무시된다(실측 2026-09-12). 그래서 렌더 뒤에 되돌린다.
+   */
+  const restorePending = useRef(false);
+
   /** 상세 패널 "이 해의 공식 연표" — 눌렀을 때만 받는다(한 해 최대 80건). */
   const [officialYear, setOfficialYear] = useState<OfficialYear | null>(null);
   /** <1024px 바텀 시트의 반 높이(50svh) ↔ 전체(100dvh) 토글(PRD §5-7 §4-3). */
@@ -516,6 +546,54 @@ export function TimelineGrid() {
     return () => window.removeEventListener("keydown", onKey);
   }, [zoomCenterTo]);
 
+  /**
+   * Esc — 상세 닫고 마지막 항목으로 포커스 복귀.
+   * **window에 건다.** onGridKey는 스크롤 컨테이너에 붙어 있고 <aside>는 그 형제라, 패널 안에
+   * 포커스가 있으면 Esc가 닿지 않는다. 지금까지는 포커스가 우연히 칩에 남아 동작했지만,
+   * 아래에서 모달일 때 포커스를 패널로 옮기므로 그대로 두면 Esc가 죽는다(같은 커밋이어야 하는 이유).
+   */
+  useEffect(() => {
+    if (!selected) return;
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      setSelected(null);
+      restorePending.current = true;
+    };
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [selected]);
+
+  /**
+   * 모달일 때만 포커스를 패널로 옮기고 Tab을 가둔다. push(>1440)는 격자와 나란히 있으므로
+   * 맥락을 끊지 않도록 포커스를 그대로 둔다 — 같은 컴포넌트가 폭에 따라 다른 것이 되는 셈이다.
+   * 라이브러리 없이 20줄이면 된다(axis.ts와 같은 "의존성 0" 규약).
+   */
+  useEffect(() => {
+    if (!modalPanel) return;
+    headingRef.current?.focus({ preventScroll: true });
+    const onTab = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const root = panelRef.current;
+      if (!root) return;
+      const f = [...root.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+        .filter((el) => el.offsetParent !== null || el === document.activeElement);
+      if (!f.length) return;
+      const first = f[0]!, last = f[f.length - 1]!;
+      const cur = document.activeElement;
+      if (e.shiftKey && (cur === first || cur === headingRef.current)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && cur === last) { e.preventDefault(); first.focus(); }
+    };
+    window.addEventListener("keydown", onTab);
+    return () => window.removeEventListener("keydown", onTab);
+  }, [modalPanel]);
+
+  useEffect(() => {
+    if (selected || !restorePending.current) return;
+    restorePending.current = false;
+    lastChip.current?.focus({ preventScroll: true });
+  }, [selected]);
+
   // ── 의미 레벨: s에서 파생하되 이력을 둔다(§5-3) ──────────────────────────
   useEffect(() => {
     setLevel((prev) => levelWithHysteresis(axis.s, prev));
@@ -559,10 +637,6 @@ export function TimelineGrid() {
    * Enter/Space는 버튼 기본 동작(상세). Esc는 상세 닫기 + 칩으로 포커스 복귀.
    */
   const onGridKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "Escape") {
-      if (selected) { setSelected(null); lastChip.current?.focus({ preventScroll: true }); }
-      return;
-    }
     const chip = (e.target as HTMLElement).closest?.("button[data-col]") as HTMLButtonElement | null;
     if (!chip || !scrollerRef.current) return;
     const col = chip.dataset.col as RegionId, b = Number(chip.dataset.b);
@@ -579,6 +653,8 @@ export function TimelineGrid() {
     } else return;
     if (!next) return;
     e.preventDefault();
+    // 로빙 tabindex — 옮겨 간 곳이 새 탭 정류장이 된다
+    setActive({ col: next.dataset.col as RegionId, b: Number(next.dataset.b), i: Number(next.dataset.i) });
     next.focus({ preventScroll: true });
     next.scrollIntoView({ block: "nearest" });
   };
@@ -614,6 +690,10 @@ export function TimelineGrid() {
 
   const jumpFromRail = (clientY: number) => jumpTo(railRef.current, clientY);
   const jumpFromScrub = (clientY: number) => jumpTo(scrubRef.current, clientY);
+
+  const activeVisible = active !== null && buckets.includes(active.b) && cols.includes(active.col);
+  /** 렌더 중에 한 번만 세워진다(위 주석). 매 렌더마다 새로 만들어지므로 상태가 새지 않는다. */
+  let tabStopClaimed = activeVisible;
 
   return (
     <div className="flex h-full flex-col text-[13px]">
@@ -674,6 +754,12 @@ export function TimelineGrid() {
 
       {/* 중간 영역. 배경이 캔버스라 열 카드 사이 10px으로 드러난다(README 7-3) */}
       <div className="relative flex min-h-0 flex-1 bg-canvas">
+        {/*
+          랜드마크. role="grid"는 랜드마크가 아니므로(스크롤러가 region을 잃는다) 격자를 <main>으로 감싼다.
+          상세 패널은 **이 밖에** 둔다 — 모달일 때 여기에 inert를 걸기 때문이다. 안에 두면 패널 자신도
+          비활성이 된다.
+        */}
+        <main className="relative flex min-w-0 flex-1" aria-label={t.timelineAria} inert={modalPanel}>
         {/* 시대 미니맵 10px — 레일 64 + 거터 56 = 120px을 86px 한 축으로 합친 그 왼쪽 끝(README 7-2).
             라벨은 없앴다. 왕조 이름은 열 헤더(sticky)가 맡는다 */}
         <div
@@ -715,7 +801,17 @@ export function TimelineGrid() {
           onScroll={onScroll}
           onKeyDown={onGridKey}
           tabIndex={0}
-          role="region"
+          /*
+            격자 구조를 스크린리더에 알린다. 가상화 때문에 aria-rowcount가 필수다 — 없으면
+            "3개 중 1번째 행"이라고 거짓말한다. 헤더가 1행이라 본문 행은 +2 오프셋.
+            컨테이너가 tabIndex=0인 것은 유지한다: ↑↓·PageUp/Down·Home/End가 네이티브 스크롤
+            (=시간 이동)이어야 하고 그러려면 컨테이너가 포커스를 받아야 한다(§5-5).
+            그래서 탭 정류장은 컨테이너 + 활성 항목 둘이다(이전에는 100개가 넘었다).
+          */
+          role="grid"
+          aria-readonly
+          aria-rowcount={Math.ceil(AXIS_SPAN_YEARS / rows.unit) + 1}
+          aria-colcount={shown.length + 1}
           aria-label={t.timelineAria}
           className="relative z-10 h-full overflow-y-auto bg-transparent outline-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           style={{ overflowAnchor: "none", overscrollBehaviorY: "contain", touchAction: "pan-y" }}
@@ -723,8 +819,8 @@ export function TimelineGrid() {
           {/* 열 헤더 = 카드의 머리(README 7-3). 나라색 바탕을 없애고 흰 면 + 이름의 색 + 3px 밑선으로.
               polityAt(뷰포트 상단 연도)를 보므로 스크롤하면 왕조 이름이 저절로 바뀐다 —
               별도의 스티키 라벨 층이 필요 없어지는 이유다 */}
-          <div className="sticky top-0 z-20 flex" style={{ height: COLUMN_HEADER_H }}>
-            <div className="shrink-0" style={{ width: axisLabelW }} />
+          <div className="sticky top-0 z-20 flex" style={{ height: COLUMN_HEADER_H }} role="row" aria-rowindex={1}>
+            <div className="shrink-0" style={{ width: axisLabelW }} role="columnheader" aria-colindex={1} />
             {shown.map((c, i) => {
               const p = polityAt(polities[c.id], yToYear(scrollTop + COLUMN_HEADER_H, axis));
               const btn = "rounded px-1 leading-none text-fg-subtle hover:bg-surface-hover hover:text-fg disabled:invisible";
@@ -739,6 +835,8 @@ export function TimelineGrid() {
                   onDragEnd={() => { dragCol.current = null; }}
                   className="group relative flex min-w-0 flex-1 cursor-grab items-center gap-2 rounded-t-card border-b border-line bg-surface px-3 active:cursor-grabbing"
                   style={{ marginLeft: CARD_GAP }}
+                  role="columnheader"
+                  aria-colindex={i + 2}
                 >
                   <img src={FLAG[c.id]} alt="" width={20} height={14} className="h-[14px] w-5 shrink-0 rounded-[2px] object-cover opacity-90" draggable={false} />
                   <span className="shrink-0 text-col font-bold tracking-tight" style={{ color: regionVar(c.id) }}>{label}</span>
@@ -777,7 +875,7 @@ export function TimelineGrid() {
           </div>
 
           {/* 스페이서 */}
-          <div className="relative w-full" style={{ height: contentHeight(axis) }}>
+          <div className="relative w-full" style={{ height: contentHeight(axis) }} role="rowgroup">
             {/* 왕조 — 배경 밴드를 지우고 러그(3px)와 틱(20px)으로(README 7-4).
                 배경 농도 교대는 글자 대비를 깎으면서 그 대가로 아무 이름도 알려주지 않았다.
                 이름은 열 헤더가 맡고, 여기서는 "언제 바뀌었나"만 말한다.
@@ -845,17 +943,31 @@ export function TimelineGrid() {
                 );
               })}
             </div>
+            {/*
+              로빙 tabindex의 정류장을 정한다. 활성 셀이 화면(=가상화된 행 범위) 안에 있으면 그것이,
+              없으면 **처음 그려지는 항목**이 정류장을 가져간다 — 활성 칩이 스크롤로 언마운트돼도
+              탭으로 격자에 들어올 자리가 항상 하나는 남는다. buckets·shown 순서가 고정이라
+              렌더 중 이 플래그를 세우는 것은 결정적이다.
+            */}
             {buckets.map((b) => {
               const top = yearToY(b, axis);
               const h = rows.unit * axis.s;
               const sub = subdivisions(rows.level, h);
               return (
-                <div key={b} className="absolute inset-x-0 flex border-t border-line-hairline" style={{ top, height: h }}>
+                <div
+                  key={b}
+                  className="absolute inset-x-0 flex border-t border-line-hairline"
+                  style={{ top, height: h }}
+                  role="row"
+                  aria-rowindex={Math.floor((b - AXIS_YEAR_START) / rows.unit) + 2}
+                >
                   {/* 연도 라벨 76px — 오른쪽 정렬 + 명조체(README 7-2). 시대·연도는 서체로 사건과 갈린다.
                       라벨이 행 높이를 넘으면 잘라 다음 행과 겹치지 않게(2026-09-05) */}
                   <div
                     className="relative shrink-0 overflow-hidden pr-2 text-right font-serif text-axis text-fg-muted tabular-nums"
                     style={{ width: axisLabelW }}
+                    role="rowheader"
+                    aria-colindex={1}
                   >
                     <span className="whitespace-nowrap">{formatRowLabelL(b, rows.level, locale)}</span>
                     {sub > 0 &&
@@ -865,7 +977,7 @@ export function TimelineGrid() {
                         </span>
                       ))}
                   </div>
-                  {shown.map((c) => {
+                  {shown.map((c, ci) => {
                     const evs = cellEvents(c.id, b);
                     const { placed, hidden } = layoutCell(evs, h, b, rows.unit, locale, itemH, laneW);
                     // 같은 셀에 같은 표제어가 둘 이상이면(도요토미 히데요시 ×3) 라벨에 원문을 덧붙인다
@@ -874,7 +986,7 @@ export function TimelineGrid() {
                     const dup = new Set([...seen].filter(([, k]) => k > 1).map(([n]) => n));
                     return (
                       // 세로 구분선은 없다 — 카드 사이 10px 여백이 그 일을 한다
-                      <div key={c.id} className="relative min-w-0 flex-1 overflow-hidden" style={{ marginLeft: CARD_GAP }}>
+                      <div key={c.id} className="relative min-w-0 flex-1 overflow-hidden" style={{ marginLeft: CARD_GAP }} role="gridcell" aria-colindex={ci + 2}>
                         {sub > 0 &&
                           Array.from({ length: sub - 1 }, (_, i) => (
                             <div key={i} className="pointer-events-none absolute inset-x-0 border-t border-line-hairline" style={{ top: ((i + 1) / sub) * h }} aria-hidden />
@@ -887,6 +999,10 @@ export function TimelineGrid() {
                             글자 크기에는 더 이상 쓰지 않는다.
                             번역이 채워지면 plain이 저절로 lead로 올라간다 — 디자인이 데이터 품질의 계기판이 된다.
                           */
+                          // 로빙 tabindex: 활성 셀이면 그것, 활성이 화면 밖이면 처음 그려지는 항목이 정류장
+                          const isTabStop = activeVisible
+                            ? active!.col === c.id && active!.b === b && active!.i === idx
+                            : !tabStopClaimed && (tabStopClaimed = true);
                           const label = eventLabel(ev, locale, dup);
                           const tag = originalTag(ev, locale);
                           const meta = [
@@ -899,7 +1015,9 @@ export function TimelineGrid() {
                               key={ev.id}
                               type="button"
                               // 같은 항목을 다시 누르면 닫는다(토글, 대표 지시 2026-09-05). 다른 항목이면 바꿔 연다
-                              onClick={(e) => { lastChip.current = e.currentTarget; if (selected?.ev.id === ev.id) setSelected(null); else openDetail(ev); }}
+                              onClick={(e) => { lastChip.current = e.currentTarget; setActive({ col: c.id, b, i: idx }); if (selected?.ev.id === ev.id) setSelected(null); else openDetail(ev); }}
+                              onFocus={() => setActive({ col: c.id, b, i: idx })}
+                              tabIndex={isTabStop ? 0 : -1}
                               aria-pressed={selected?.ev.id === ev.id}
                               title={ev.desc && locale === "ko" ? `${yearLabel(ev)} · ${ev.desc}` : yearLabel(ev)}
                               data-col={c.id}
@@ -984,6 +1102,7 @@ export function TimelineGrid() {
           })}
           <div className="absolute inset-x-0.5 rounded bg-fg/70" style={{ top: railY(centerYear(scrollTop, axis), scrubH) - 8, height: 16 }} />
         </div>
+        </main>
 
 
         {/*
@@ -995,8 +1114,14 @@ export function TimelineGrid() {
         */}
         {selected && (
           <aside
+            ref={panelRef}
             className={`fixed inset-x-0 bottom-0 z-30 flex flex-col ${sheetFull ? "h-[100dvh]" : "h-[50svh]"} min-h-[176px] rounded-t-2xl border-t border-line bg-surface shadow-[var(--shadow-sheet)] lg:absolute lg:inset-x-auto lg:right-0 lg:top-0 lg:bottom-0 lg:h-auto lg:w-[400px] lg:rounded-none lg:border-l lg:border-t-0 lg:shadow-[var(--shadow-float)] wide:static wide:w-[clamp(320px,32vw,400px)] wide:shrink-0 wide:shadow-none`}
-            role="complementary"
+            /*
+              폭에 따라 다른 것이 된다 — 격자를 덮으면(바텀 시트·오버레이) 모달 다이얼로그이고,
+              나란히 밀어내면(>1440) 보조 영역이다. 한 role로 셋을 덮을 수 없다.
+            */
+            role={modalPanel ? "dialog" : "complementary"}
+            aria-modal={modalPanel || undefined}
             aria-label={t.detailAria}
           >
             <button type="button" onClick={() => setSheetFull((f) => !f)} className="mx-auto mt-2 block h-1 w-9 shrink-0 rounded-full bg-line-strong lg:hidden" aria-label={sheetFull ? t.sheetCollapse : t.sheetExpand} />
@@ -1007,11 +1132,11 @@ export function TimelineGrid() {
                 <div className="font-serif text-meta text-fg-muted">
                   {yearLabel(selected.ev)} · {regionLabel(selected.ev.regions[0]?.r ?? "kr")}
                 </div>
-                <h2 className="mt-0.5 text-title font-bold [text-wrap:balance] [word-break:keep-all]">
+                <h2 ref={headingRef} tabIndex={-1} className="mt-0.5 text-title font-bold outline-none [text-wrap:balance] [word-break:keep-all]">
                   {(() => { const l = eventLabel(selected.ev, locale); return l.name ?? l.text; })()}
                 </h2>
               </div>
-              <button type="button" onClick={() => { setSelected(null); lastChip.current?.focus({ preventScroll: true }); }} className="shrink-0 rounded p-1 text-fg-subtle hover:bg-surface-hover" aria-label={t.close}>✕</button>
+              <button type="button" onClick={() => { setSelected(null); restorePending.current = true; }} className="shrink-0 rounded p-1 text-fg-subtle hover:bg-surface-hover" aria-label={t.close}>✕</button>
             </div>
 
             {/* 본문(스크롤) */}
