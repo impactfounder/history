@@ -19,12 +19,19 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
    한 번 허용하면 다크 팔레트가 100곳에 흩어져 그 블록의 의미가 사라진다.
 
 토큰 층은 3단이다: `[1] :root` 원시(유틸리티 없음) → `[2] @theme` 역할(유틸리티 생성) →
-`[3]` 다크에서 [2]의 이름에 다른 [1] 값을 재대입. 인라인 `var()`로만 쓰는 파생값
-(`--color-region-*-band-*`)은 `@theme` 밖 `:root`에 둔다 — Tailwind v4가 `@theme`의 미사용
-토큰을 트리셰이킹으로 지우기 때문이다.
+`[3]` 다크에서 [2]의 이름에 다른 [1] 값을 재대입. 인라인 `var()`로만 쓰는 값
+(컴포넌트가 `var(--color-region-${id})`처럼 template literal로 이름을 만드는 나라 4색)은
+`@theme` 밖 `:root`에 둔다 — 리터럴 이름이 소스에 없으면 Tailwind v4가 `@theme`의 "미사용"
+토큰을 트리셰이킹으로 지운다. 실제로 한 번 지워져 나라 이름 색이 배포본에서 죽어 있었다.
 
-**대비 규칙**: `text-fg-subtle`(ink-500)은 흰 배경 4.73:1로 통과하지만 정치체 띠 위에서는
-3.99:1로 실패한다. **띠 위에서는 `text-fg-muted`**(ink-600, 띠 위 6.57:1).
+**대비 규칙**: 글자 네 단계(`fg` `fg-strong` `fg-muted` `fg-subtle`)는 **흰 면과 가라앉은
+면(`surface-sunken`) 둘 다에서** 4.5:1을 넘겨야 한다. `contrast.test.ts`가 globals.css의 hex를
+읽어 그 여덟 짝을 계산한다 — 새 표면·글자 토큰을 만들면 그 표에 줄을 더하는 것이 같은 작업의
+일부다. 표에 없는 조합은 테스트가 통과하면서 화면이 실패한다.
+
+여유가 가장 얇은 것은 `fg-subtle`(흰 4.83 · 가라앉은 면 4.63)이다. 한때 흰 바탕만 보고 값을
+정해 상세 패널 발에서 4.43으로 떨어져 있었다. `fg-decorative`(ink-450, 2.6:1)는 이름이 곧
+금지다 — `aria-hidden` 글리프 전용이고 글자에 쓰지 않는다.
 
 치수는 `src/lib/design/metrics.ts`가 원본이고 globals.css의 `--size-*`가 사본이다.
 `metrics.test.ts`가 둘의 일치를 강제한다 — 한쪽만 고치면 `npm test`가 깨진다.

@@ -37,8 +37,8 @@ import {
   COLUMN_HEADER_H,
   ERA_TICK_W,
   HIT_COMFORT,
-  ITEM_H,
-  ITEM_H_COMPACT,
+  HIT_MIN,
+  itemHeights,
   ITEM_INSET_END,
   ITEM_INSET_START,
   LUG_W,
@@ -230,6 +230,20 @@ export function TimelineGrid() {
    * 격자를 덮으므로 **모달**이어야 한다 — role·포커스 트랩·inert가 여기서 갈린다.
    */
   const [pushMode, setPushMode] = useState(false);
+  /**
+   * 포인터가 굵은가(터치). 항목 높이의 하한을 24px로 올리는 데만 쓴다 — 폭이 아니라
+   * 포인터로 갈라야 좁은 데스크톱 창에서 밀도를 헛되게 깎지 않는다(metrics.itemHeights).
+   * 서버 렌더에서는 false로 시작한다: 하이드레이션 불일치를 만들지 않으려면 첫 렌더가
+   * 양쪽에서 같아야 하고, 실제 값은 아래 효과가 채운다.
+   */
+  const [coarse, setCoarse] = useState(false);
+  useEffect(() => {
+    const mq = matchMedia("(pointer: coarse)");
+    const sync = () => setCoarse(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
   useEffect(() => {
     const mq = matchMedia("(min-width: 90rem)"); // --breakpoint-wide
     const sync = () => setPushMode(mq.matches);
@@ -685,7 +699,7 @@ export function TimelineGrid() {
   };
   const axisLabelW = narrow ? AXIS_LABEL_W_COMPACT : AXIS_LABEL_W;
   const minimapW = narrow ? MINIMAP_W_COMPACT : MINIMAP_W;
-  const itemH = narrow ? ITEM_H_COMPACT : ITEM_H;
+  const itemH = itemHeights(narrow, coarse);
   const laneW = narrow ? MORE_LANE_W_COMPACT : MORE_LANE_W;
 
   const jumpFromRail = (clientY: number) => jumpTo(railRef.current, clientY);
@@ -823,7 +837,14 @@ export function TimelineGrid() {
             <div className="shrink-0" style={{ width: axisLabelW }} role="columnheader" aria-colindex={1} />
             {shown.map((c, i) => {
               const p = polityAt(polities[c.id], yToYear(scrollTop + COLUMN_HEADER_H, axis));
-              const btn = "rounded px-1 leading-none text-fg-subtle hover:bg-surface-hover hover:text-fg disabled:invisible";
+              /*
+                WCAG 2.2 SC 2.5.8(AA)은 24×24다. 전에는 18.4×13에 이웃과 중심 간격 19px이라
+                크기도, 크기 예외인 "간격"도 함께 미달이었다(실측). 24px 정사각으로 만들면
+                gap 0에서 중심이 정확히 24px 떨어지므로 두 조건이 한 번에 풀린다 — 그래서
+                gap-0.5를 버린다. 글리프는 13px 그대로이고 눌리는 면만 커진다.
+              */
+              const btn = "flex items-center justify-center rounded leading-none text-fg-subtle hover:bg-surface-hover hover:text-fg disabled:invisible";
+              const hit = { width: HIT_MIN, height: HIT_MIN } as const;
               const label = regionLabel(c.id);
               return (
                 <div
@@ -843,10 +864,10 @@ export function TimelineGrid() {
                   {/* 시대는 색이 아니라 서체로(README 규칙 2) */}
                   {p && <span className="min-w-0 truncate font-serif text-meta text-fg-muted">{polityLabel(p)}</span>}
                   {/* 열 조작(§4-1): 순서 ◂ ▸, 빼기 ×. 마지막 한 열은 뺄 수 없다 */}
-                  <span className="ml-auto flex shrink-0 gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100">
-                    <button type="button" className={btn} disabled={i === 0} onClick={() => moveCol(c.id, -1)} aria-label={t.colLeft(label)}>◂</button>
-                    <button type="button" className={btn} disabled={i === shown.length - 1} onClick={() => moveCol(c.id, 1)} aria-label={t.colRight(label)}>▸</button>
-                    <button type="button" className={btn} disabled={shown.length === 1} onClick={() => removeCol(c.id)} aria-label={t.colRemove(label)}>×</button>
+                  <span className="ml-auto flex shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100">
+                    <button type="button" style={hit} className={btn} disabled={i === 0} onClick={() => moveCol(c.id, -1)} aria-label={t.colLeft(label)}>◂</button>
+                    <button type="button" style={hit} className={btn} disabled={i === shown.length - 1} onClick={() => moveCol(c.id, 1)} aria-label={t.colRight(label)}>▸</button>
+                    <button type="button" style={hit} className={btn} disabled={shown.length === 1} onClick={() => removeCol(c.id)} aria-label={t.colRemove(label)}>×</button>
                   </span>
                   {/* 나라색이 남는 두 곳 중 하나 — 이름과 이 3px 밑선 */}
                   <span className="absolute inset-x-0 bottom-0 h-[3px]" style={{ background: regionVar(c.id) }} aria-hidden />
@@ -1124,7 +1145,21 @@ export function TimelineGrid() {
             aria-modal={modalPanel || undefined}
             aria-label={t.detailAria}
           >
-            <button type="button" onClick={() => setSheetFull((f) => !f)} className="mx-auto mt-2 block h-1 w-9 shrink-0 rounded-full bg-line-strong lg:hidden" aria-label={sheetFull ? t.sheetCollapse : t.sheetExpand} />
+            {/*
+              시트 손잡이. 보이는 막대는 36×4 그대로이고 눌리는 면만 24px로 키운다
+              (WCAG 2.2 SC 2.5.8 AA). 4px 막대를 손가락으로 집으라는 것은 실측 이전에
+              이미 말이 안 됐다. mt-2를 버리고 그 여백을 24px 상자 안쪽으로 옮겼으므로
+              막대가 놓이는 자리는 2px만 내려간다.
+            */}
+            <button
+              type="button"
+              onClick={() => setSheetFull((f) => !f)}
+              className="mx-auto flex w-16 shrink-0 items-center justify-center lg:hidden"
+              style={{ height: HIT_MIN }}
+              aria-label={sheetFull ? t.sheetCollapse : t.sheetExpand}
+            >
+              <span className="block h-1 w-9 rounded-full bg-line-strong" aria-hidden />
+            </button>
 
             {/* 머리(고정) — 날짜·열은 명조체로, 제목은 굵게 */}
             <div className="flex shrink-0 items-start justify-between gap-2 px-5 pt-4 pb-3">
@@ -1136,7 +1171,16 @@ export function TimelineGrid() {
                   {(() => { const l = eventLabel(selected.ev, locale); return l.name ?? l.text; })()}
                 </h2>
               </div>
-              <button type="button" onClick={() => { setSelected(null); restorePending.current = true; }} className="shrink-0 rounded p-1 text-fg-subtle hover:bg-surface-hover" aria-label={t.close}>✕</button>
+              {/* 패널의 주 조작이므로 간격 예외에 기대지 않고 24px 정사각을 직접 만든다 */}
+              <button
+                type="button"
+                onClick={() => { setSelected(null); restorePending.current = true; }}
+                className="flex shrink-0 items-center justify-center rounded text-fg-subtle hover:bg-surface-hover"
+                style={{ width: HIT_MIN, height: HIT_MIN }}
+                aria-label={t.close}
+              >
+                ✕
+              </button>
             </div>
 
             {/* 본문(스크롤) */}

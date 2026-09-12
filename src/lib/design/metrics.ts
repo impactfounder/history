@@ -26,6 +26,26 @@ export type ItemKind = keyof typeof ITEM_H;
  */
 export const ITEM_H_COMPACT = { lead: 24, plain: 20 } as const;
 
+/**
+ * 화면 폭과 포인터 종류로 항목 높이를 고른다.
+ *
+ * 굵은 포인터(터치)에서 **하한을 HIT_MIN으로 올린다.** 좁은 화면의 plain은 20px이라
+ * WCAG 2.2 SC 2.5.8(AA)의 24px에 미달이고, 세로로 쌓이므로 중심 간격도 22px(20 + ITEM_GAP)
+ * 이어서 "간격" 예외조차 못 쓴다 — 크기와 간격이 **같은 한 수치에 묶여 있다**.
+ *
+ * 폭이 아니라 포인터로 갈리는 이유: 좁은 데스크톱 창은 손가락이 아니라 마우스다. 거기서
+ * 밀도를 깎으면 기준을 얻는 사람 없이 보이는 건수만 줄어든다. 폰은 둘 다 해당돼 24px를 받는다.
+ *
+ * 대가는 생각보다 작다 — 가장 자주 보는 십년 칸(80px)은 24×3 + 간격 4 = 76으로 여백
+ * 76에 딱 맞아 **건수가 줄지 않는다.** 줄어드는 곳은 더 높은 행이다(100px 칸에서 4 → 3).
+ * 44px(SC 2.5.5 AAA)까지는 여전히 못 가며, 그 격차는 밀도가 정보 자체인 이 화면의
+ * Essential 예외로 두고 준수 대안 경로는 `/y/{year}`다.
+ */
+export const itemHeights = (narrow: boolean, coarse: boolean): Record<ItemKind, number> => {
+  const h = narrow ? ITEM_H_COMPACT : ITEM_H;
+  return coarse ? { lead: Math.max(h.lead, HIT_MIN), plain: Math.max(h.plain, HIT_MIN) } : h;
+};
+
 export const ITEM_GAP = 2;
 export const CELL_PAD = 2;
 /** 항목 왼쪽 여백 — 왕조 러그(3px)와 기간 레인이 들어가는 자리. */

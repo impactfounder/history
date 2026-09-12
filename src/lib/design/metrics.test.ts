@@ -18,6 +18,7 @@ import {
   ITEM_INSET_END,
   ITEM_H_COMPACT,
   ITEM_INSET_START,
+  itemHeights,
   LUG_W,
   MINIMAP_W,
   MINIMAP_W_COMPACT,
@@ -100,6 +101,45 @@ describe("항목 높이의 성질", () => {
   it("축은 미니맵 + 라벨로 정확히 쪼개진다 — 넓은 화면·좁은 화면 둘 다", () => {
     expect(MINIMAP_W + AXIS_LABEL_W).toBe(AXIS_W);
     expect(MINIMAP_W_COMPACT + AXIS_LABEL_W_COMPACT).toBe(AXIS_W_COMPACT);
+  });
+
+  it("굵은 포인터에서는 항목 높이가 AA 하한(24px) 아래로 내려가지 않는다", () => {
+    for (const narrow of [false, true]) {
+      const h = itemHeights(narrow, true);
+      expect(h.lead).toBeGreaterThanOrEqual(HIT_MIN);
+      expect(h.plain).toBeGreaterThanOrEqual(HIT_MIN);
+    }
+  });
+
+  it("항목이 세로로 쌓이므로 높이가 곧 간격이다 — 굵은 포인터에서 중심 간격도 24px 이상", () => {
+    // SC 2.5.8의 "간격" 예외는 중심이 24px 떨어져야 성립한다. 같은 칸에 쌓인 항목의
+    // 중심 간격은 높이 + ITEM_GAP이므로, 높이가 24면 간격은 자동으로 넘긴다.
+    for (const narrow of [false, true]) {
+      const h = itemHeights(narrow, true);
+      expect(h.plain + ITEM_GAP).toBeGreaterThanOrEqual(HIT_MIN);
+    }
+  });
+
+  it("가는 포인터는 밀도를 잃지 않는다 — 좁은 화면 값이 그대로다", () => {
+    expect(itemHeights(true, false)).toEqual(ITEM_H_COMPACT);
+    expect(itemHeights(false, false)).toEqual(ITEM_H);
+  });
+
+  it("십년 칸(80px)은 24px로 올려도 plain 3건이 그대로 들어간다 — 대가가 없다", () => {
+    // 20 → 24로 올렸을 때 가장 자주 보는 칸에서 건수가 줄지 않는다는 것이
+    // 이 변경을 값싸게 만든다. 76 = 80 − 여백 4, 24×3 + 2×2 = 76으로 딱 맞는다.
+    const avail = 80 - CELL_PAD * 2;
+    const fits = (h: number) => Math.floor((avail + ITEM_GAP) / (h + ITEM_GAP));
+    expect(fits(ITEM_H_COMPACT.plain)).toBe(3);
+    expect(fits(itemHeights(true, true).plain)).toBe(3);
+  });
+
+  it("대가는 더 높은 행에서 나온다 — 100px 칸은 4건에서 3건으로", () => {
+    // 연도 레벨처럼 행이 높아지면 24px의 대가가 실제로 보인다. 숨기지 않고 적어 둔다.
+    const avail = 100 - CELL_PAD * 2;
+    const fits = (h: number) => Math.floor((avail + ITEM_GAP) / (h + ITEM_GAP));
+    expect(fits(ITEM_H_COMPACT.plain)).toBe(4);
+    expect(fits(itemHeights(true, true).plain)).toBe(3);
   });
 
   it("좁은 화면 항목이 더 낮다 — 메타 줄을 접기 때문", () => {
