@@ -50,6 +50,42 @@ function assigned(role: string): string {
   return inner;
 }
 
+/**
+ * `[3]` 다크 블록의 대입만 읽는다. `assigned()`는 파일 앞쪽(=라이트)을 먼저 만나므로
+ * 다크를 확인하려면 범위를 잘라야 한다. 두 다크 블록(시스템·명시)이 **같은 목록**을
+ * 들고 있는지도 여기서 본다 — 한쪽만 고치면 조용히 갈라진다.
+ */
+function darkBlocks(): Array<Map<string, string>> {
+  const out: Array<Map<string, string>> = [];
+  for (const head of ["@media (prefers-color-scheme: dark)", ':root[data-theme="dark"]']) {
+    const at = css.indexOf(head);
+    if (at < 0) throw new Error(`다크 블록을 찾지 못했다: ${head}`);
+    // 그 헤더부터 블록을 닫는 `color-scheme: dark;`까지가 그 블록의 선언이다
+    const rest = css.slice(at + head.length);
+    const end = rest.indexOf("color-scheme: dark;");
+    if (end < 0) throw new Error(`${head} 블록이 color-scheme으로 닫히지 않는다`);
+    const body = rest.slice(0, end);
+    const m = new Map<string, string>();
+    for (const line of body.split("\n").map((l) => l.trim())) {
+      if (!line.startsWith("--color-") && !line.startsWith("--shadow-")) continue;
+      const [name, ...rest2] = line.split(":");
+      const value = rest2.join(":").split(";")[0]!.trim();
+      m.set(name!.trim().replace(/^--/, ""), value);
+    }
+    out.push(m);
+  }
+  return out;
+}
+
+/** 다크에서 이 역할이 받는 **원시 이름**. var(--x) 꼴이 아니면 던진다. */
+function darkPrimitive(role: string): string {
+  const value = darkBlocks()[0]!.get(`color-${role}`);
+  if (!value) throw new Error(`다크에 --color-${role} 대입이 없다`);
+  const inner = value.startsWith("var(--") ? value.slice("var(--".length, -1) : "";
+  if (!inner) throw new Error(`--color-${role}이 원시를 var()로 받지 않는다: ${value}`);
+  return inner;
+}
+
 /** WCAG 2.x 상대 휘도. sRGB 가정 — 원시가 전부 hex라서 성립한다. */
 const luminance = ([r, g, b]: [number, number, number]) => {
   const lin = (v: number) => {
@@ -107,6 +143,66 @@ describe("본문 4.5:1 — 실제로 쓰이는 글자·표면 짝", () => {
   it("나라 4색은 흰 바탕에서 AA를 넘는다 — 열 이름·관점별 명칭에 쓴다", () => {
     for (const r of ["kr", "cn", "jp", "us"]) {
       expect(ratio(`region-${r}`, "ink-0")).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+});
+
+describe("[3] 다크 — 라이트와 같은 계약을 받는다", () => {
+  it("두 다크 블록(시스템·명시)이 같은 이름에 같은 값을 대입한다", () => {
+    const [sys, explicit] = darkBlocks();
+    expect([...explicit!.keys()].sort()).toEqual([...sys!.keys()].sort());
+    for (const [k, v] of sys!) expect(explicit!.get(k)).toBe(v);
+  });
+
+  it("라이트에 있는 역할은 다크에도 전부 있다 — 하나라도 빠지면 그 토큰만 라이트로 남는다", () => {
+    const light = new Set(
+      css.slice(css.indexOf("@theme"), css.indexOf("@media (prefers-color-scheme: dark)"))
+        .split("\n").map((l) => l.trim())
+        .filter((l) => l.startsWith("--color-"))
+        .map((l) => l.slice(2).split(":")[0]!.trim()),
+    );
+    const dark = new Set(darkBlocks()[0]!.keys());
+    const missing = [...light].filter((k) => !dark.has(k));
+    expect(missing).toEqual([]);
+  });
+
+  const pairs = (["surface", "surface-sunken"] as const).flatMap((bg) =>
+    (Object.keys(TEXT) as Array<keyof typeof TEXT>).map((fg) => [fg, bg] as const),
+  );
+
+  it.each(pairs)("다크 %s on %s >= 4.5", (fg, bg) => {
+    const a = luminance(primitive(darkPrimitive(fg)));
+    const b = luminance(primitive(darkPrimitive(bg)));
+    expect((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("다크에서도 나라 4색이 표면 위 AA를 넘는다 — 흰 바탕용 값을 그대로 쓰면 안 보인다", () => {
+    const bg = luminance(primitive(darkPrimitive("surface")));
+    for (const r of ["kr", "cn", "jp", "us"]) {
+      const a = luminance(primitive(darkPrimitive(`region-${r}`)));
+      expect((Math.max(a, bg) + 0.05) / (Math.min(a, bg) + 0.05)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it("다크에서도 fg-decorative는 글자 기준에 못 미친다 — 이름이 곧 금지다", () => {
+    const a = luminance(primitive(darkPrimitive("fg-decorative")));
+    const bg = luminance(primitive(darkPrimitive("surface")));
+    expect((Math.max(a, bg) + 0.05) / (Math.min(a, bg) + 0.05)).toBeLessThan(4.5);
+  });
+
+  it("역상 한 쌍이 뒤집힌다 — 라이트의 '검은 알약에 흰 글씨'가 다크에서는 그 반대다", () => {
+    const surf = luminance(primitive(darkPrimitive("surface-inverse")));
+    const fg = luminance(primitive(darkPrimitive("fg-inverse")));
+    expect(surf).toBeGreaterThan(fg); // 다크에서는 역상 표면이 더 밝다
+    expect(luminance(primitive(assigned("surface-inverse")))).toBeLessThan(luminance(primitive(assigned("fg-inverse"))));
+    expect((Math.max(surf, fg) + 0.05) / (Math.min(surf, fg) + 0.05)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("그림자는 다크에서 값이 바뀐다 — 검은 그림자는 어두운 면에서 보이지 않는다", () => {
+    const dark = darkBlocks()[0]!;
+    for (const k of ["shadow-float", "shadow-sheet"]) {
+      expect(dark.get(k)).toBeDefined();
+      expect(dark.get(k)).toContain("255 255 255"); // 테두리 한 겹이 들어간다
     }
   });
 });

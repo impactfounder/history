@@ -61,6 +61,49 @@
   /* 경고(프리뷰 배지) */
   --amber-surface: oklch(96.2% 0.059 95.617);
   --amber-text: oklch(47.3% 0.137 46.201);
+
+  /*
+    ── 다크 원시 ─────────────────────────────────────────────────────────────
+    라이트와 **같은 층**에 둔다. [3]은 이 값들을 [2]의 이름에 재대입할 뿐이고,
+    값의 정의는 언제나 여기 한 곳이다.
+
+    웜 페이퍼를 그대로 뒤집지 않았다. 뒤집으면 표면이 순검정에 가까워져 종이의 성격이
+    사라진다. 색조는 같은 웜(hue 60~80)을 유지하고 명도만 낮춘 별도 계단이다.
+
+    표면은 셋 다 서로 가깝다(1.05~1.12). 라이트에서도 흰 면과 캔버스가 1.09였다 —
+    카드는 명도 차가 아니라 **10px 간격과 테두리**로 나뉘기 때문이다. 그 설계를 유지한다.
+  */
+  --night-canvas: #0f0e0d;
+  --night-surface: #1d1b19;
+  --night-sunken: #171614;
+  --night-hover: #262320;
+  --night-line-hairline: #232120;
+  --night-line: #2c2926;
+  --night-line-strong: #403c37;
+  /* 글자 네 단계 — surface 15.10 · 11.63 · 7.79 · 5.36, sunken에서도 전부 4.5 이상 */
+  --night-fg: #f3f0ea;
+  --night-fg-strong: #d9d4cb;
+  --night-fg-muted: #b4aea3;
+  --night-fg-subtle: #968f84;
+  /* 장식 전용 2.37 — 라이트의 ink-450과 같은 지위다(글자 금지) */
+  --night-decorative: #5c564e;
+  --night-lug-a: #3f3b35;
+  --night-lug-b: #232120;
+  --night-span-frame: #4a453e;
+
+  /*
+    나라 4색의 다크 판. 원래 값은 **흰 바탕**에서 AA를 넘도록 고른 것이라
+    어두운 면에서는 kr #0047a0이 1.5:1로 사실상 보이지 않는다. 같은 색상을 유지한 채
+    명도만 올린 별도 값이 필요하다 — surface 대비 7.4~8.5.
+  */
+  --night-region-kr: #7aa9ff;
+  --night-region-cn: #ff8a95;
+  --night-region-jp: #c0a6ff;
+  --night-region-us: #5fc98d;
+
+  /* 경고 — 어두운 면 위 9.08 */
+  --night-warn-surface: #2e2717;
+  --night-warn-text: #f2c46b;
 }
 
 /* ── [2] 역할 ─────────────────────────────────────────────────────────────── */
@@ -198,15 +241,108 @@
 
 /*
   ── [3] 다크 ────────────────────────────────────────────────────────────────
-  구조는 그대로다. 채울 때는 여기서만 [2]의 이름에 다른 [1] 값을 재대입한다.
-  1b에서 목록이 줄었다 — 밴드 농도 24개가 사라지고 러그 2개로 대체됐다.
-    표면  surface / surface-sunken / canvas / surface-hover / surface-inverse
-    선    line-hairline / line / line-strong
-    글자  fg / fg-strong / fg-muted / fg-subtle / fg-inverse / fg-decorative
-    상태  focus / selected-ring / warn-*
-    시대  lug-a / lug-b / era-tick / span-frame
-    그림자 shadow-float / shadow-sheet → 테두리 기반으로 교체
+  [2]의 **이름에** 다른 [1] 값을 재대입한다. 그것만으로 모든 유틸리티가 따라온다 —
+  컴포넌트에는 `dark:`가 한 글자도 들어가지 않는다(AGENTS.md 규칙 3).
+
+  두 번 쓰는 이유: 시스템 설정(`prefers-color-scheme`)과 명시적 선택(`data-theme`)이
+  따로 필요하다. 시스템 쪽에 `:not([data-theme="light"])`를 걸어 두면 나중에 토글을
+  붙일 때 "시스템은 다크인데 사용자가 라이트를 골랐다"가 그냥 동작한다.
+  토글 UI는 아직 없다 — 지금 켜지는 경로는 시스템 설정이다.
+
+  뒤집히는 것 셋을 놓치기 쉽다:
+    · surface-inverse / fg-inverse — 라이트에서 "검은 알약에 흰 글씨"였던 것이
+      다크에서는 "흰 알약에 검은 글씨"가 되어야 한다. 값을 서로 맞바꾼다.
+    · 나라 4색 — 흰 바탕 기준으로 고른 값이라 어두운 면에서 kr이 1.5:1이다. 별도 값.
+    · 그림자 — 검은 그림자는 어두운 면에서 보이지 않는다. 위로 향한 테두리 한 겹으로
+      바꾼다(README §7-3의 "테두리 기반으로 교체").
 */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-surface: var(--night-surface);
+    --color-surface-sunken: var(--night-sunken);
+    --color-canvas: var(--night-canvas);
+    --color-surface-hover: var(--night-hover);
+    --color-surface-inverse: var(--night-fg);
+
+    --color-line-hairline: var(--night-line-hairline);
+    --color-line: var(--night-line);
+    --color-line-strong: var(--night-line-strong);
+
+    --color-fg: var(--night-fg);
+    --color-fg-strong: var(--night-fg-strong);
+    --color-fg-muted: var(--night-fg-muted);
+    --color-fg-subtle: var(--night-fg-subtle);
+    --color-fg-inverse: var(--night-canvas);
+    --color-fg-decorative: var(--night-decorative);
+
+    --color-focus: var(--night-fg);
+    --color-selected-ring: var(--night-fg-strong);
+
+    --color-lug-a: var(--night-lug-a);
+    --color-lug-b: var(--night-lug-b);
+    --color-era-tick: var(--night-decorative);
+    --color-span-frame: var(--night-span-frame);
+
+    --color-warn-surface: var(--night-warn-surface);
+    --color-warn-text: var(--night-warn-text);
+
+    --color-region-kr: var(--night-region-kr);
+    --color-region-cn: var(--night-region-cn);
+    --color-region-jp: var(--night-region-jp);
+    --color-region-us: var(--night-region-us);
+
+    /* 검은 그림자 대신 위로 향한 테두리 한 겹 + 더 깊은 그림자 */
+    --shadow-float: 0 0 0 1px rgb(255 255 255 / 0.06), 0 8px 24px rgb(0 0 0 / 0.55);
+    --shadow-sheet: 0 -1px 0 0 rgb(255 255 255 / 0.08), 0 -12px 36px rgb(0 0 0 / 0.6);
+
+    color-scheme: dark;
+  }
+}
+
+/*
+  명시적 선택. 지금은 아무것도 이 속성을 켜지 않지만(토글 UI 없음), 위 블록과 **같은 목록**을
+  들고 있어야 나중에 토글을 붙일 때 값을 두 번 정하지 않는다. 한쪽만 고치면 조용히 갈라지므로
+  contrast.test.ts가 두 블록이 같은 이름 집합을 대입하는지 확인한다.
+*/
+:root[data-theme="dark"] {
+  --color-surface: var(--night-surface);
+  --color-surface-sunken: var(--night-sunken);
+  --color-canvas: var(--night-canvas);
+  --color-surface-hover: var(--night-hover);
+  --color-surface-inverse: var(--night-fg);
+
+  --color-line-hairline: var(--night-line-hairline);
+  --color-line: var(--night-line);
+  --color-line-strong: var(--night-line-strong);
+
+  --color-fg: var(--night-fg);
+  --color-fg-strong: var(--night-fg-strong);
+  --color-fg-muted: var(--night-fg-muted);
+  --color-fg-subtle: var(--night-fg-subtle);
+  --color-fg-inverse: var(--night-canvas);
+  --color-fg-decorative: var(--night-decorative);
+
+  --color-focus: var(--night-fg);
+  --color-selected-ring: var(--night-fg-strong);
+
+  --color-lug-a: var(--night-lug-a);
+  --color-lug-b: var(--night-lug-b);
+  --color-era-tick: var(--night-decorative);
+  --color-span-frame: var(--night-span-frame);
+
+  --color-warn-surface: var(--night-warn-surface);
+  --color-warn-text: var(--night-warn-text);
+
+  --color-region-kr: var(--night-region-kr);
+  --color-region-cn: var(--night-region-cn);
+  --color-region-jp: var(--night-region-jp);
+  --color-region-us: var(--night-region-us);
+
+  --shadow-float: 0 0 0 1px rgb(255 255 255 / 0.06), 0 8px 24px rgb(0 0 0 / 0.55);
+  --shadow-sheet: 0 -1px 0 0 rgb(255 255 255 / 0.08), 0 -12px 36px rgb(0 0 0 / 0.6);
+
+  color-scheme: dark;
+}
 
 html,
 body {
