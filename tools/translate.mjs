@@ -30,6 +30,14 @@ const CACHE = "curation/translations/ko.jsonl";
 
 export const hashOf = (lang, text) => createHash("sha1").update(`${lang}|${text}`).digest("hex").slice(0, 16);
 
+/** 글자 중 한글이 절반을 넘으면 이미 한국어로 본다(한자·가나·라틴은 분모에 넣고 숫자·기호는 뺀다). */
+export const isMostlyHangul = (text) => {
+  const letters = String(text).match(/[\uac00-\ud7a3a-zA-Z\u4e00-\u9fff\u3040-\u30ff]/g);
+  if (!letters?.length) return false;
+  const ko = String(text).match(/[\uac00-\ud7a3]/g)?.length ?? 0;
+  return ko / letters.length > 0.5;
+};
+
 const SYSTEM = `너는 역사 연표를 한국어로 옮기는 번역기다. 입력은 위키백과 연표의 한 줄(영어·일본어·중국어)이다.
 규칙:
 1. 뜻을 더하거나 빼지 않는다. 요약·해설·보충 금지. 원문의 문장 수와 구두점을 유지한다.
@@ -49,6 +57,10 @@ for (const region of regions) {
   for (const line of readFileSync(f, "utf8").split("\n").filter(Boolean)) {
     const r = JSON.parse(line);
     if (r.status !== "published" || r.lang === "ko") continue;
+    // lang이 en이어도 제목이 이미 한국어인 줄이 있다 — 위키데이터 즉위 줄의 ko 표제어가
+    // title로 들어온 경우다(고국천왕·광개토대왕…). 전체의 9%(796줄)였고, 보내면 모델이
+    // 그대로 되받아쓴다. lang이 아니라 **글자**로 판정한다.
+    if (isMostlyHangul(r.title)) continue;
     const h = hashOf(r.lang, r.title);
     if (cache.has(h)) continue;
     // 용어집: 이 줄에 실제로 있는 원문 표제어만
@@ -74,29 +86,60 @@ if (!process.env.ANTHROPIC_API_KEY) { console.error("ANTHROPIC_API_KEY 없음 �
 // ── 호출 ────────────────────────────────────────────────────────────────────
 const client = new Anthropic();
 let usage = { input: 0, output: 0 }, done = 0, failed = 0;
-for (let i = 0; i < items.length; i += BATCH) {
-  const batch = items.slice(i, i + BATCH);
+
+/**
+ * 출력 상한. 4096이었을 때 배치 25가 상한에 걸려 JSON이 중간에서 잘렸고, 그 배치 25건이
+ * 통째로 버려졌다(표본 100건 중 25건 실패, 2026-09-12). 건당 출력이 약 170토큰이라
+ * 25건이면 4,300 — 상한을 넘는다. claude-sonnet-5는 128K까지 받지만 비스트리밍에서는
+ * 16000이 권장 기본값이다(HTTP 타임아웃 여유).
+ */
+const MAX_TOKENS = 16000;
+
+/**
+ * 한 배치를 번역한다. 잘리거나(stop_reason=max_tokens) 파싱이 깨지면 **같은 입력으로 다시
+ * 부르지 않고 절반으로 쪼갠다** — 같은 호출을 반복하면 같은 자리에서 또 잘리고 토큰만 두 배로 쓴다.
+ * 1건까지 쪼개도 안 되면 그 건만 실패로 센다.
+ */
+async function translateBatch(batch, depth = 0) {
   const glossary = Object.fromEntries(batch.flatMap((b) => b.glossary));
   const user = JSON.stringify({ glossary, items: batch.map((b, k) => ({ id: String(k), lang: b.lang, text: b.text })) });
+  const res = await client.messages.create({ model: MODEL, max_tokens: MAX_TOKENS, system: SYSTEM, messages: [{ role: "user", content: user }] });
+  usage.input += res.usage.input_tokens;
+  usage.output += res.usage.output_tokens;
+
   let parsed = null;
-  for (let attempt = 0; attempt < 2 && !parsed; attempt++) {
-    const res = await client.messages.create({ model: MODEL, max_tokens: 4096, system: SYSTEM, messages: [{ role: "user", content: user }] });
-    usage.input += res.usage.input_tokens;
-    usage.output += res.usage.output_tokens;
+  if (res.stop_reason !== "max_tokens") {
     const text = res.content.filter((c) => c.type === "text").map((c) => c.text).join("");
     try {
       const arr = JSON.parse(text.slice(text.indexOf("["), text.lastIndexOf("]") + 1));
       if (Array.isArray(arr)) parsed = arr;
-    } catch { /* 한 번 더 */ }
+    } catch { /* 아래에서 쪼갠다 */ }
   }
-  if (!parsed) { failed += batch.length; console.warn(`  배치 ${i / BATCH + 1}: JSON 파싱 실패`); continue; }
+
+  if (!parsed) {
+    if (batch.length === 1) {
+      failed += 1;
+      console.warn(`\n  건너뜀(${res.stop_reason}): ${batch[0].text.slice(0, 50)}`);
+      return;
+    }
+    const half = Math.ceil(batch.length / 2);
+    if (depth === 0) console.warn(`\n  ${res.stop_reason === "max_tokens" ? "출력 잘림" : "JSON 파싱 실패"} — ${batch.length}건을 ${half}건씩 쪼개 다시`);
+    await translateBatch(batch.slice(0, half), depth + 1);
+    await translateBatch(batch.slice(half), depth + 1);
+    return;
+  }
+
   const at = new Date().toISOString();
-  for (const b of batch) {
-    const hit = parsed.find((p) => String(p.id) === String(batch.indexOf(b)));
-    if (!hit?.ko) { failed++; continue; }
+  batch.forEach((b, k) => {
+    const hit = parsed.find((p) => String(p.id) === String(k));
+    if (!hit?.ko) { failed++; return; }
     appendFileSync(CACHE, JSON.stringify({ h: b.h, lang: b.lang, src: b.text, ko: String(hit.ko).trim(), model: MODEL, at }) + "\n");
     done++;
-  }
-  process.stdout.write(`\r  ${Math.min(i + BATCH, items.length)}/${items.length}  토큰 in ${usage.input} out ${usage.output}`);
+  });
+}
+
+for (let i = 0; i < items.length; i += BATCH) {
+  await translateBatch(items.slice(i, i + BATCH));
+  process.stdout.write(`\r  ${Math.min(i + BATCH, items.length)}/${items.length}  완료 ${done} 실패 ${failed}  토큰 in ${usage.input} out ${usage.output}`);
 }
 console.log(`\n완료 ${done} · 실패 ${failed} · 토큰 입력 ${usage.input} 출력 ${usage.output} → ${CACHE}`);
