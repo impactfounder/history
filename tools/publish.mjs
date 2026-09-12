@@ -70,12 +70,32 @@ const names_ko = new Map(
     : [],
 );
 
+/**
+ * 겹친 제목의 판정(tools/dedupe.mjs). 같은 열·같은 해에 같은 제목이 둘 이상일 때,
+ * 합칠 것인지(같은 사건) 각자 다른 제목을 줄 것인지(한 캠페인의 다른 국면) 판단한 결과다.
+ * 보류(same:null)는 아무 키도 만들지 않는다 — 손대지 않으면 오늘 동작(원문 문장)이 남는다.
+ */
+const clash = { drop: new Map(), rename: new Map() };
+if (existsSync("curation/names/clash.jsonl")) {
+  for (const l of readFileSync("curation/names/clash.jsonl", "utf8").split("\n").filter(Boolean)) {
+    let d; try { d = JSON.parse(l); } catch { continue; }
+    if (d.same === true) for (const id of d.drop ?? []) clash.drop.set(id, d.primary);
+    else if (d.same === false) for (const [id, n] of Object.entries(d.rename ?? {})) clash.rename.set(id, n);
+  }
+}
+
 const bucket = (y, u) => Math.floor(y / u) * u;
 const yearKo = (y) => (y <= 0 ? `기원전 ${1 - y}년` : `${y}년`);
 const formatYear = (y, approx) => yearKo(y) + (approx ? "경" : "");
 /** 국사편찬위 날짜 → "1882년 음력 6월 9일". 모르는 달·날은 뺀다. */
 const formatNikhDate = (d) =>
   yearKo(d.y) + (d.m ? ` ${d.cal === "lunar" ? "음력 " : ""}${d.m}월` : "") + (d.d ? ` ${d.d}일` : "") + (d.leap ? "(윤달)" : "");
+
+/**
+ * 이 줄의 지은 제목. dedupe가 「다른 국면」이라 판정해 새 제목을 준 줄은 그것이 이긴다 —
+ * 같은 열·같은 해에 같은 이름이 겹치던 것을 푼 결과이므로 원래 이름보다 구체적이다.
+ */
+const nameOf = (r) => clash.rename.get(r.source_id) ?? names_ko.get(nameHash(r.lang, r.title))?.name ?? null;
 
 function toRecord(r) {
   // 열마다 그 열의 언어판 표제어. 영어 원천의 한국 사건이라도 한국 열 이름은 ko 표제어다
@@ -99,7 +119,7 @@ function toRecord(r) {
     ...(r.title_ko ? { title_ko: r.title_ko } : {}),
     // 지은 제목(tools/name.mjs). 원문 표제어가 사건 꼴이 아닐 때 칩·상세 제목이 된다.
     // 원문은 title/text에 그대로 있고 상세가 그것을 보여 준다 — 진본이 바뀌는 게 아니다.
-    ...(names_ko.has(nameHash(r.lang, r.title)) ? { name_ko: names_ko.get(nameHash(r.lang, r.title)).name } : {}),
+    ...(nameOf(r) ? { name_ko: nameOf(r) } : {}),
     // 위키데이터 구조 라벨("accession" 재위 시작) — UI가 언어별 "즉위"를 붙인다
     ...(r.role ? { role: r.role } : {}),
     // 짧은 설명(한국어 위키백과 description, "일본의 무장" 같은 한 구) — 칩 툴팁용
@@ -124,8 +144,8 @@ function toDetail(r, id) {
     // 기계 번역(tools/translate.mjs). 원문이 진본이고 번역은 파생물 — UI가 "기계 번역"이라 표시한다
     ...(r.title_ko ? { text_ko: r.title_ko, mt: r.mt } : {}),
     // 지은 제목의 출처. 제목이 파생물이라는 사실을 상세가 들고 있어야 표시할 수 있다
-    ...(names_ko.has(nameHash(r.lang, r.title))
-      ? { name_ko: names_ko.get(nameHash(r.lang, r.title)).name, name_mt: { model: names_ko.get(nameHash(r.lang, r.title)).model, at: names_ko.get(nameHash(r.lang, r.title)).at } }
+    ...(nameOf(r)
+      ? { name_ko: nameOf(r), name_mt: { model: names_ko.get(nameHash(r.lang, r.title))?.model ?? null, at: names_ko.get(nameHash(r.lang, r.title))?.at ?? null } }
       : {}),
     lang: r.lang,
     year: r.date.year,
@@ -154,6 +174,29 @@ for (const f of files) {
     all.push(r);
   }
 }
+
+/*
+  겹친 제목 합치기(tools/dedupe.mjs 판정). 사라지는 줄의 원문은 대표의 sources에 `alt: true`로
+  옮긴다 — derive.mjs mergeDuplicates가 쓰는 모양 그대로라 toDetail의 `alt`가 그대로 집어 간다.
+  "같은 사건을 중국·일본·미국 연표가 어떻게 쓰는가"가 한 패널에 모이는 것이 이 제품의 주장이므로,
+  합치기는 **행을 지우는 일이 아니라 관점을 모으는 일**이다. 국사편찬위 항목도 함께 옮긴다.
+*/
+const byId = new Map(all.map((r) => [r.source_id, r]));
+let mergedRows = 0;
+for (const r of all) {
+  const into = clash.drop.get(r.source_id);
+  const primary = into ? byId.get(into) : null;
+  if (!primary || primary === r) continue;
+  for (const src of r.sources) {
+    if (src.kind === "wikipedia") primary.sources.push({ ...src, lang: r.lang, text: r.text, alt: true });
+    else if (!primary.sources.some((p) => p.kind === src.kind && p.id === src.id)) primary.sources.push(src);
+  }
+  r.merged_into = into;
+  mergedRows++;
+}
+const kept = all.filter((r) => !r.merged_into);
+all.length = 0;
+all.push(...kept);
 
 // ── 쓰기 ────────────────────────────────────────────────────────────────────
 rmSync(OUT, { recursive: true, force: true });
@@ -279,6 +322,7 @@ write("manifest.json", { version: "v1", stage, publishedAt: new Date().toISOStri
 console.log(`발행 — stage=${stage} → ${OUT}
   사건        ${all.length}  (${Object.entries(counts.byRegion).map(([k, v]) => `${k} ${v}`).join(" · ")})
   제외        rejected ${skipped.rejected} · period ${skipped.period}
+  겹침 합침   ${mergedRows}행 (같은 열·같은 해·같은 제목 — 원문은 대표의 alt로)
   청크 수록   century ${byLevel.century} · decade ${byLevel.decade} · year ${byLevel.year}
   기간        막대 ${spanKept}건 (중복 제거 ${spanDupes})
   공식 출처   매칭 사건 ${officialMatched} · 연도 파일 ${officialYears} (항목 ${officialEntries})

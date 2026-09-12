@@ -1,0 +1,36 @@
+/**
+ * 지은 제목의 규칙. `tools/name.mjs`(처음 짓기)와 `tools/dedupe.mjs`(겹칠 때 다시 짓기)가
+ * 같은 자를 쓰도록 따로 뺀다 — 두 곳에 복사하면 한쪽만 고쳐지고, 그 순간 규칙이 규칙이 아니게 된다.
+ *
+ * 의존성 0. 두 도구가 모두 import하므로 **본문에서 아무것도 실행하지 않는다**(name.mjs를
+ * 그대로 import하면 그 파일의 수집·호출 본문이 딸려 돈다 — 그래서 분리했다).
+ */
+
+/** 이미 제목처럼 읽히는 길이. 이보다 짧으면 이름을 지어도 얻는 것이 없다. */
+export const ALREADY_SHORT = 14;
+/** 지은 이름의 상한. 12자를 요구하고 16자까지 받는다(관용 명칭이 긴 경우가 있다). */
+export const NAME_MAX = 16;
+
+/**
+ * 지은 이름이 쓸 만한가. 모델이 규칙을 어기면 **버리고 문장을 그대로 둔다** —
+ * 틀린 제목은 긴 문장보다 나쁘다는 것이 이 기능의 전제이므로, 의심스러우면 버리는 쪽이 맞다.
+ *
+ * @param {unknown} name 모델이 낸 이름
+ * @param {string} [source] 원문(되받아쓴 것을 걸러낸다)
+ * @param {number} [year] 그 사건의 연도(관용 명칭에 붙은 같은 연도만 떼어 낸다). 없으면 연도 접두를 떼지 않는다
+ */
+export function validName(name, source, year) {
+  if (typeof name !== "string") return null;
+  let s = name.trim().replace(/[.。]$/, "");
+  /*
+    "1940년 미국 대선" — 미국 대선처럼 관용 명칭에 연도가 붙는 사건이 있다. 연도는 시간축에
+    이미 있으므로 떼는 것이 맞지만, 버리면 이름 자체를 잃는다. **그 사건의 연도와 같을 때만**
+    떼어 낸다 — 다른 연도가 붙어 있으면 모델이 엉뚱한 사건을 본 것이므로 그때는 버린다.
+  */
+  if (year !== undefined) s = s.replace(new RegExp(`^${year}년\\s*`), "");
+  if (s.length < 2 || s.length > NAME_MAX) return null;
+  if (/\d+\s*(년|월|일)/.test(s)) return null; // 남은 날짜는 축과 중복이거나 오독이다
+  if (/(했다|하다|되었다|된다|당했다|였다|이다|졌다|난다|간다)$/.test(s)) return null; // 서술어 = 문장
+  if (source && s === String(source).trim()) return null; // 문장을 되받아쓴 것
+  return s;
+}

@@ -1,0 +1,332 @@
+{"g":"kr|-107|위만조선 멸망","same":true,"primary":"38fcfc0db8bd","drop":["a950d9f7089d"],"model":"claude-sonnet-5","at":"2026-09-12T14:43:45.791Z"}
+{"g":"kr|-17|백제 건국","same":true,"primary":"f0c77b7dbd93","drop":["c226ad4ccef7"],"model":"claude-sonnet-5","at":"2026-09-12T14:43:47.154Z"}
+{"g":"kr|475|한성 함락","same":true,"primary":"c17334ce8b73","drop":["9c773aad0abb"],"model":"claude-sonnet-5","at":"2026-09-12T14:43:48.510Z"}
+{"g":"kr|612|살수대첩","same":true,"primary":"bb0775dccb0c","drop":["1b600936ab55"],"model":"claude-sonnet-5","at":"2026-09-12T14:43:49.918Z"}
+{"g":"kr|698|발해 건국","same":true,"primary":"139145e757be","drop":["ec7c51567b3a"],"model":"claude-sonnet-5","at":"2026-09-12T14:43:51.245Z"}
+{"g":"kr|828|청해진 설치","same":true,"primary":"aa81d09af030","drop":["b397db692f36"],"model":"claude-sonnet-5","at":"2026-09-12T14:43:52.582Z"}
+{"g":"kr|900|후백제 건국","same":true,"primary":"e1c3417ad694","drop":["6a4bf462802c"],"model":"claude-sonnet-5","at":"2026-09-12T14:43:53.943Z"}
+{"g":"kr|901|태봉 건국","same":true,"primary":"005d5b569e1a","drop":["ea5700764a0b"],"model":"claude-sonnet-5","at":"2026-09-12T14:43:55.189Z"}
+{"g":"kr|918|고려 건국","same":true,"primary":"cd74108d6402","drop":["22a52b112b30"],"model":"claude-sonnet-5","at":"2026-09-12T14:43:56.612Z"}
+{"g":"kr|936|후삼국 통일","same":true,"primary":"4680fabe83f5","drop":["44ab0e6002e6"],"model":"claude-sonnet-5","at":"2026-09-12T14:43:58.018Z"}
+{"g":"kr|956|노비안검법 시행","same":true,"primary":"634605f0e24c","drop":["nikh_1ab11aea58ee"],"model":"claude-sonnet-5","at":"2026-09-12T14:43:59.404Z"}
+{"g":"kr|1010|거란의 2차 침입","same":null,"why":"model-null","model":"claude-sonnet-5","at":"2026-09-12T14:44:00.752Z"}
+{"g":"kr|1019|귀주대첩","same":true,"primary":"nikh_4c5068752833","drop":["c7c4ff7a3e7e"],"model":"claude-sonnet-5","at":"2026-09-12T14:44:02.121Z"}
+{"g":"kr|1145|삼국사기 편찬","same":true,"primary":"51fb74eae992","drop":["f7786b64e438"],"model":"claude-sonnet-5","at":"2026-09-12T14:44:04.897Z"}
+{"g":"kr|1176|망이·망소이의 난","same":true,"primary":"nikh_f3adf88bd422","drop":["89184b8279c7"],"model":"claude-sonnet-5","at":"2026-09-12T14:44:07.560Z"}
+{"g":"kr|1234|상정고금예문 간행","same":true,"primary":"841322fa680f","drop":["72968f7abd65"],"model":"claude-sonnet-5","at":"2026-09-12T14:44:08.896Z"}
+{"g":"kr|1270|삼별초의 항쟁","same":true,"primary":"nikh_2806158b6f03","drop":["1b40ee484654"],"model":"claude-sonnet-5","at":"2026-09-12T14:44:10.261Z"}
+{"g":"kr|1356|쌍성총관부 수복","same":true,"primary":"nikh_104ccbf9f5db","drop":["71b6034948be"],"model":"claude-sonnet-5","at":"2026-09-12T14:44:11.648Z"}
+{"g":"kr|1380|황산대첩","same":true,"primary":"nikh_f6d4bd24f0d4","drop":["ebe728c844aa"],"model":"claude-sonnet-5","at":"2026-09-12T14:44:31.586Z"}
+{"g":"kr|1388|위화도 회군","same":true,"primary":"cc517a18f9dc","drop":["8702872cc9e9"],"model":"claude-sonnet-5","at":"2026-09-12T14:44:37.272Z"}
+{"g":"kr|1389|대마도 정벌","same":true,"primary":"nikh_96546bb0770b","drop":["55f2f6106b46"],"model":"claude-sonnet-5","at":"2026-09-12T14:44:38.691Z"}
+{"g":"kr|1392|조선 건국","same":true,"primary":"de6f304a0fe0","drop":["933526dc495b"],"model":"claude-sonnet-5","at":"2026-09-12T14:44:40.073Z"}
+{"g":"kr|1419|대마도 정벌","same":true,"primary":"nikh_d986bdd6c869","drop":["85a201d74c10"],"model":"claude-sonnet-5","at":"2026-09-12T14:44:42.688Z"}
+{"g":"kr|1597|정유재란","same":true,"primary":"nikh_b887a9d50e21","drop":["4705a8f178f6"],"model":"claude-sonnet-5","at":"2026-09-12T14:44:44.045Z"}
+{"g":"kr|1598|노량해전","same":true,"primary":"nikh_0c29d8e02b01","drop":["d58dd8bf126d"],"model":"claude-sonnet-5","at":"2026-09-12T14:44:45.503Z"}
+{"g":"kr|1886|육영공원 설립","same":true,"primary":"7dae54fcbbeb","drop":["fabcfbbf38a9"],"model":"claude-sonnet-5","at":"2026-09-12T14:44:51.810Z"}
+{"g":"kr|1895|을미사변","same":true,"primary":"cfc58de3ed9b","drop":["a355077fda0c","d711542f36e5"],"model":"claude-sonnet-5","at":"2026-09-12T14:44:53.104Z"}
+{"g":"kr|1896|아관파천","same":true,"primary":"ffb30f499e33","drop":["e74351e2abe0"],"model":"claude-sonnet-5","at":"2026-09-12T14:44:57.379Z"}
+{"g":"kr|1919|3·1 운동","same":true,"primary":"7a5d9e9437a3","drop":["275be34ae861"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:03.313Z"}
+{"g":"kr|1940|한국광복군 창설","same":true,"primary":"ccd9ffdc986a","drop":["9e9686982e92"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:05.338Z"}
+{"g":"kr|1943|카이로 선언","same":true,"primary":"48395709f942","drop":["73c6abb46550"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:11.080Z"}
+{"g":"kr|1945|8·15 광복","same":true,"primary":"df428d63d777","drop":["4420803581b1"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:14.620Z"}
+{"g":"kr|1948|대한민국 정부 수립","same":true,"primary":"1e38a9dc3a30","drop":["4edddc2f1902"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:15.985Z"}
+{"g":"kr|1948|북한 정부 수립","same":true,"primary":"f0df91c86fef","drop":["ec884094d0ba"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:17.402Z"}
+{"g":"kr|1976|판문점 도끼 만행 사건","same":true,"primary":"617bf57fbf7a","drop":["1c11397d6351"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:18.761Z"}
+{"g":"kr|1979|10·26 사건","same":true,"primary":"6b563810f1f8","drop":["ff26d9a2f327"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:20.655Z"}
+{"g":"kr|1979|12·12 군사반란","same":true,"primary":"e033811851f5","drop":["91ce3c6f9b5f"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:21.982Z"}
+{"g":"kr|2017|문재인 대통령 취임","same":true,"primary":"77987cfbba52","drop":["6a322caec23d"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:23.395Z"}
+{"g":"kr|1033|천리장성 축조","same":true,"primary":"3a59b9fd45f0","drop":["nikh_d2e43b5816ca"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:25.346Z"}
+{"g":"kr|1883|한성순보 창간","same":true,"primary":"1325058a9d45","drop":["afc82e44e41b"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:26.795Z"}
+{"g":"kr|1897|고종 환궁","same":true,"primary":"b93559821ec9","drop":["7e9344e26cb7"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:28.148Z"}
+{"g":"kr|1904|대한매일신보 창간","same":true,"primary":"c9a7feca0d86","drop":["d7291056bc37"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:29.515Z"}
+{"g":"kr|1908|스티븐스 암살","same":true,"primary":"401f59f865a5","drop":["5cffff3074ab"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:30.853Z"}
+{"g":"kr|1909|이토 히로부미 암살","same":true,"primary":"0629889f9a2a","drop":["474e77fd9fc5"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:32.235Z"}
+{"g":"kr|1174|조위총의 난","same":true,"primary":"nikh_03d8d6a43169","drop":["nikh_8af5caa8af8f"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:33.585Z"}
+{"g":"kr|1182|죽동의 난","same":true,"primary":"nikh_62048fb6e35d","drop":["nikh_c201d0f57420"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:34.957Z"}
+{"g":"kr|1305|동녀 헌상","same":false,"rename":{"nikh_e6b87be62ab3":"왕유소 동녀 헌상","nikh_c08a927948fc":"정공 동녀 헌상"},"model":"claude-sonnet-5","at":"2026-09-12T14:45:36.399Z"}
+{"g":"kr|1307|동녀 헌상","same":null,"why":"rename-collide","model":"claude-sonnet-5","at":"2026-09-12T14:45:41.801Z"}
+{"g":"kr|1347|동녀 진상","same":false,"rename":{"nikh_9d269bff88d7":"익성군 서 동녀 진상","nikh_50ce19ce68de":"이수산 동녀 진상"},"model":"claude-sonnet-5","at":"2026-09-12T14:45:43.417Z"}
+{"g":"kr|1382|검대장군 반란 미수","same":true,"primary":"nikh_5e65e007b7cf","drop":["nikh_35de2a97559a"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:44.718Z"}
+{"g":"kr|1408|공녀 간택","same":false,"rename":{"nikh_a36f53615d59":"처녀 70명 중 7명 선발","nikh_d93bb0ac598a":"경외처녀 44명 선발"},"model":"claude-sonnet-5","at":"2026-09-12T14:45:46.420Z"}
+{"g":"kr|1801|내시노비 혁파","same":true,"primary":"nikh_cc3ebac2e28a","drop":["nikh_2666bf941915"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:47.771Z"}
+{"g":"cn|-841|국인폭동","same":true,"primary":"5d86100f8a23","drop":["5f254702a33a"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:50.610Z"}
+{"g":"cn|-472|오나라 멸망","same":true,"primary":"1a937127460b","drop":["0b92f18ca39c"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:51.837Z"}
+{"g":"cn|-353|계릉 전투","same":true,"primary":"85215d64532b","drop":["d48ce5e8ef47"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:55.669Z"}
+{"g":"cn|-306|호복기사","same":true,"primary":"8dba58212215","drop":["e88c51a710c6"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:57.292Z"}
+{"g":"cn|-255|주나라 멸망","same":true,"primary":"04ef9c8bea4f","drop":["58721ee67a22"],"model":"claude-sonnet-5","at":"2026-09-12T14:45:59.257Z"}
+{"g":"cn|-207|이사 처형","same":true,"primary":"bb194ad5da12","drop":["a0fd6d15f145"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:00.517Z"}
+{"g":"cn|-201|한고조 즉위","same":true,"primary":"fee7035cd34b","drop":["b9e1d96f8290"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:02.115Z"}
+{"g":"cn|6|왕망 섭정","same":true,"primary":"2b8744caa32e","drop":["82e5aebd8de3"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:03.455Z"}
+{"g":"cn|221|촉한 건국","same":true,"primary":"b3412edd36f1","drop":["ed0a10d7bc19"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:04.871Z"}
+{"g":"cn|222|이릉대전","same":true,"primary":"6e12b8a76742","drop":["1fc492c54859"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:06.202Z"}
+{"g":"cn|229|오나라 건국","same":true,"primary":"ffc35ac5ae2b","drop":["772ca60126f0"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:07.570Z"}
+{"g":"cn|337|전연 건국","same":true,"primary":"90c98ea6aff7","drop":["9c0ffd88e135"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:08.982Z"}
+{"g":"cn|351|전진 건국","same":true,"primary":"e5929606ee2a","drop":["d55e92c81e31"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:14.845Z"}
+{"g":"cn|384|후연 건국","same":true,"primary":"41a065e2c7b6","drop":["5edffaf28e11"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:16.225Z"}
+{"g":"cn|386|북위 건국","same":true,"primary":"9fbc84a470e6","drop":["5e1fb587db16"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:17.560Z"}
+{"g":"cn|407|북연 건국","same":true,"primary":"2874bb985460","drop":["09b4115ea673"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:19.087Z"}
+{"g":"cn|417|후진 멸망","same":true,"primary":"36a2d5f35888","drop":["a2d1363fa7d9"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:20.509Z"}
+{"g":"cn|420|유송 건국","same":true,"primary":"97c79b126ffa","drop":["d366a35f915f"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:21.925Z"}
+{"g":"cn|431|서진 멸망","same":true,"primary":"bd102b9c0095","drop":["9255e30470b9"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:29.854Z"}
+{"g":"cn|479|남제 건국","same":true,"primary":"3bf9b42d2262","drop":["02828b240612"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:31.103Z"}
+{"g":"cn|502|양 건국","same":true,"primary":"118e208177a1","drop":["08f59f695b33"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:32.460Z"}
+{"g":"cn|550|북제 건국","same":true,"primary":"ba6675e91311","drop":["5e3e6e43e08b"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:33.788Z"}
+{"g":"cn|557|진 건국","same":true,"primary":"fce7aa1de545","drop":["2e371e03f092"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:35.018Z"}
+{"g":"cn|618|당 건국","same":true,"primary":"c9598d48ed9f","drop":["c4dadf344323"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:39.822Z"}
+{"g":"cn|620|유무주 격파","same":true,"primary":"8c83f351ec0a","drop":["0f804019ff3e"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:41.256Z"}
+{"g":"cn|626|현무문의 변","same":true,"primary":"682ea312a9aa","drop":["f49958af5427","5c3196c36e01"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:43.980Z"}
+{"g":"cn|690|무주 건국","same":true,"primary":"7e625e343c86","drop":["6666f33b0217"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:45.455Z"}
+{"g":"cn|874|왕선지의 난","same":true,"primary":"c1ac17594e0e","drop":["cc7d9f1c5700","0a521f4e55ba"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:46.939Z"}
+{"g":"cn|923|후당 건국","same":true,"primary":"f60c75e19a57","drop":["75ac4d7bc249"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:48.421Z"}
+{"g":"cn|925|전촉 멸망","same":true,"primary":"44b49752d2a6","drop":["d79ddc42ee05"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:49.794Z"}
+{"g":"cn|934|후촉 건국","same":true,"primary":"236b58a76be2","drop":["046c8c8bfb33"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:51.150Z"}
+{"g":"cn|936|후진 건국","same":true,"primary":"e09db941341a","drop":["c959094cb71a"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:55.169Z"}
+{"g":"cn|947|후한 건국","same":true,"primary":"470a7f931666","drop":["04a0f501d90b"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:56.569Z"}
+{"g":"cn|965|후촉 멸망","same":true,"primary":"a8ea5c362489","drop":["1f023ce51314"],"model":"claude-sonnet-5","at":"2026-09-12T14:46:57.857Z"}
+{"g":"cn|1038|서하 건국","same":true,"primary":"ed5fc479e577","drop":["ad326ca2cc8b","e58c31141d95"],"model":"claude-sonnet-5","at":"2026-09-12T14:47:01.349Z"}
+{"g":"cn|1069|왕안석 변법","same":false,"rename":{"1275a42dbb31":"왕안석 참지정사 임명","1c7e30666f4b":"보갑제 도입"},"model":"claude-sonnet-5","at":"2026-09-12T14:47:03.457Z"}
+{"g":"cn|1127|정강의 변","same":true,"primary":"f48d7813a79c","drop":["4c857c783a75","a3a4637711fd"],"model":"claude-sonnet-5","at":"2026-09-12T14:47:15.479Z"}
+{"g":"cn|1140|언성 전투","same":true,"primary":"6323629439c8","drop":["b5e0d90cd81e"],"model":"claude-sonnet-5","at":"2026-09-12T14:47:16.920Z"}
+{"g":"cn|1234|금 멸망","same":true,"primary":"39e4c4f54da1","drop":["abe4722cf1c6"],"model":"claude-sonnet-5","at":"2026-09-12T14:47:18.189Z"}
+{"g":"cn|1368|명나라 건국","same":true,"primary":"93ef6df9d839","drop":["1bc6a9b51dd0"],"model":"claude-sonnet-5","at":"2026-09-12T14:47:29.042Z"}
+{"g":"cn|1398|건문제 즉위","same":true,"primary":"d08714e7d56d","drop":["c31c3f93740e"],"model":"claude-sonnet-5","at":"2026-09-12T14:47:30.483Z"}
+{"g":"cn|1402|정난의 변","same":true,"primary":"83a6aece06bf","drop":["fac3183263b9"],"model":"claude-sonnet-5","at":"2026-09-12T14:47:31.777Z"}
+{"g":"cn|1457|탈문의 변","same":true,"primary":"b4c1b1b18c19","drop":["bd9d870f06a6"],"model":"claude-sonnet-5","at":"2026-09-12T14:47:33.070Z"}
+{"g":"cn|1592|임진왜란","same":false,"rename":{"c382e044874a":"일본군 조선 출병","25914ca8cc07":"일본군 조선 침략","94f22ec8d877":"명군의 참전 동원"},"model":"claude-sonnet-5","at":"2026-09-12T14:47:40.512Z"}
+{"g":"cn|1616|후금 건국","same":true,"primary":"0fe81ac12516","drop":["1399108b260c"],"model":"claude-sonnet-5","at":"2026-09-12T14:47:41.876Z"}
+{"g":"cn|1645|융무제 즉위","same":true,"primary":"ec8421130d5c","drop":["084f796ebcbf"],"model":"claude-sonnet-5","at":"2026-09-12T14:47:43.245Z"}
+{"g":"cn|1646|소무제 즉위","same":true,"primary":"9c8b20f940fb","drop":["81acdb87f019"],"model":"claude-sonnet-5","at":"2026-09-12T14:47:52.125Z"}
+{"g":"cn|1895|시모노세키 조약","same":true,"primary":"b8ef87852839","drop":["232ed6463066"],"model":"claude-sonnet-5","at":"2026-09-12T14:47:53.571Z"}
+{"g":"cn|1921|중국공산당 창당","same":true,"primary":"d090428aa609","drop":["81a732a46fdb"],"model":"claude-sonnet-5","at":"2026-09-12T14:47:57.253Z"}
+{"g":"cn|1934|신생활운동","same":false,"rename":{"e51fbc08285f":"장정 시작과 문화 활동","d220ebdd6a3e":"신생활운동 창설"},"model":"claude-sonnet-5","at":"2026-09-12T14:47:58.867Z"}
+{"g":"cn|1949|중화인민공화국 성립","same":true,"primary":"1bf4a191b445","drop":["48699db608e1"],"model":"claude-sonnet-5","at":"2026-09-12T14:48:10.041Z"}
+{"g":"cn|1972|닉슨 방중","same":true,"primary":"dc7c27356317","drop":["6efb475afcde"],"model":"claude-sonnet-5","at":"2026-09-12T14:48:14.251Z"}
+{"g":"cn|1978|신문연파 첫 방송","same":true,"primary":"ce7bfe524b86","drop":["c6928e20b475"],"model":"claude-sonnet-5","at":"2026-09-12T14:48:18.254Z"}
+{"g":"cn|1979|미중 수교","same":true,"primary":"b5f8dc894f7f","drop":["67e66ddf00b7"],"model":"claude-sonnet-5","at":"2026-09-12T14:48:22.584Z"}
+{"g":"cn|1982|인구 10억 돌파","same":true,"primary":"ed9b586e8c29","drop":["e1c53994c0a3"],"model":"claude-sonnet-5","at":"2026-09-12T14:48:24.476Z"}
+{"g":"cn|1991|장칭 자살","same":true,"primary":"fe33120fd0a4","drop":["3ca9fd9fb8af"],"model":"claude-sonnet-5","at":"2026-09-12T14:48:29.277Z"}
+{"g":"cn|1992|남순강화","same":false,"rename":{"27ccc16b027d":"파룬궁 창립과 한중수교","c4f99a2a1160":"경제정책 재확립 선언","9f6d796db77a":"남부지역 시찰 담화"},"model":"claude-sonnet-5","at":"2026-09-12T14:48:35.654Z"}
+{"g":"cn|2016|차이잉원 총통 당선","same":true,"primary":"7b517c5ec15c","drop":["2b92355b77a3"],"model":"claude-sonnet-5","at":"2026-09-12T14:48:39.099Z"}
+{"g":"cn|2023|시진핑 3연임","same":true,"primary":"b5b7ceac17e3","drop":["128bad64609b"],"model":"claude-sonnet-5","at":"2026-09-12T14:48:42.724Z"}
+{"g":"cn|2025|선저우 20호 발사","same":true,"primary":"7a5a441508ce","drop":["7cf541152d84"],"model":"claude-sonnet-5","at":"2026-09-12T14:48:44.066Z"}
+{"g":"cn|-179|여씨의 난","same":false,"rename":{"c1453243a536":"후소제 폐위와 문제 즉위","885a3b9df5d1":"여씨 일족 몰살"},"model":"claude-sonnet-5","at":"2026-09-12T14:48:46.647Z"}
+{"g":"cn|-118|막북 전투","same":true,"primary":"d5769fc5316e","drop":["98d2d9838a63"],"model":"claude-sonnet-5","at":"2026-09-12T14:48:50.099Z"}
+{"g":"cn|-107|누란 전투","same":false,"rename":{"cff16eac753b":"누란 왕국 공격","6df9f982f83e":"차말·차사국 복속"},"model":"claude-sonnet-5","at":"2026-09-12T14:48:53.669Z"}
+{"g":"cn|-66|차사 전투","same":true,"primary":"7bb15b8480ca","drop":["9a02564b2848"],"model":"claude-sonnet-5","at":"2026-09-12T14:48:55.144Z"}
+{"g":"cn|9|신나라 건국","same":true,"primary":"0406ca01dcbb","drop":["be213d3a22aa"],"model":"claude-sonnet-5","at":"2026-09-12T14:48:56.601Z"}
+{"g":"cn|25|광무제 즉위","same":true,"primary":"e5c861c98976","drop":["522a8145e0cb"],"model":"claude-sonnet-5","at":"2026-09-12T14:48:57.968Z"}
+{"g":"cn|27|적미군 항복","same":true,"primary":"96117ff69360","drop":["61675d304692"],"model":"claude-sonnet-5","at":"2026-09-12T14:48:59.284Z"}
+{"g":"cn|73|이오려 전투","same":true,"primary":"265b13b8fbdf","drop":["3f4d5338c250"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:00.676Z"}
+{"g":"cn|192|동탁 피살","same":true,"primary":"8cedf6a28a2e","drop":["c4c02bcd7164"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:05.306Z"}
+{"g":"cn|200|관도 대전","same":true,"primary":"104c62392ecc","drop":["390d7767ddda"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:06.629Z"}
+{"g":"cn|644|카라샤르 정벌","same":true,"primary":"6c02bdcec67a","drop":["ea9731666ee8"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:08.105Z"}
+{"g":"cn|657|이르티시 강 전투","same":true,"primary":"8b5d411b490a","drop":["b7c282bd34f2"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:09.460Z"}
+{"g":"cn|710|당륭정변","same":true,"primary":"ed53f8bd857c","drop":["975ce723e369"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:10.732Z"}
+{"g":"cn|717|아크수 전투","same":true,"primary":"5f49b5aad7db","drop":["ce7e11c25354"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:12.130Z"}
+{"g":"cn|756|옹구 전투","same":true,"primary":"90e2aed6023b","drop":["9b68b97e77bd"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:13.470Z"}
+{"g":"cn|757|수양 전투","same":true,"primary":"4b57aa96de14","drop":["9982048d3057"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:14.833Z"}
+{"g":"cn|868|금강경 인쇄","same":true,"primary":"270ae4361c8c","drop":["7067d502c2ab"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:16.172Z"}
+{"g":"cn|873|당 희종 즉위","same":true,"primary":"ef789505bdfc","drop":["0714d9708cc8"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:17.701Z"}
+{"g":"cn|879|광저우 대학살","same":true,"primary":"2629a4c1ce62","drop":["9d2bc2e34d94"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:19.113Z"}
+{"g":"cn|904|당 애제 즉위","same":true,"primary":"8e5d916b8183","drop":["0105134748b9"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:20.595Z"}
+{"g":"cn|907|요 태조 즉위","same":true,"primary":"aa9506261556","drop":["bbf6a4ef590e"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:21.870Z"}
+{"g":"cn|976|송 태종 즉위","same":true,"primary":"f2522596fcdf","drop":["fc9c99689a14"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:23.148Z"}
+{"g":"cn|981|박당강 전투","same":true,"primary":"b6d56999182c","drop":["33c76bf5ce7b"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:24.532Z"}
+{"g":"cn|1022|송 인종 즉위","same":true,"primary":"29e09a6172bb","drop":["2f656b088f32"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:25.944Z"}
+{"g":"cn|1063|송 영종 즉위","same":true,"primary":"afbf521c918f","drop":["f6bbf3ee5368"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:28.220Z"}
+{"g":"cn|1126|휘종 양위","same":true,"primary":"d0f5d189b856","drop":["3c87434e43ec"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:29.613Z"}
+{"g":"cn|1161|당도 전투","same":true,"primary":"f19f7bf0a4f8","drop":["4ca2c8b47de6"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:31.033Z"}
+{"g":"cn|1227|서하 멸망","same":true,"primary":"b74a4234b14f","drop":["cda7d0ccb5fa"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:32.362Z"}
+{"g":"cn|1264|송 도종 즉위","same":true,"primary":"b81329543887","drop":["21d649506887"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:33.718Z"}
+{"g":"cn|1274|송 공제 즉위","same":true,"primary":"9294d7aaaf62","drop":["a8b1b45f933f"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:35.060Z"}
+{"g":"cn|1276|송 단종 즉위","same":true,"primary":"e07cb3740afa","drop":["7d7e5c4cbcda"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:36.433Z"}
+{"g":"cn|1363|파양호 대전","same":true,"primary":"de17dd4d6634","drop":["0177466cb167"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:38.985Z"}
+{"g":"cn|1382|명의 운남 정복","same":false,"rename":{"6010ab0e5b71":"양왕 자결","97b2228ce177":"운남성 정복 완료"},"model":"claude-sonnet-5","at":"2026-09-12T14:49:40.509Z"}
+{"g":"cn|1425|홍희제 사망","same":true,"primary":"221edca95c71","drop":["9ca46e0ea923"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:41.874Z"}
+{"g":"cn|1425|선덕제 즉위","same":true,"primary":"13b21a1776bd","drop":["2e81bd3ee3d8"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:43.239Z"}
+{"g":"cn|1449|경태제 즉위","same":true,"primary":"442b12a21f1f","drop":["50d407375479"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:44.511Z"}
+{"g":"cn|1461|조흠의 변","same":true,"primary":"e8fae38f23a4","drop":["98f41a353884"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:45.880Z"}
+{"g":"cn|1464|성화제 즉위","same":true,"primary":"c1595edc9ed3","drop":["d6970d190ccb"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:47.284Z"}
+{"g":"cn|1487|홍치제 즉위","same":true,"primary":"d9147da03c36","drop":["9444acb9c466"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:48.645Z"}
+{"g":"cn|1505|정덕제 즉위","same":true,"primary":"d1f086f34d2f","drop":["403409df1f80"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:49.987Z"}
+{"g":"cn|1511|말라카 함락","same":true,"primary":"92366b073b89","drop":["70ae5498a5c2"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:53.678Z"}
+{"g":"cn|1521|정덕제 사망","same":true,"primary":"6b8134eb394d","drop":["f50113c2efc3"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:55.690Z"}
+{"g":"cn|1521|가정제 즉위","same":true,"primary":"6725287b4a8c","drop":["ad9ee923ac11"],"model":"claude-sonnet-5","at":"2026-09-12T14:49:58.837Z"}
+{"g":"cn|1567|융경제 즉위","same":true,"primary":"975571ebf30a","drop":["4fbda362807b"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:00.047Z"}
+{"g":"cn|1572|만력제 즉위","same":true,"primary":"fb6b5e0d1137","drop":["06eaa332ffa7"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:01.248Z"}
+{"g":"cn|1620|태창제 즉위","same":true,"primary":"206a915213eb","drop":["78d4c024728a"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:02.754Z"}
+{"g":"cn|1620|천계제 즉위","same":true,"primary":"663cc0c96bc3","drop":["fac7b57d8922"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:04.118Z"}
+{"g":"cn|1627|숭정제 즉위","same":true,"primary":"8e34d0198f43","drop":["004d6c63097a"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:05.331Z"}
+{"g":"cn|1942|창사 전투","same":true,"primary":"3d796210ac8b","drop":["wd_q709303"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:06.759Z"}
+{"g":"cn|1952|오반운동","same":true,"primary":"d66a7adfd9ce","drop":["0b1560f7cf46"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:07.950Z"}
+{"g":"cn|1969|전바오섬 사건","same":true,"primary":"92c379c179a7","drop":["8a7de4c7fbac"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:09.336Z"}
+{"g":"cn|1970|둥팡훙 1호 발사","same":true,"primary":"84dc2927de04","drop":["fb265a4a8cda"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:10.680Z"}
+{"g":"cn|1976|저우언라이 사망","same":true,"primary":"f506068d00f2","drop":["97f43b39819b"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:11.936Z"}
+{"g":"cn|1976|사인방 체포","same":true,"primary":"62b9b5d8dc54","drop":["fea85a7d1b5b"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:13.165Z"}
+{"g":"cn|1976|화궈펑 주석 취임","same":true,"primary":"be53ca89fd82","drop":["f3eafc6babfb"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:14.595Z"}
+{"g":"cn|1997|홍콩 반환","same":true,"primary":"c45629497a17","drop":["203b0122afe8"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:15.933Z"}
+{"g":"cn|1999|마카오 반환","same":true,"primary":"b6b74ed924bb","drop":["794d92e0a2e7"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:17.340Z"}
+{"g":"cn|2001|중국 WTO 가입","same":true,"primary":"7264d4b087f2","drop":["fe72ca68e6b1"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:18.763Z"}
+{"g":"cn|2003|선저우 5호 발사","same":true,"primary":"06bf700c9fd2","drop":["dfe48965a0db"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:20.139Z"}
+{"g":"cn|2012|왕리쥔 사건","same":true,"primary":"41d1df1f6b34","drop":["5848854cab45"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:21.490Z"}
+{"g":"cn|2016|항저우 G20 정상회의","same":true,"primary":"ea1582887235","drop":["3275f5851f94"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:23.003Z"}
+{"g":"cn|1399|정난의 변","same":false,"rename":{"9cfb6dd61e41":"인근 주현 공세 개시","16e5972f0861":"13만 대군 격파","47bac2097953":"베이핑 포위전 철수"},"model":"claude-sonnet-5","at":"2026-09-12T14:50:24.452Z"}
+{"g":"cn|1400|정난의 변","same":false,"rename":{"c6450ebf1536":"산시 침공","a513b932bd66":"조정군 격파","94229525fd31":"더저우 포위","77e4d361bb17":"더저우 포위 철수"},"model":"claude-sonnet-5","at":"2026-09-12T14:50:26.224Z"}
+{"g":"cn|1401|정난의 변","same":false,"rename":{"22a49684a145":"산둥 화약 피해 퇴각","9fc8f83a8fca":"더저우 인근 조정군 격파"},"model":"claude-sonnet-5","at":"2026-09-12T14:50:27.833Z"}
+{"g":"cn|1555|가정 왜구 침입","same":false,"rename":{"a2dddef87c69":"항저우 공격","9795a852b0cc":"자싱 북쪽 격파"},"model":"claude-sonnet-5","at":"2026-09-12T14:50:33.459Z"}
+{"g":"cn|1592|누르하치 참전 거절","same":true,"primary":"a599532aa7ed","drop":["003215dadf74"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:34.873Z"}
+{"g":"cn|1603|누르하치 경계 획정","same":true,"primary":"7a0e9fd0bc53","drop":["86af4cf3c943"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:36.264Z"}
+{"g":"cn|1616|후금 선포","same":true,"primary":"391e5fbf83bd","drop":["7739e199e214"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:37.639Z"}
+{"g":"cn|1618|무순 전투","same":true,"primary":"2fb7c4369ae9","drop":["f74105374847"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:39.064Z"}
+{"g":"cn|1618|청하 전투","same":true,"primary":"9caa109d162e","drop":["f7faa6109880"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:40.398Z"}
+{"g":"cn|1619|개원 전투","same":true,"primary":"b504793d8c9f","drop":["22968d72b17e"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:41.878Z"}
+{"g":"cn|1619|철령 전투","same":true,"primary":"39fc32251ff8","drop":["fd15e569ff77"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:43.208Z"}
+{"g":"cn|1621|심요 전투","same":true,"primary":"461b1c6046cf","drop":["d7dc8c077c30"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:44.663Z"}
+{"g":"cn|1621|진강성 전투","same":true,"primary":"ec03ac9f18c7","drop":["f08a563d8564"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:46.103Z"}
+{"g":"cn|1622|광녕 전투","same":true,"primary":"787bcc65ade4","drop":["472de8680a34"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:47.378Z"}
+{"g":"cn|1627|영금 전투","same":true,"primary":"015700e156d8","drop":["83cd58f56b31"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:48.814Z"}
+{"g":"cn|1629|기사의 변","same":true,"primary":"c0955ab14908","drop":["304bd1217ac9"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:50.010Z"}
+{"g":"cn|1630|후금군 퇴각","same":true,"primary":"dc04c7d54ade","drop":["713e085d7193"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:51.392Z"}
+{"g":"cn|1633|산둥 반란군 후금 투항","same":true,"primary":"88bb9e278f94","drop":["e7a0d8131db1"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:52.769Z"}
+{"g":"cn|1633|랴오뤄만 해전","same":false,"rename":{"f5803f89b912":"조선소 화포선 파괴","08fbc2107214":"진먼섬 해전 승리"},"model":"claude-sonnet-5","at":"2026-09-12T14:50:54.557Z"}
+{"g":"cn|1633|뤼순 공방전","same":true,"primary":"5140617b3018","drop":["98cd3d5cc03f"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:55.983Z"}
+{"g":"cn|1644|청군 베이징 점령","same":true,"primary":"ba63e35e0868","drop":["45afeec82136"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:57.707Z"}
+{"g":"cn|1645|뤄양 점령","same":true,"primary":"da09c76de245","drop":["2841300361ad"],"model":"claude-sonnet-5","at":"2026-09-12T14:50:58.942Z"}
+{"g":"cn|1645|양저우 점령","same":true,"primary":"a9b3ab7e1478","drop":["e6d6de127517"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:00.395Z"}
+{"g":"cn|1645|난징 함락","same":true,"primary":"6c6dc12de002","drop":["58560da94dcf"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:01.796Z"}
+{"g":"cn|1645|항저우 점령","same":true,"primary":"37ea1fa5c9ae","drop":["a9011536c4ab"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:03.193Z"}
+{"g":"cn|1645|변발령","same":true,"primary":"5ca3b250b883","drop":["392dcf54ab39"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:04.563Z"}
+{"g":"cn|1646|강남 패배","same":true,"primary":"13b2d9edef25","drop":["09a8800fbc75"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:06.166Z"}
+{"g":"cn|1646|통려 전투","same":true,"primary":"a0036fa4f9af","drop":["cd519c4b69e3"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:07.556Z"}
+{"g":"cn|1646|연평 점령","same":true,"primary":"aa44b2c08aa5","drop":["06920956f636"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:08.827Z"}
+{"g":"cn|1646|융무제 피살","same":true,"primary":"4ea105e8f643","drop":["9211d253bf03"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:10.105Z"}
+{"g":"cn|1646|푸저우 점령","same":true,"primary":"d149a319dfa5","drop":["cc3c90df6a65"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:11.486Z"}
+{"g":"cn|1647|장헌충 피살","same":true,"primary":"96943c5b1253","drop":["d9b0d75c896f"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:12.978Z"}
+{"g":"cn|1647|광저우 함락","same":true,"primary":"e0ee261426da","drop":["8578a8bbb29b"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:14.335Z"}
+{"g":"cn|1647|광둥 정복","same":true,"primary":"27fb3f59b0bd","drop":["acbd758fdbbc"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:15.715Z"}
+{"g":"cn|1647|청나라의 창사 점령","same":true,"primary":"c34a221e3e26","drop":["b5db2f5616b4"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:17.071Z"}
+{"g":"cn|1647|청나라의 안핑 습격","same":true,"primary":"c8a490ff2bac","drop":["33d359c8cae4"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:18.807Z"}
+{"g":"cn|1647|청나라의 우강 점령","same":true,"primary":"eee4b0c3cdae","drop":["5565a8a0dc8f"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:20.204Z"}
+{"g":"cn|1648|난창·난닝 봉기","same":true,"primary":"bfc6133cee53","drop":["6027f116ee9e"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:21.641Z"}
+{"g":"cn|1648|청나라의 구이린 공략 실패","same":true,"primary":"0b19110ab00a","drop":["c87e88171d3e"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:23.050Z"}
+{"g":"cn|1649|다퉁 봉기","same":true,"primary":"2a53f5a1473a","drop":["8702c5a002d5"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:24.078Z"}
+{"g":"cn|1649|청나라의 난창 점령","same":true,"primary":"c199b765a5e0","drop":["7ffcbba5433e"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:25.488Z"}
+{"g":"cn|1649|다퉁 봉기 진압","same":true,"primary":"9ede298ac2a8","drop":["a5ab4dd046e0"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:26.799Z"}
+{"g":"cn|1649|청나라의 후광 남부 정복","same":true,"primary":"df17dc757611","drop":["fc06e23a35df"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:28.174Z"}
+{"g":"cn|1649|광저우 학살","same":true,"primary":"1635b5c6d9e0","drop":["d17616c651f5"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:29.607Z"}
+{"g":"cn|1649|청나라의 구이린 점령","same":true,"primary":"3ae46fa898f3","drop":["fddaa865768f"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:30.989Z"}
+{"g":"cn|1649|청나라의 자오칭 점령","same":true,"primary":"204c8c6cc62b","drop":["8d5db662a28e"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:32.217Z"}
+{"g":"cn|1651|청나라의 저우산 점령","same":true,"primary":"dc9c5be4f7a8","drop":["7bba0ad0ca84"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:33.521Z"}
+{"g":"cn|1652|이정국의 구이린 점령","same":true,"primary":"4af5fb5cff20","drop":["8c75eda2e150"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:34.762Z"}
+{"g":"cn|1652|손가망군 궤멸","same":true,"primary":"2817d4018ed4","drop":["74d4c6398def"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:36.070Z"}
+{"g":"cn|1655|이정국군 궤멸","same":true,"primary":"550aeebd3963","drop":["398d66352afe"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:37.498Z"}
+{"g":"cn|1656|청나라의 진먼 침공 실패","same":true,"primary":"5711af9a8734","drop":["1283e562cd2d"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:38.798Z"}
+{"g":"cn|1657|명군의 청군 격파","same":true,"primary":"d6e03cc3d9b8","drop":["9d20d6eba232"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:40.239Z"}
+{"g":"cn|1657|손가망의 청 항복","same":true,"primary":"b7218cb27292","drop":["f0c07272a7da"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:41.593Z"}
+{"g":"cn|1658|정성공의 원저우 점령","same":true,"primary":"16e5d9c9f30c","drop":["6ee4c33874ab"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:42.942Z"}
+{"g":"cn|1659|영력제의 퉁구 피신","same":true,"primary":"4b4ef79ce4f7","drop":["51a5853115b3"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:44.335Z"}
+{"g":"cn|1659|정성공의 전장 점령","same":true,"primary":"fbfdba50d7a1","drop":["45b4a44ac80b"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:45.731Z"}
+{"g":"cn|1659|정성공의 난징 포위","same":true,"primary":"15feabc78b3d","drop":["550a5814f500"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:47.082Z"}
+{"g":"cn|1659|정성공군 전멸","same":true,"primary":"c829e7e9b9dd","drop":["5f9db2e8411b"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:48.439Z"}
+{"g":"cn|1662|영력제 송환 강요","same":true,"primary":"a49608daf983","drop":["9e6799db521b"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:49.702Z"}
+{"g":"cn|1662|영력제 처형","same":true,"primary":"069262a96177","drop":["bb9582848636"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:51.085Z"}
+{"g":"cn|1664|청나라 푸젠 정복","same":true,"primary":"9d5c5da89b01","drop":["b6ac1da0916c"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:52.345Z"}
+{"g":"cn|2023|대만 포위 군사훈련","same":null,"why":"rename-invalid","model":"claude-sonnet-5","at":"2026-09-12T14:51:53.915Z"}
+{"g":"cn|1933|우루무치 전투","same":true,"primary":"wd_q4438404","drop":["wd_q4438406"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:55.236Z"}
+{"g":"cn|2013|난터우 지진","same":null,"why":"rename-invalid","model":"claude-sonnet-5","at":"2026-09-12T14:51:56.742Z"}
+{"g":"jp|538|불교 공전","same":true,"primary":"5a76f5fea195","drop":["5396b3ca8fd8"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:58.029Z"}
+{"g":"jp|562|가야 멸망","same":true,"primary":"2bf14e7edcf5","drop":["65e52c78b204"],"model":"claude-sonnet-5","at":"2026-09-12T14:51:59.411Z"}
+{"g":"jp|842|조와의 변","same":true,"primary":"65e996d13247","drop":["17cf43a21ea9"],"model":"claude-sonnet-5","at":"2026-09-12T14:52:00.818Z"}
+{"g":"jp|1582|혼노지의 변","same":true,"primary":"4d7e0dda65f0","drop":["dc9c4aabbf8d"],"model":"claude-sonnet-5","at":"2026-09-12T14:52:02.266Z"}
+{"g":"jp|1783|덴메이 대분화","same":true,"primary":"ce0f03b1b815","drop":["2dc944990526"],"model":"claude-sonnet-5","at":"2026-09-12T14:52:03.656Z"}
+{"g":"jp|1811|골로브닌 사건","same":true,"primary":"9da270108357","drop":["e774dec87582"],"model":"claude-sonnet-5","at":"2026-09-12T14:52:05.152Z"}
+{"g":"jp|1915|21개조 요구","same":true,"primary":"3e4faef6c8eb","drop":["7dbd2b71071a"],"model":"claude-sonnet-5","at":"2026-09-12T14:52:10.399Z"}
+{"g":"jp|1918|시베리아 출병","same":true,"primary":"4964e17c6eff","drop":["a6d6837724b3"],"model":"claude-sonnet-5","at":"2026-09-12T14:52:14.731Z"}
+{"g":"kr|663|백강 전투","same":true,"primary":"8a7aabcc3071","drop":["ecd09211546c"],"model":"claude-sonnet-5","at":"2026-09-12T14:54:53.763Z"}
+{"g":"kr|1135|묘청의 난","same":true,"primary":"nikh_8f4ba3568ca7","drop":["b6ebe4caae70","a4a190645567","wd_q12595480","nikh_0eb94d49df60"],"model":"claude-sonnet-5","at":"2026-09-12T14:54:55.243Z"}
+{"g":"kr|1170|무신정변","same":true,"primary":"8b78a0042022","drop":["bf33d6853671","wd_q11241358"],"model":"claude-sonnet-5","at":"2026-09-12T14:54:56.443Z"}
+{"g":"kr|1398|제1차 왕자의 난","same":true,"primary":"f63a2852b6cc","drop":["wd_q624181"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:00.297Z"}
+{"g":"kr|1400|제2차 왕자의 난","same":true,"primary":"cea845c64266","drop":["f59bb344c94f","wd_q624222"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:01.742Z"}
+{"g":"kr|1506|중종반정","same":true,"primary":"25a9dd830725","drop":["wd_q626301"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:02.947Z"}
+{"g":"kr|1589|기축옥사","same":true,"primary":"ddc18857a93e","drop":["wd_q7836645"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:04.136Z"}
+{"g":"kr|1592|임진왜란","same":true,"primary":"nikh_6d8326c19596","drop":["8e2bd43b8e84"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:05.410Z"}
+{"g":"kr|1593|행주대첩","same":true,"primary":"0d65e0cbf046","drop":["wd_q279611"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:06.755Z"}
+{"g":"kr|1623|인조반정","same":true,"primary":"92568a9a6983","drop":["wd_q12613430"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:08.126Z"}
+{"g":"kr|1627|정묘호란","same":true,"primary":"nikh_dc8efeb9c006","drop":["c2dffb50ec70","f7a758753933"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:09.521Z"}
+{"g":"kr|1811|홍경래의 난","same":true,"primary":"nikh_f7fea1aa7e11","drop":["d9add0fcc8c0","nikh_fcb60d1065e8"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:12.566Z"}
+{"g":"kr|1871|신미양요","same":true,"primary":"240ebc141839","drop":["457a842d6a89"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:13.789Z"}
+{"g":"kr|1910|한일병합조약","same":true,"primary":"e4d77f20ab8d","drop":["17ce927980ee","cc7030f0477b"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:18.029Z"}
+{"g":"kr|1920|봉오동 전투","same":true,"primary":"4b691ea93a7c","drop":["e632fb39d299"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:22.317Z"}
+{"g":"kr|1926|6·10 만세 운동","same":true,"primary":"ed8306a580c5","drop":["f9b5f653f728"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:26.675Z"}
+{"g":"kr|1948|여수·순천 사건","same":true,"primary":"067be99f9a9d","drop":["wd_q624853"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:27.891Z"}
+{"g":"kr|1894|갑오개혁","same":true,"primary":"9dfc37dbc46e","drop":["3e051384fe62"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:34.186Z"}
+{"g":"kr|1231|귀주성 전투","same":true,"primary":"nikh_203a912ce837","drop":["wd_q7510172"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:35.620Z"}
+{"g":"kr|1232|처인성 전투","same":true,"primary":"nikh_779d337a87fe","drop":["wd_q16261959"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:36.968Z"}
+{"g":"kr|1467|이시애의 난","same":true,"primary":"nikh_f8538640aa0e","drop":["wd_q11266243"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:38.431Z"}
+{"g":"kr|1592|임진강 전투","same":true,"primary":"nikh_8c7d53e613ee","drop":["wd_q4871272"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:39.841Z"}
+{"g":"kr|1592|상주 전투","same":true,"primary":"nikh_b9f00d4981ce","drop":["wd_q497034"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:41.230Z"}
+{"g":"kr|1593|벽제관 전투","same":true,"primary":"nikh_3a8a0ef20189","drop":["wd_q484029"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:43.237Z"}
+{"g":"kr|1597|울산성 전투","same":true,"primary":"nikh_18415447ebd0","drop":["wd_q490935"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:44.443Z"}
+{"g":"kr|1598|왜교성 전투","same":true,"primary":"nikh_a6706f17fefb","drop":["wd_q623621"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:46.390Z"}
+{"g":"kr|1624|이괄의 난","same":true,"primary":"nikh_aa9daad43544","drop":["wd_q6780271"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:47.595Z"}
+{"g":"cn|-1045|목야 전투","same":true,"primary":"8bbb5083eb41","drop":["17325fcef12a"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:48.979Z"}
+{"g":"cn|-631|성복 전투","same":true,"primary":"be3277ddf8b1","drop":["65ae89540826"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:50.624Z"}
+{"g":"cn|184|황건적의 난","same":true,"primary":"4c2fcad81db3","drop":["252f1b8c0b29","3a70b72ee4c0"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:52.037Z"}
+{"g":"cn|264|종회의 난","same":true,"primary":"c970c0bf678c","drop":["wd_q4290907"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:53.527Z"}
+{"g":"cn|751|탈라스 전투","same":true,"primary":"2e3aef6666e1","drop":["a2898ef1c9e3","1809ebbddb2b"],"model":"claude-sonnet-5","at":"2026-09-12T14:55:59.425Z"}
+{"g":"cn|875|황소의 난","same":true,"primary":"e5316199912c","drop":["wd_q620621"],"model":"claude-sonnet-5","at":"2026-09-12T14:56:02.445Z"}
+{"g":"cn|1120|방랍의 난","same":true,"primary":"c7c3b4b70644","drop":["d99164ad7da8","wd_q8013083"],"model":"claude-sonnet-5","at":"2026-09-12T14:56:06.405Z"}
+{"g":"cn|1259|조어성 전투","same":true,"primary":"64d8a674e39d","drop":["wd_q48880934"],"model":"claude-sonnet-5","at":"2026-09-12T14:56:08.301Z"}
+{"g":"cn|1279|애산 전투","same":true,"primary":"d89f80b2ca56","drop":["6f55339fbecc","20809050c0eb"],"model":"claude-sonnet-5","at":"2026-09-12T14:56:09.626Z"}
+{"g":"cn|1351|홍건적의 난","same":true,"primary":"a335cf417d25","drop":["33c6b93a23f1","wd_q112524"],"model":"claude-sonnet-5","at":"2026-09-12T14:56:14.346Z"}
+{"g":"cn|1898|무술변법","same":true,"primary":"d1b9e98d3f14","drop":["1d9b05374dab","bce82d6b5ae1"],"model":"claude-sonnet-5","at":"2026-09-12T14:56:17.638Z"}
+{"g":"cn|1911|우창 봉기","same":true,"primary":"889b4c47c495","drop":["3a7e97215e7d"],"model":"claude-sonnet-5","at":"2026-09-12T14:56:45.466Z"}
+{"g":"cn|1938|타이얼좡 전투","same":true,"primary":"8bfd06314088","drop":["09716b42595e"],"model":"claude-sonnet-5","at":"2026-09-12T14:56:52.283Z"}
+{"g":"cn|1955|이장산 전투","same":true,"primary":"4ec9702bc8a5","drop":["308b4dbad4f2"],"model":"claude-sonnet-5","at":"2026-09-12T14:56:57.797Z"}
+{"g":"cn|-132|마읍 전투","same":true,"primary":"140427a3c148","drop":["8f3561630534"],"model":"claude-sonnet-5","at":"2026-09-12T14:57:04.556Z"}
+{"g":"cn|184|양주의 난","same":true,"primary":"a5ebebd73e32","drop":["ced880b3c9eb"],"model":"claude-sonnet-5","at":"2026-09-12T14:57:05.929Z"}
+{"g":"cn|219|번성 전투","same":true,"primary":"d0cdb27e24e0","drop":["47f953e89f98"],"model":"claude-sonnet-5","at":"2026-09-12T14:57:10.333Z"}
+{"g":"cn|621|호뢰 전투","same":true,"primary":"01c97124a585","drop":["fcd618a01a2d"],"model":"claude-sonnet-5","at":"2026-09-12T14:57:17.055Z"}
+{"g":"cn|630|당나라의 동돌궐 병합","same":true,"primary":"037253f10742","drop":["b768720aea97"],"model":"claude-sonnet-5","at":"2026-09-12T14:57:18.425Z"}
+{"g":"cn|663|백강 전투","same":true,"primary":"d98599c3c307","drop":["2c1b50a547dd"],"model":"claude-sonnet-5","at":"2026-09-12T14:57:19.829Z"}
+{"g":"cn|1161|채석 전투","same":true,"primary":"987a7287aecf","drop":["f1c64cee3138"],"model":"claude-sonnet-5","at":"2026-09-12T14:57:21.064Z"}
+{"g":"cn|1598|노량 해전","same":true,"primary":"1d781928c758","drop":["842b5b8e83a5"],"model":"claude-sonnet-5","at":"2026-09-12T14:57:48.837Z"}
+{"g":"cn|1619|사르후 전투","same":true,"primary":"412f9c7132ea","drop":["1f1ec6f853a7","fa3389e1c96e"],"model":"claude-sonnet-5","at":"2026-09-12T14:57:51.651Z"}
+{"g":"cn|1626|제1차 영원성 전투","same":true,"primary":"bd3defadb9fb","drop":["8f35a8083bc1","f7346a37b233"],"model":"claude-sonnet-5","at":"2026-09-12T14:57:53.066Z"}
+{"g":"cn|1627|정묘호란","same":true,"primary":"8d6316ebaec8","drop":["6eccadea3fe6"],"model":"claude-sonnet-5","at":"2026-09-12T14:57:58.541Z"}
+{"g":"cn|1637|병자호란","same":true,"primary":"606ed200ea81","drop":["ed0d55b7a9c9"],"model":"claude-sonnet-5","at":"2026-09-12T14:57:59.980Z"}
+{"g":"cn|1644|산해관 전투","same":true,"primary":"223a17c7cd19","drop":["b6bd93fc1ed2","42cf205b8b19"],"model":"claude-sonnet-5","at":"2026-09-12T14:58:01.247Z"}
+{"g":"cn|1662|질란디아 요새 공방전","same":true,"primary":"6e1094ed1660","drop":["e0dec44247c3"],"model":"claude-sonnet-5","at":"2026-09-12T14:58:02.514Z"}
+{"g":"cn|1689|네르친스크 조약","same":true,"primary":"d18e19f15df1","drop":["100497fe4fe7"],"model":"claude-sonnet-5","at":"2026-09-12T14:58:03.905Z"}
+{"g":"cn|1844|왕샤 조약","same":true,"primary":"29dd80ba9cd3","drop":["wd_q1326406"],"model":"claude-sonnet-5","at":"2026-09-12T14:58:05.337Z"}
+{"g":"cn|1858|톈진 조약","same":true,"primary":"6091ed03e844","drop":["wd_q612577"],"model":"claude-sonnet-5","at":"2026-09-12T14:58:06.675Z"}
+{"g":"cn|1860|베이징 조약","same":true,"primary":"41b80542487c","drop":["wd_q604938"],"model":"claude-sonnet-5","at":"2026-09-12T14:58:08.767Z"}
+{"g":"cn|1927|난창 봉기","same":true,"primary":"f4cf8811d714","drop":["wd_q476634"],"model":"claude-sonnet-5","at":"2026-09-12T14:58:09.969Z"}
+{"g":"cn|1957|반우파 운동","same":true,"primary":"90cba8090b0c","drop":["d4fd373cd2af"],"model":"claude-sonnet-5","at":"2026-09-12T14:58:12.892Z"}
+{"g":"cn|2001|하이난섬 사건","same":true,"primary":"4f3708da2208","drop":["1054132bfa99"],"model":"claude-sonnet-5","at":"2026-09-12T14:58:14.294Z"}
+{"g":"cn|-153|오초칠국의 난","same":true,"primary":"70dfda73edc3","drop":["3d25810d9609"],"model":"claude-sonnet-5","at":"2026-09-12T14:58:15.561Z"}
+{"g":"cn|1631|대릉하 전투","same":true,"primary":"fc9eb1ff079c","drop":["5f9df4549144"],"model":"claude-sonnet-5","at":"2026-09-12T14:58:16.939Z"}
+{"g":"cn|1642|송금 전투","same":true,"primary":"4a1ec07c9625","drop":["3b031e00a7ae"],"model":"claude-sonnet-5","at":"2026-09-12T14:58:18.311Z"}
+{"g":"cn|1965|둥인 해전","same":true,"primary":"de8c442d47ee","drop":["wd_q2888438"],"model":"claude-sonnet-5","at":"2026-09-12T14:58:19.676Z"}
+{"g":"jp|1184|이치노타니 전투","same":true,"primary":"b28bba439a67","drop":["wd_q2116658"],"model":"claude-sonnet-5","at":"2026-09-12T14:58:21.050Z"}
+{"g":"jp|1615|오사카 전투","same":true,"primary":"b8f82af2815c","drop":["eeee695de3fe"],"model":"claude-sonnet-5","at":"2026-09-12T14:58:22.372Z"}
+{"g":"jp|1638|시마바라의 난","same":true,"primary":"28fec3dd0a85","drop":["b67c251033d7"],"model":"claude-sonnet-5","at":"2026-09-12T14:58:25.218Z"}
+{"g":"jp|1876|아키즈키의 난","same":true,"primary":"wd_q2090046","drop":["c4f516d66bbd"],"model":"claude-sonnet-5","at":"2026-09-12T14:58:28.076Z"}
+{"g":"jp|1891|노비 지진","same":true,"primary":"47109d39bc39","drop":["wd_q2351002"],"model":"claude-sonnet-5","at":"2026-09-12T14:58:29.483Z"}
+{"g":"us|1715|야마시 전쟁","same":true,"primary":"8a60fe98db2c","drop":["wd_q1520241"],"model":"claude-sonnet-5","at":"2026-09-12T14:58:33.017Z"}
+{"g":"us|1832|은행 전쟁","same":true,"primary":"d43f002bf3af","drop":["wd_q4855994"],"model":"claude-sonnet-5","at":"2026-09-12T14:58:34.395Z"}
+{"g":"kr|1374|목호의 난","same":false,"rename":{"fe76be28ba0d":"목호의 난 발발","nikh_2279d173fe1a":"최영의 목호 반란 진압"},"model":"claude-sonnet-5","at":"2026-09-12T15:03:05.935Z"}
+{"g":"kr|1636|병자호란","same":false,"rename":{"38bece458c79":"병자호란 발발","3a5e89283c91":"조선 항복 및 조공국화","nikh_137afb8abfc9":"청군 의주 점령"},"model":"claude-sonnet-5","at":"2026-09-12T15:03:07.783Z"}
+{"g":"kr|1960|4·19 혁명","same":false,"rename":{"bfa7329bb842":"혁명 발발","0728df044785":"이승만 하야·망명"},"model":"claude-sonnet-5","at":"2026-09-12T15:03:11.097Z"}
+{"g":"cn|291|팔왕의 난","same":false,"rename":{"5595859e23a1":"여남왕 사마량 살해","2a42580fc509":"태후 양지 유폐"},"model":"claude-sonnet-5","at":"2026-09-12T15:03:16.198Z"}
+{"g":"cn|755|안사의 난","same":true,"primary":"5d2f9f73e331","drop":["23f7a15bbf45"],"model":"claude-sonnet-5","at":"2026-09-12T15:03:17.584Z"}
+{"g":"cn|1966|문화대혁명","same":null,"why":"rename-invalid","model":"claude-sonnet-5","at":"2026-09-12T15:03:21.719Z"}
+{"g":"cn|219|형주 공방전","same":true,"primary":"c83d3a6a730b","drop":["775c2109dce9"],"model":"claude-sonnet-5","at":"2026-09-12T15:03:27.522Z"}
+{"g":"cn|1510|안화왕의 난","same":false,"rename":{"b55fdb281a7f":"명 세리 살해","bb74d744f8de":"산시서 반란 봉기","f8ee62ad11f0":"주치번 생포"},"model":"claude-sonnet-5","at":"2026-09-12T15:03:35.621Z"}
+{"g":"cn|1945|일본의 항복","same":false,"rename":{"19d3dc63fe3e":"중국주둔군 항복 조인","1d17e6808296":"타이완 접수와 광복절"},"model":"claude-sonnet-5","at":"2026-09-12T15:03:37.258Z"}
+{"g":"jp|1945|포츠담 선언","same":false,"rename":{"d20323d6fb63":"연합국 포츠담 선언 발표","522b69460693":"일본 포츠담 선언 수락 결정","047410479846":"일본 포츠담 선언 최종 수락"},"model":"claude-sonnet-5","at":"2026-09-12T15:03:38.835Z"}
+{"g":"jp|2022|세계평화통일가정연합","same":false,"rename":{"74d8753657d3":"야마가미 모친 신자 확인","5109daa0e95a":"정부 조사 착수"},"model":"claude-sonnet-5","at":"2026-09-12T15:03:40.597Z"}
+{"g":"us|2019|엡스타인 파일 투명성법","same":false,"rename":{"a9bbb8964a04":"투명성법 서명","71940ed47d41":"법무부 문서 공개"},"model":"claude-sonnet-5","at":"2026-09-12T15:03:42.209Z"}
+{"g":"cn|1519|녕왕의 난","same":false,"rename":{"b6bddb507c1e":"찬탈자 선언과 원정","ee46962eafc7":"장시 반란 봉기","c2c3f75412f8":"주장시 점령","0bf2af4e2ad0":"안칭시 포위","ef3433db8efc":"안칭 포위 해제","f5f2f83efe03":"난창 탈환","c663a6bc8169":"주신호군 패배","722b56db4888":"주신호 생포"},"model":"claude-sonnet-5","at":"2026-09-12T15:05:51.482Z"}
+{"g":"cn|1900|의화단 운동","same":null,"why":"rename-collide","model":"claude-sonnet-5","at":"2026-09-12T15:06:31.911Z"}
