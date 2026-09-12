@@ -418,8 +418,13 @@ export function eventLabel(ev: LabelSource, locale: Locale, dupNames?: ReadonlyS
   }
   const dup = name !== undefined && dupNames?.has(name) === true;
   if (name && !dup && isEventName(name, locale)) return { name };
-  // 지은 제목 — 원문 표제어가 없거나 사건 꼴이 아닐 때. ko UI에서만(다른 언어는 아직 안 지었다)
-  if (locale === "ko" && ev.name_ko) return { name: ev.name_ko };
+  /*
+    지은 제목 — 원문 표제어가 없거나 사건 꼴이 아닐 때. ko UI에서만(다른 언어는 아직 안 지었다).
+    **중복 검사를 똑같이 받는다.** 같은 사건이 위키 줄과 국사편찬위 줄로 두 번 실리는 일이
+    잦아서(실측 6.6%가 같은 해·같은 열에서 이름이 겹쳤다 — 「3·1 운동」이 1919년 한국 열에
+    세 번), 검사를 건너뛰면 같은 이름이 나란히 찍힌다. 그때는 원문이 둘을 구별해 준다.
+  */
+  if (locale === "ko" && ev.name_ko && dupNames?.has(ev.name_ko) !== true) return { name: ev.name_ko };
   if (ev.lang === SAME_LANG[locale]) return { text: locale === "ko" ? shortKo(ev.title) : ev.title };
   if (locale === "ko" && ev.title_ko) return { text: ev.title_ko };
   return { text: ev.title };

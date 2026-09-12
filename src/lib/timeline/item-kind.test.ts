@@ -41,6 +41,14 @@ describe("itemKind — 지은 제목(name_ko)", () => {
     expect(eventLabel(e, "ko").name).toBe("임진왜란");
   });
 
+  it("같은 칸에 같은 지은 제목이 둘이면 원문으로 되돌린다 — 「3·1 운동」이 세 번 찍히지 않게", () => {
+    const e = ev({ title: "3월 — 3·1 운동이 시작되어 한국 독립운동을 고취시키다.", lang: "en", name_ko: "3·1 운동" });
+    expect(eventLabel(e, "ko", new Set(["3·1 운동"])).name).toBeUndefined();
+    expect(eventLabel(e, "ko", new Set(["3·1 운동"])).text).toBeDefined();
+    // 겹치지 않으면 그대로 이름
+    expect(eventLabel(e, "ko", new Set(["다른 이름"])).name).toBe("3·1 운동");
+  });
+
   it("지은 제목에는 언어 태그를 붙이지 않는다 — 읽히는 것에 태그는 소음이다", () => {
     expect(originalTag(ev({ title: "A long English sentence…", lang: "en", name_ko: "냉전 종식" }), "ko")).toBeUndefined();
   });
