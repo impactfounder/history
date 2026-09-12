@@ -35,6 +35,7 @@ import {
   CARD_GAP,
   CELL_PAD,
   COLUMN_HEADER_H,
+  COLUMN_HEADER_H_COMPACT,
   ERA_TICK_W,
   HIT_COMFORT,
   HIT_MIN,
@@ -706,6 +707,11 @@ export function TimelineGrid() {
   const minimapW = narrow ? MINIMAP_W_COMPACT : MINIMAP_W;
   const itemH = itemHeights(narrow, coarse);
   const laneW = narrow ? MORE_LANE_W_COMPACT : MORE_LANE_W;
+  /**
+   * 좁은 화면의 헤더는 **두 줄**이라 더 높다. 한 줄에 다 넣으면 왕조 이름에 남는 폭이 0px이라
+   * 「조선 1392–1897」이 통째로 사라진다(실측 2026-09-13). metrics.COLUMN_HEADER_H_COMPACT 주석.
+   */
+  const colHeaderH = narrow ? COLUMN_HEADER_H_COMPACT : COLUMN_HEADER_H;
 
   const jumpFromRail = (clientY: number) => jumpTo(railRef.current, clientY);
   const jumpFromScrub = (clientY: number) => jumpTo(scrubRef.current, clientY);
@@ -838,10 +844,10 @@ export function TimelineGrid() {
           {/* 열 헤더 = 카드의 머리(README 7-3). 나라색 바탕을 없애고 흰 면 + 이름의 색 + 3px 밑선으로.
               polityAt(뷰포트 상단 연도)를 보므로 스크롤하면 왕조 이름이 저절로 바뀐다 —
               별도의 스티키 라벨 층이 필요 없어지는 이유다 */}
-          <div className="sticky top-0 z-20 flex" style={{ height: COLUMN_HEADER_H }} role="row" aria-rowindex={1}>
+          <div className="sticky top-0 z-20 flex" style={{ height: colHeaderH }} role="row" aria-rowindex={1}>
             <div className="shrink-0" style={{ width: axisLabelW }} role="columnheader" aria-colindex={1} />
             {shown.map((c, i) => {
-              const p = polityAt(polities[c.id], yToYear(scrollTop + COLUMN_HEADER_H, axis));
+              const p = polityAt(polities[c.id], yToYear(scrollTop + colHeaderH, axis));
               /*
                 WCAG 2.2 SC 2.5.8(AA)은 24×24다. 전에는 18.4×13에 이웃과 중심 간격 19px이라
                 크기도, 크기 예외인 "간격"도 함께 미달이었다(실측). 24px 정사각으로 만들면
@@ -859,21 +865,30 @@ export function TimelineGrid() {
                   onDragOver={(e) => { if (dragCol.current && dragCol.current !== c.id) { e.preventDefault(); e.dataTransfer.dropEffect = "move"; } }}
                   onDrop={(e) => { e.preventDefault(); if (dragCol.current) moveColTo(dragCol.current, c.id); dragCol.current = null; }}
                   onDragEnd={() => { dragCol.current = null; }}
-                  className="group relative flex min-w-0 flex-1 cursor-grab items-center gap-2 rounded-t-card border-b border-line bg-surface px-3 active:cursor-grabbing"
+                  className={`group relative flex min-w-0 flex-1 cursor-grab rounded-t-card border-b border-line bg-surface px-3 active:cursor-grabbing ${narrow ? "flex-col justify-center gap-0.5" : "items-center gap-2"}`}
                   style={{ marginLeft: CARD_GAP }}
                   role="columnheader"
                   aria-colindex={i + 2}
                 >
-                  <img src={FLAG[c.id]} alt="" width={20} height={14} className="h-[14px] w-5 shrink-0 rounded-[2px] object-cover opacity-90" draggable={false} />
-                  <span className="shrink-0 text-col font-bold tracking-tight" style={{ color: regionVar(c.id) }}>{label}</span>
-                  {/* 시대는 색이 아니라 서체로(README 규칙 2) */}
-                  {p && <span className="min-w-0 truncate font-serif text-meta text-fg-muted">{polityLabel(p)}</span>}
-                  {/* 열 조작(§4-1): 순서 ◂ ▸, 빼기 ×. 마지막 한 열은 뺄 수 없다 */}
-                  <span className="ml-auto flex shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100">
-                    <button type="button" style={hit} className={btn} disabled={i === 0} onClick={() => moveCol(c.id, -1)} aria-label={t.colLeft(label)}>◂</button>
-                    <button type="button" style={hit} className={btn} disabled={i === shown.length - 1} onClick={() => moveCol(c.id, 1)} aria-label={t.colRight(label)}>▸</button>
-                    <button type="button" style={hit} className={btn} disabled={shown.length === 1} onClick={() => removeCol(c.id)} aria-label={t.colRemove(label)}>×</button>
-                  </span>
+                  {/*
+                    좁은 화면은 **두 줄**이다. 한 줄이면 국기 20 + 이름 26 + 조작 72 + 여백 24가
+                    먼저 차서 왕조 이름에 0px이 남는다(390px·2열 = 열 하나 153px, 실측 2026-09-13).
+                    두 줄로 나누면 2줄이 열 전폭 129px을 받아 「에도 시대 1603–1868」까지 들어간다.
+                    README §7-3(`◂ ▸ ×`는 그대로)과 §7-4(왕조 이름은 헤더에)가 둘 다 지켜진다.
+                  */}
+                  <div className={narrow ? "flex w-full items-center gap-2" : "contents"}>
+                    <img src={FLAG[c.id]} alt="" width={20} height={14} className="h-[14px] w-5 shrink-0 rounded-[2px] object-cover opacity-90" draggable={false} />
+                    <span className="shrink-0 text-col font-bold tracking-tight" style={{ color: regionVar(c.id) }}>{label}</span>
+                    {/* 시대는 색이 아니라 서체로(README 규칙 2). 넓은 화면은 이 자리, 좁은 화면은 아랫줄 */}
+                    {p && !narrow && <span className="min-w-0 truncate font-serif text-meta text-fg-muted">{polityLabel(p)}</span>}
+                    {/* 열 조작(§4-1): 순서 ◂ ▸, 빼기 ×. 마지막 한 열은 뺄 수 없다 */}
+                    <span className="ml-auto flex shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100">
+                      <button type="button" style={hit} className={btn} disabled={i === 0} onClick={() => moveCol(c.id, -1)} aria-label={t.colLeft(label)}>◂</button>
+                      <button type="button" style={hit} className={btn} disabled={i === shown.length - 1} onClick={() => moveCol(c.id, 1)} aria-label={t.colRight(label)}>▸</button>
+                      <button type="button" style={hit} className={btn} disabled={shown.length === 1} onClick={() => removeCol(c.id)} aria-label={t.colRemove(label)}>×</button>
+                    </span>
+                  </div>
+                  {p && narrow && <span className="w-full truncate font-serif text-meta text-fg-muted">{polityLabel(p)}</span>}
                   {/* 나라색이 남는 두 곳 중 하나 — 이름과 이 3px 밑선 */}
                   <span className="absolute inset-x-0 bottom-0 h-[3px]" style={{ background: regionVar(c.id) }} aria-hidden />
                 </div>

@@ -10,6 +10,7 @@ import {
   CARD_GAP,
   CELL_PAD,
   COLUMN_HEADER_H,
+  COLUMN_HEADER_H_COMPACT,
   ERA_TICK_W,
   HIT_COMFORT,
   HIT_MIN,
@@ -59,6 +60,7 @@ describe("치수 토큰 — metrics.ts(원본) ↔ globals.css(사본)", () => {
     ["more-lane", MORE_LANE_W],
     ["more-lane-compact", MORE_LANE_W_COMPACT],
     ["col-header", COLUMN_HEADER_H],
+    ["col-header-compact", COLUMN_HEADER_H_COMPACT],
     ["card-gap", CARD_GAP],
     ["lug", LUG_W],
     ["era-tick", ERA_TICK_W],
@@ -96,6 +98,17 @@ describe("항목 높이의 성질", () => {
     const avail = 80 - CELL_PAD * 2;
     expect(ITEM_H.lead * 2 + ITEM_GAP).toBeLessThanOrEqual(avail);
     expect(ITEM_H.lead * 3 + ITEM_GAP * 2).toBeGreaterThan(avail);
+  });
+
+  it("좁은 화면 헤더가 더 높다 — 유일하게 compact가 더 큰 치수다(두 줄이기 때문)", () => {
+    expect(COLUMN_HEADER_H_COMPACT).toBeGreaterThan(COLUMN_HEADER_H);
+  });
+
+  it("두 줄이 실제로 들어간다 — 버튼 줄(HIT_MIN) + 왕조 줄(12.5×1.4) + 여백 + 밑선", () => {
+    const 왕조줄 = Math.round(12.5 * 1.4);
+    expect(HIT_MIN + 왕조줄 + 3).toBeLessThanOrEqual(COLUMN_HEADER_H_COMPACT);
+    // 44로는 모자란다는 것이 이 값이 따로 있는 이유다
+    expect(HIT_MIN + 왕조줄 + 3).toBeGreaterThan(COLUMN_HEADER_H);
   });
 
   it("축은 미니맵 + 라벨로 정확히 쪼개진다 — 넓은 화면·좁은 화면 둘 다", () => {
