@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { eventLabel } from "@/lib/i18n";
 import { itemKind, originalTag, type KindSource } from "./item-kind";
 
 /**
@@ -22,6 +23,26 @@ describe("itemKind — 사건 이름 표제어", () => {
 
   it("재위 시작(accession)은 인물 이름이라도 lead — eventLabel이 「… 즉위」를 만든다", () => {
     expect(itemKind(ev({ title: "Sejong", lang: "en", role: "accession", names: { kr: { nat: "세종" } } }), "ko")).toBe("lead");
+  });
+});
+
+describe("itemKind — 지은 제목(name_ko)", () => {
+  it("지은 제목이 있으면 ko UI에서 lead — 문장 대신 이름이 보인다", () => {
+    const sentence = "2월. 14개조 평화 원칙에서 제시된 민족자결주의에 영향을 받아, 일본에 있던 한국 독립운동가들이 2·8독립선언서를 발표하였다.";
+    expect(itemKind(ev({ title: sentence, lang: "en", name_ko: "2·8 독립선언" }), "ko")).toBe("lead");
+  });
+
+  it("지은 제목은 ko UI에만 쓴다 — 다른 언어는 아직 안 지었으므로 원문 그대로", () => {
+    expect(itemKind(ev({ title: "The Cold War ends.", lang: "en", name_ko: "냉전 종식" }), "ja")).toBe("plain");
+  });
+
+  it("원문 표제어가 사건 꼴이면 그쪽이 이긴다 — 진본이 파생물보다 앞선다", () => {
+    const e = ev({ title: "…", lang: "en", names: { kr: { nat: "임진왜란" } }, name_ko: "조선 침공" });
+    expect(eventLabel(e, "ko").name).toBe("임진왜란");
+  });
+
+  it("지은 제목에는 언어 태그를 붙이지 않는다 — 읽히는 것에 태그는 소음이다", () => {
+    expect(originalTag(ev({ title: "A long English sentence…", lang: "en", name_ko: "냉전 종식" }), "ko")).toBeUndefined();
   });
 });
 

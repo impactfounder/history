@@ -181,6 +181,9 @@ node tools/enrich.mjs                    QID → 언어판 수·유형·사이�
 node tools/summaries.mjs                 ko 표제어 → 한국어 위키백과 첫 문단 (curation/summaries/ko.jsonl)
 node tools/translate.mjs                 원문 → 한국어 (API 키 필요, curation/translations/ko.jsonl)
 node tools/derive.mjs                    위 전부 → curation/events/{region}.jsonl (git 추적)
+node tools/name.mjs                      문장 → 12자 제목 (API 키 필요, curation/names/ko.jsonl)
+                                         ↑ derive의 출력을 읽고, publish가 이 캐시를 붙인다.
+                                           국사편찬위 줄(kr-nikh)은 derive를 안 거치므로 둘 다 보는 곳이 publish다
 npm run publish:preview                  → public/data/v1 (gitignore, 빌드 때 재생성)
 ```
 

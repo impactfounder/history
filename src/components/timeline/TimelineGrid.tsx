@@ -94,6 +94,8 @@ interface PublishedEvent {
   title: string;
   /** 기계 번역(tools/translate.mjs). 있으면 칩에 이것을 보인다. */
   title_ko?: string;
+  /** 지은 제목(tools/name.mjs). 원문 표제어가 사건 꼴이 아닐 때 칩 라벨이 된다. */
+  name_ko?: string;
   /** 연결 문서의 짧은 설명("일본의 무장") — 칩 툴팁. */
   desc?: string;
   /** 위키데이터 구조 라벨. "accession" = 재위 시작 — 라벨에 언어별 "즉위"가 붙는다. */
@@ -122,6 +124,9 @@ interface Detail {
   /** 기계 번역과 그 출처(모델·시각). 원문이 진본. */
   text_ko?: string;
   mt?: { model: string; at: string };
+  /** 지은 제목과 그 출처. 제목이 파생물이라는 사실을 상세가 들고 있어야 표시할 수 있다. */
+  name_ko?: string;
+  name_mt?: { model: string; at: string };
   /** 연결 문서의 한국어 위키백과 첫 문단(tools/summaries.mjs). 인물·왕조 문서면 그 설명. */
   about?: { title: string; text: string; url: string; revid: number | null; license: string };
   lang: string;
@@ -1166,6 +1171,14 @@ export function TimelineGrid() {
               <div className="min-w-0">
                 <div className="font-serif text-meta text-fg-muted">
                   {yearLabel(selected.ev)} · {regionLabel(selected.ev.regions[0]?.r ?? "kr")}
+                  {/*
+                    편집 원칙(§1-6)은 "우리가 쓴 문장은 없다"였다. 제목은 이제 예외다 —
+                    원천이 문장으로 쓴 연대기라 이름이 없어서 지었다. 번역을 "기계 번역"이라
+                    밝히듯 이것도 밝힌다. 아래 본문에 원문이 그대로 있으므로 대조할 수 있다.
+                  */}
+                  {locale === "ko" && selected.ev.name_ko && (
+                    <> · <span className="text-fg-subtle">{t.derivedTitle}</span></>
+                  )}
                 </div>
                 <h2 ref={headingRef} tabIndex={-1} className="mt-0.5 text-title font-bold outline-none [text-wrap:balance] [word-break:keep-all]">
                   {(() => { const l = eventLabel(selected.ev, locale); return l.name ?? l.text; })()}

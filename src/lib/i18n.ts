@@ -60,6 +60,8 @@ export interface Strings {
   wikiOriginal: string;
   notTranslated: string;
   mt: string;
+  /** 제목이 원문에 없고 지어진 것임을 알린다(tools/name.mjs). 번역과 같은 지위의 파생물. */
+  derivedTitle: string;
   sameEvent: (lang: string) => string;
   description: string;
   related: string;
@@ -120,6 +122,7 @@ export const T: Record<Locale, Strings> = {
     wikiOriginal: "위키백과 연표 원문",
     notTranslated: "한글 옮김은 아직",
     mt: "한국어 · 기계 번역",
+    derivedTitle: "지은 제목",
     sameEvent: (lang) => `같은 사건 · ${lang} 위키백과 연표 원문`,
     description: "설명",
     related: "관련 문서",
@@ -172,6 +175,7 @@ export const T: Record<Locale, Strings> = {
     wikiOriginal: "Wikipedia timeline, verbatim",
     notTranslated: "not translated yet",
     mt: "Korean · machine translation",
+    derivedTitle: "generated title",
     sameEvent: (lang) => `Same event · ${lang} Wikipedia timeline`,
     description: "About",
     related: "Related article",
@@ -224,6 +228,7 @@ export const T: Record<Locale, Strings> = {
     wikiOriginal: "Wikipedia年表の原文",
     notTranslated: "未翻訳",
     mt: "韓国語 · 機械翻訳",
+    derivedTitle: "生成された見出し",
     sameEvent: (lang) => `同じ出来事 · ${lang}版Wikipedia年表の原文`,
     description: "説明",
     related: "関連記事",
@@ -276,6 +281,7 @@ export const T: Record<Locale, Strings> = {
     wikiOriginal: "维基百科年表原文",
     notTranslated: "尚未翻译",
     mt: "韩语 · 机器翻译",
+    derivedTitle: "生成的标题",
     sameEvent: (lang) => `同一事件 · ${lang}语维基百科年表原文`,
     description: "说明",
     related: "相关条目",
@@ -368,6 +374,12 @@ export interface LabelSource {
   title_ko?: string;
   lang: string;
   names: Partial<Record<RegionId, { nat?: string; lang?: string }>>;
+  /**
+   * 지은 제목(tools/name.mjs). 원천이 **이름 붙은 사건 목록이 아니라 문장으로 쓴 연대기**라,
+   * 발행분의 91%가 짧은 이름 없이 문장으로 떨어졌다(실측 2026-09-12, 라벨 중앙값 25자).
+   * 원문 표제어가 사건 꼴이면 그쪽이 언제나 이긴다 — 이건 그 다음 차례다.
+   */
+  name_ko?: string;
   /** 위키데이터에서 온 구조 라벨. "accession" = 재위 시작 — 인물 이름 뒤에 언어별 "즉위"를 붙인다. */
   role?: string;
 }
@@ -406,6 +418,8 @@ export function eventLabel(ev: LabelSource, locale: Locale, dupNames?: ReadonlyS
   }
   const dup = name !== undefined && dupNames?.has(name) === true;
   if (name && !dup && isEventName(name, locale)) return { name };
+  // 지은 제목 — 원문 표제어가 없거나 사건 꼴이 아닐 때. ko UI에서만(다른 언어는 아직 안 지었다)
+  if (locale === "ko" && ev.name_ko) return { name: ev.name_ko };
   if (ev.lang === SAME_LANG[locale]) return { text: locale === "ko" ? shortKo(ev.title) : ev.title };
   if (locale === "ko" && ev.title_ko) return { text: ev.title_ko };
   return { text: ev.title };

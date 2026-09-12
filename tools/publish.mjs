@@ -49,6 +49,27 @@ const sha = (s) => createHash("sha256").update(s).digest("hex");
  * 같은 id가 된다("Rebellion breaks out in Sichuan"이 송 연표에 네 번, 2026-09-05 중복 키 경고).
  */
 const eventId = (r) => "ev_" + sha(`${r.source_id}|${r.date.year}|${r.title}`).slice(0, 12);
+/**
+ * 지은 사건 제목(tools/name.mjs). 키는 sha1(lang|원문 한 줄)로 translate.mjs와 같은 공간이다.
+ *
+ * **derive.mjs가 아니라 여기서 붙인다.** 국사편찬위 줄(kr-nikh.jsonl)은 derive를 거치지 않고
+ * publish가 직접 읽는 별도 파일이라, derive에 붙이면 2,143건이 통째로 샌다. 두 원천을 모두
+ * 보는 곳은 publish뿐이다.
+ *
+ * name이 null인 줄도 캐시에 있다("이름을 못 짓겠다"도 결론이다) — 그 경우 필드를 만들지 않고
+ * UI가 지금처럼 원문 문장을 쓴다.
+ */
+const nameHash = (lang, text) => createHash("sha1").update(`${lang}|${text}`).digest("hex").slice(0, 16);
+const names_ko = new Map(
+  existsSync("curation/names/ko.jsonl")
+    ? readFileSync("curation/names/ko.jsonl", "utf8").split("\n").filter(Boolean)
+        // 덧붙이는 중인 캐시를 읽으면 마지막 줄이 잘려 있을 수 있다. 한 줄 때문에 발행이
+        // 통째로 죽지 않게 한다 — 이 캐시는 없으면 없는 대로 도는 선택적 입력이다.
+        .map((l) => { try { return JSON.parse(l); } catch { return null; } })
+        .filter((n) => n?.name).map((n) => [n.h, n])
+    : [],
+);
+
 const bucket = (y, u) => Math.floor(y / u) * u;
 const yearKo = (y) => (y <= 0 ? `기원전 ${1 - y}년` : `${y}년`);
 const formatYear = (y, approx) => yearKo(y) + (approx ? "경" : "");
@@ -76,6 +97,9 @@ function toRecord(r) {
     hist: r.historicity ?? "historical",
     title: r.title,
     ...(r.title_ko ? { title_ko: r.title_ko } : {}),
+    // 지은 제목(tools/name.mjs). 원문 표제어가 사건 꼴이 아닐 때 칩·상세 제목이 된다.
+    // 원문은 title/text에 그대로 있고 상세가 그것을 보여 준다 — 진본이 바뀌는 게 아니다.
+    ...(names_ko.has(nameHash(r.lang, r.title)) ? { name_ko: names_ko.get(nameHash(r.lang, r.title)).name } : {}),
     // 위키데이터 구조 라벨("accession" 재위 시작) — UI가 언어별 "즉위"를 붙인다
     ...(r.role ? { role: r.role } : {}),
     // 짧은 설명(한국어 위키백과 description, "일본의 무장" 같은 한 구) — 칩 툴팁용
@@ -99,6 +123,10 @@ function toDetail(r, id) {
     ...(nikhPrimary ? {} : { text: r.text }),
     // 기계 번역(tools/translate.mjs). 원문이 진본이고 번역은 파생물 — UI가 "기계 번역"이라 표시한다
     ...(r.title_ko ? { text_ko: r.title_ko, mt: r.mt } : {}),
+    // 지은 제목의 출처. 제목이 파생물이라는 사실을 상세가 들고 있어야 표시할 수 있다
+    ...(names_ko.has(nameHash(r.lang, r.title))
+      ? { name_ko: names_ko.get(nameHash(r.lang, r.title)).name, name_mt: { model: names_ko.get(nameHash(r.lang, r.title)).model, at: names_ko.get(nameHash(r.lang, r.title)).at } }
+      : {}),
     lang: r.lang,
     year: r.date.year,
     license: nikhPrimary ? "KOGL 제1유형(이용허락범위 제한 없음)" : "CC BY-SA 4.0", // 본문의 라이선스
