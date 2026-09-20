@@ -1285,7 +1285,8 @@ export function TimelineGrid() {
                   </div>
                   {shown.map((c, ci) => {
                     const evs = cellEvents(c.id, b);
-                    const { placed, hidden } = layoutCell(evs, h, b, rows.unit, locale, itemH, laneW);
+                    // sub(월·해 눈금)을 넘긴다 — 눈금이 있으면 위치가 약속이라 밀어내기에 한계가 생긴다
+                    const { placed, hidden } = layoutCell(evs, h, b, rows.unit, locale, itemH, laneW, sub);
     // 같은 셀에 같은 라벨이 둘 이상이면(도요토미 히데요시 ×3) 그 이름은 쓰지 않고 원문으로 되돌린다.
                     // 규칙은 i18n.ts의 dupNames 한 벌 — 여기서 nameIn만 세던 시절에는 지은 제목이 집합에
                     // 안 들어가 「3·1 운동」이 세 번 찍히는 것을 그리드만 못 막았다(연도 페이지는 막았다).
