@@ -145,6 +145,35 @@ lead로 올라간다 — 디자인이 데이터 품질의 계기판이 된다.**
 온전하지도 않다. 그 구간에 두 줄을 주려면 `narrow` 기준(600)을 손봐야 하는데, 그러면 항목
 높이·축 폭·열 개수가 함께 따라오므로 별건이다.
 
+## 해가 바뀔 때 — 조용한 구멍을 빨간 테스트로
+
+수록 끝 연도는 **사람이 올린다.** 오늘 날짜로 자동 계산하지 않는 이유는 이 값이 시계가 아니라
+**데이터 사실**이기 때문이다 — "2025까지"는 "2025년까지 수집·검증했다"는 뜻이지 "작년이
+2025다"가 아니다. 날짜로 올리면 1월 1일에 상수만 올라가고 데이터는 그대로여서 **빈 해가
+사이트맵에 올라가고**, 같은 커밋을 연말과 연초에 빌드했을 때 산출물이 달라진다.
+그리고 새 해를 넣으려면 어차피 `collect.mjs`부터 다시 돌려야 한다.
+
+대신 **잊으면 걸리게** 했다 — `src/lib/coverage.test.ts`(5개). 소스를 글자로 읽어
+(`derive.mjs`는 import하면 CLI가 돈다) 세 가지를 본다:
+
+- `year-data.ts DATA_END_YEAR` = 모든 열의 끝 중 최댓값 — 둘이 어긋나면 상세의 「그 해 페이지」
+  링크가 404가 되거나(`dynamicParams = false`) 빈 해가 사이트맵에 오른다
+- 열별 예외(`COVERAGE_TO`)가 기본 끝보다 앞서지 않는다 — 그러면 예외가 아니라 축소다
+- **낡지 않았다** — 기본 열이 전년도까지, AI 열이 올해까지
+
+### 해마다 할 일 (1월)
+
+```
+1. MVMT_CONTACT=… node tools/collect.mjs ai      (그리고 kr cn jp us)
+2. node tools/enrich.mjs · summaries.mjs · derive.mjs
+3. node --env-file=.env tools/translate.mjs · name.mjs · dedupe.mjs
+4. tools/derive.mjs   DATA_END_YEAR + COVERAGE_TO.ai 를 한 해씩
+5. src/lib/year-data.ts DATA_END_YEAR 를 그 최댓값으로
+6. npm test → coverage.test.ts 초록 확인 · npm run build
+```
+
+**순서를 뒤집지 말 것** — 상수부터 올리면 사건이 하나도 없는 해가 사이트맵에 오른다.
+
 ## AI 열만 올해를 싣는다 (2026-09-20)
 
 `DATA_END_YEAR = 2025`("올해 연표는 아직 움직이는 문서다", PRD §11 C-2)로 **2026년이 통째로
