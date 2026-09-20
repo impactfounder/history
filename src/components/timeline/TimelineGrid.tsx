@@ -51,7 +51,7 @@ import {
   TOPBAR_H,
   ZOOM_FLOAT_INSET,
 } from "@/lib/design/metrics";
-import { LOCALES, LOCALE_LABEL, LOCALE_REGION, REGION_LABEL, T, eventLabel, formatRowLabelL, formatYearL, isEventName, isLocale, localePath, nameIn, type Locale } from "@/lib/i18n";
+import { LOCALES, LOCALE_LABEL, LOCALE_REGION, REGION_LABEL, T, dupNames, eventLabel, formatRowLabelL, formatYearL, isEventName, isLocale, localePath, nameIn, type Locale } from "@/lib/i18n";
 import { ThemeToggle } from "./ThemeToggle";
 
 /**
@@ -299,7 +299,14 @@ export function TimelineGrid() {
   const inflight = useRef(new Set<string>());
   const [, bump] = useState(0);
   const [manifest, setManifest] = useState<Manifest | null>(null);
-  const [selected, setSelected] = useState<{ ev: PublishedEvent; detail: Detail | null } | null>(null);
+  /**
+   * 상세는 **세 상태**다 — `null`(받는 중) · `Detail`(받음) · `"error"`(못 받음).
+   *
+   * 처음에는 둘뿐이었고 실패가 `.catch(() => {})`로 삼켜져 `null`에 머물렀다. 그러면
+   * 「불러오는 중…」이 **영원히** 남고 출처·오류신고 줄도 안 나와서, 사용자는 "느린가 보다"로
+   * 읽는다. 곧 들어올 `?e=` 딥링크가 닿는 곳이 바로 이 패널이라 더더욱 구별해야 한다.
+   */
+  const [selected, setSelected] = useState<{ ev: PublishedEvent; detail: Detail | null | "error" } | null>(null);
   /** 패널이 격자를 덮는가 — 덮으면 모달이고, 격자는 inert가 된다. */
   const modalPanel = selected !== null && !pushMode;
   /** 상세 제목 — 모달로 열릴 때 포커스가 여기로 간다. */
@@ -724,10 +731,14 @@ export function TimelineGrid() {
   const openDetail = (ev: PublishedEvent) => {
     setOfficialYear(null);
     setSelected({ ev, detail: null });
+    loadDetail(ev);
+  };
+  /** 404도 네트워크 실패도 「실패」다 — 둘 다 사용자에게는 "안 나온다"로 같다. */
+  const loadDetail = (ev: PublishedEvent) => {
     fetch(withV(`${DATA}/events/detail/${ev.id}.json`))
-      .then((r) => (r.ok ? (r.json() as Promise<Detail>) : null))
+      .then((r) => (r.ok ? (r.json() as Promise<Detail>) : Promise.reject(new Error(String(r.status)))))
       .then((detail) => setSelected((s) => (s && s.ev.id === ev.id ? { ev, detail } : s)))
-      .catch(() => {});
+      .catch(() => setSelected((s) => (s && s.ev.id === ev.id ? { ev, detail: "error" } : s)));
   };
 
   const jumpTo = (box: HTMLDivElement | null, clientY: number) => {
@@ -1071,10 +1082,10 @@ export function TimelineGrid() {
                   {shown.map((c, ci) => {
                     const evs = cellEvents(c.id, b);
                     const { placed, hidden } = layoutCell(evs, h, b, rows.unit, locale, itemH, laneW);
-                    // 같은 셀에 같은 표제어가 둘 이상이면(도요토미 히데요시 ×3) 라벨에 원문을 덧붙인다
-                    const seen = new Map<string, number>();
-                    for (const pl of placed) { const n = nameIn(pl.ev, locale); if (n) seen.set(n, (seen.get(n) ?? 0) + 1); }
-                    const dup = new Set([...seen].filter(([, k]) => k > 1).map(([n]) => n));
+    // 같은 셀에 같은 라벨이 둘 이상이면(도요토미 히데요시 ×3) 그 이름은 쓰지 않고 원문으로 되돌린다.
+                    // 규칙은 i18n.ts의 dupNames 한 벌 — 여기서 nameIn만 세던 시절에는 지은 제목이 집합에
+                    // 안 들어가 「3·1 운동」이 세 번 찍히는 것을 그리드만 못 막았다(연도 페이지는 막았다).
+                    const dup = dupNames(placed.map((pl) => pl.ev), locale);
                     return (
                       // 세로 구분선은 없다 — 카드 사이 10px 여백이 그 일을 한다
                       <div key={c.id} className="relative min-w-0 flex-1 overflow-hidden" style={{ marginLeft: CARD_GAP }} role="gridcell" aria-colindex={ci + 2}>
@@ -1263,7 +1274,25 @@ export function TimelineGrid() {
 
             {/* 본문(스크롤) */}
             <div className="min-h-0 flex-1 overflow-y-auto px-5" style={{ overscrollBehavior: "contain" }}>
-              {selected.detail ? (
+              {selected.detail === "error" ? (
+                <div className="py-5">
+                  <p className="text-fg-strong">{t.detailFailed}</p>
+                  <p className="mt-3 flex gap-3 text-item-meta">
+                    <button
+                      type="button"
+                      onClick={() => { setSelected((s) => (s ? { ...s, detail: null } : s)); loadDetail(selected.ev); }}
+                      className="rounded border border-line-strong bg-surface px-2 py-1 hover:bg-surface-hover"
+                      style={{ minHeight: HIT_MIN }}
+                    >
+                      {t.retry}
+                    </button>
+                    {/* 상세가 없어도 그 해 페이지는 서버가 그린 것이라 살아 있다 */}
+                    <a href={localePath(locale, `/y/${selected.ev.y0}`)} className="self-center underline text-fg-subtle">
+                      {t.yearPage(formatYearL(selected.ev.y0, locale))}
+                    </a>
+                  </p>
+                </div>
+              ) : selected.detail ? (
                 <>
                   {/* 공식 연표가 맞춰진 사건은 그쪽 본문이 앞에 선다(editorial-policy §1-7) */}
                   {selected.detail.official.map((o) => (
@@ -1351,11 +1380,12 @@ export function TimelineGrid() {
               )}
             </div>
 
-            {/* 발(고정) — 그 해 공식 연표로 가는 버튼 + 출처·라이선스 */}
-            {selected.detail && (
+            {/* 발(고정) — 그 해 공식 연표로 가는 버튼 + 출처·라이선스.
+                실패했을 때는 본문 쪽이 「다시 시도」와 그 해 페이지 링크를 들고 있으므로 발은 접는다 */}
+            {selected.detail && selected.detail !== "error" && (
               <div className="shrink-0 border-t border-line bg-surface-sunken px-5 py-3">
                 {selected.ev.regions[0]?.r === "kr" && !officialYear && (
-                  <button type="button" onClick={() => openOfficialYear(selected.detail!.year)} className="mb-2 rounded border border-line-strong bg-surface px-2 py-1 text-item-meta hover:bg-surface-hover">
+                  <button type="button" onClick={() => { const d = selected.detail; if (d && d !== "error") openOfficialYear(d.year); }} className="mb-2 rounded border border-line-strong bg-surface px-2 py-1 text-item-meta hover:bg-surface-hover">
                     {t.officialMore}
                   </button>
                 )}

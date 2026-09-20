@@ -94,6 +94,9 @@ export interface Strings {
   yearPage: (year: string) => string;
   report: string;
   loading: string;
+  /** 상세를 못 받았을 때. 빈 화면이나 영원한 「불러오는 중」보다 낫다. */
+  detailFailed: string;
+  retry: string;
   zoomGroup: string;
   zoomOut: string;
   zoomIn: string;
@@ -161,6 +164,8 @@ export const T: Record<Locale, Strings> = {
     yearPage: (year) => `${year} 페이지`,
     report: "오류 신고",
     loading: "불러오는 중…",
+    detailFailed: "자세한 내용을 불러오지 못했습니다.",
+    retry: "다시 시도",
     zoomGroup: "확대·축소",
     zoomOut: "축소",
     zoomIn: "확대",
@@ -217,6 +222,8 @@ export const T: Record<Locale, Strings> = {
     yearPage: (year) => `Page for ${year}`,
     report: "Report an error",
     loading: "Loading…",
+    detailFailed: "Couldn't load the details.",
+    retry: "Try again",
     zoomGroup: "Zoom",
     zoomOut: "Zoom out",
     zoomIn: "Zoom in",
@@ -273,6 +280,8 @@ export const T: Record<Locale, Strings> = {
     yearPage: (year) => `${year}のページ`,
     report: "誤りを報告",
     loading: "読み込み中…",
+    detailFailed: "詳細を読み込めませんでした。",
+    retry: "再試行",
     zoomGroup: "拡大・縮小",
     zoomOut: "縮小",
     zoomIn: "拡大",
@@ -329,6 +338,8 @@ export const T: Record<Locale, Strings> = {
     yearPage: (year) => `${year}页面`,
     report: "报告错误",
     loading: "加载中…",
+    detailFailed: "无法加载详细内容。",
+    retry: "重试",
     zoomGroup: "缩放",
     zoomOut: "缩小",
     zoomIn: "放大",
@@ -445,6 +456,25 @@ const shortKo = (title: string): string => {
  * 정보가 안 되고 형식만 섞인다(2026-09-05). 그 이름들은 상세의 관점별 명칭 표에 있다.
  * @param dupNames 같은 셀에서 둘 이상 나오는 표제어 — 그 경우 원문으로
  */
+/**
+ * 한 묶음(셀 하나 · 연도 페이지의 한 열) 안에서 **둘 이상 나오는 라벨**. 그 이름은 쓰지 않고
+ * 원문으로 되돌린다 — 1919년 한국 열에 「3·1 운동」이 세 번 찍히는 것을 막는 규칙이다.
+ *
+ * **`eventLabel(...).name`으로 센다.** 위키 표제어(`nameIn`)만 세면 지은 제목(`name_ko`)이
+ * 집합에 안 들어가 `eventLabel`의 중복 검사가 영영 참이 되지 않는다. 실제로 그리드가
+ * `nameIn`만 세고 있어서 **같은 회귀가 연도 페이지에서는 막히고 그리드에서는 안 막혔다**
+ * (실측 2026-09-20: 같은 십년 셀의 중복 라벨 319건 중 **213건이 지은 제목**이었다).
+ * 그래서 두 곳이 이 함수 하나를 쓴다.
+ */
+export function dupNames(evs: readonly LabelSource[], locale: Locale): Set<string> {
+  const seen = new Map<string, number>();
+  for (const ev of evs) {
+    const n = eventLabel(ev, locale).name;
+    if (n) seen.set(n, (seen.get(n) ?? 0) + 1);
+  }
+  return new Set([...seen].filter(([, n]) => n > 1).map(([k]) => k));
+}
+
 export function eventLabel(ev: LabelSource, locale: Locale, dupNames?: ReadonlySet<string>): { name?: string; text?: string } {
   const name = nameIn(ev, locale);
   // 재위 시작: 인물 이름 + 언어별 "즉위". 이름만으로는 무슨 일인지 알 수 없다
