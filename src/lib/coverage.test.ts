@@ -25,6 +25,7 @@ import { describe, expect, it } from "vitest";
 const read = (rel: string) => readFileSync(path.join(__dirname, "../..", rel), "utf8");
 const derive = read("tools/derive.mjs");
 const yearData = read("src/lib/year-data.ts");
+const axis = read("src/lib/timeline/axis.ts");
 
 /** 소스를 글자로 읽는다 — derive.mjs는 import하면 CLI 본문이 돈다(parse-year.mjs를 뺀 이유와 같다). */
 function num(src: string, pattern: RegExp, what: string): number {
@@ -68,6 +69,19 @@ describe("수록 끝 — 두 상수가 어긋나지 않는다", () => {
     for (const [region, y] of Object.entries(COVERAGE_TO)) {
       expect(y, `${region}`).toBeGreaterThanOrEqual(DERIVE_END);
     }
+  });
+});
+
+describe("축의 시작 — derive.mjs가 axis.ts의 사본을 들고 있다", () => {
+  /**
+   * `.mjs`는 `.ts`를 import하지 못해 값이 두 벌이다. 어긋나면 **축 밖 사건이 발행된다** —
+   * 격자도 `/y/{year}`도 축 안만 그리므로 그 사건은 파일로만 존재하고 아무도 볼 수 없다.
+   * 실제로 173건이 그렇게 나가고 있었고 배지의 사건 수만 부풀어 있었다(2026-09-20).
+   */
+  it("두 값이 같다", () => {
+    const fromAxis = num(axis, /AXIS_YEAR_START = (-?\d+)/, "axis.ts AXIS_YEAR_START");
+    const fromDerive = num(derive, /AXIS_START = (-?\d+)/, "derive.mjs AXIS_START");
+    expect(fromDerive).toBe(fromAxis);
   });
 });
 

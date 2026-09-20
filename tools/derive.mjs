@@ -153,6 +153,15 @@ function mergeDuplicates(recs, region) {
   return merged;
 }
 
+/**
+ * 축의 시작(`src/lib/timeline/axis.ts` AXIS_YEAR_START의 사본 — .mjs는 .ts를 import하지 못한다.
+ * `coverage.test.ts`가 둘의 일치를 강제한다).
+ *
+ * 이보다 이른 행은 **발행해도 아무도 볼 수 없다.** 격자는 축 밖을 그리지 않고 `/y/{year}`도
+ * 축 안에서만 생긴다. 그런데도 167건이 파일로 나가고 있었다(2026-09-20 실측) — 한국 열의
+ * "BC.70만 년경 구석기 문화가 시작" 같은 선사 항목이다. 배지의 사건 수만 그만큼 부풀었다.
+ */
+const AXIS_START = -499;
 /** 열의 수록 시작 연도(PRD §11 C-3). 미국 열은 1607 제임스타운부터 — pre-US 연표의 그 이전 행은 싣지 않는다. */
 const COVERAGE_FROM = { us: 1607 };
 /** 데이터의 끝(PRD §11 C-2, A-12 — 대표 결정 2026-09-05): 전년도까지. 올해 연표는 아직 움직이는 문서다. */
@@ -176,6 +185,7 @@ const endYearFor = (region) => COVERAGE_TO[region] ?? DATA_END_YEAR;
 /** 사건이 아닌 줄 — 연도 범위 머리글("2010–present"), 날짜만("September 11"), 글자 없는 줄, 수록 범위 밖. */
 function rejectReason(raw, title) {
   if (raw.kind !== "event") return "시대 구분(kind=period) — 정치체 밴드로";
+  if (raw.date.year < AXIS_START) return `축 밖(${AXIS_START}년 이전 — 그려지지 않는다)`;
   if (raw.date.year < (COVERAGE_FROM[raw.region] ?? -Infinity)) return `수록 범위 밖(${COVERAGE_FROM[raw.region]}년 이전, C-3)`;
   if (raw.date.year > endYearFor(raw.region)) return `수록 범위 밖(${endYearFor(raw.region)}년 이후, C-2)`;
   const t = title.replace(/[–—-]/g, "-").trim();

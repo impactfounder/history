@@ -216,7 +216,35 @@ const write = (rel, obj) => {
   chunks[rel] = sha(body);
 };
 
-write("regions.json", { regions: REGIONS });
+/*
+  열별 밀도 — 축 전체를 같은 폭 26칸으로 나눈 사건 수. 한 열이 **어디에 몰려 있는가**를
+  숫자 스물여섯 개로 말한다.
+
+  왜 발행에서 내보내는가: 이 계산은 사건 전부를 봐야 하는데, 그걸 아는 곳은 여기뿐이다.
+  소비자는 지금 OG 이미지 하나지만(`src/app/opengraph-image.tsx`) 손으로 찍은 값 대신
+  데이터를 쓰게 하려면 데이터가 나와 있어야 한다 — "모르는 것을 아는 척하지 않는다"는
+  그림에도 적용된다.
+*/
+const DENSITY_BINS = 26;
+const AXIS_FROM = -499, AXIS_TO = 2026;
+const densityOf = (region) => {
+  const bins = Array.from({ length: DENSITY_BINS }, () => 0);
+  for (const r of all) {
+    if (r.region !== region) continue;
+    const t = (r.date.year - AXIS_FROM) / (AXIS_TO - AXIS_FROM + 1);
+    if (t < 0 || t >= 1) continue; // 축 밖(예: 기원전 10세기 언사)은 세지 않는다
+    bins[Math.floor(t * DENSITY_BINS)] += 1;
+  }
+  return bins;
+};
+
+write("regions.json", {
+  regions: REGIONS.map((r) => {
+    const density = densityOf(r.id);
+    // 건수는 밀도의 합이다 — 축 밖은 발행 자체가 안 되므로(derive AXIS_START) 둘이 어긋나지 않는다
+    return { ...r, count: density.reduce((a, b) => a + b, 0), density };
+  }),
+});
 
 // ── 정치체 밴드 (tools/polities.mjs → curation/polities/{region}.json) ────────
 // 약 40개라 한 파일. 가상화하지 않고 전부 렌더한다(PRD §5-5A 레이어 구조).

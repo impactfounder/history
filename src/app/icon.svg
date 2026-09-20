@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!--
+    제품의 주장을 그대로: 같은 시간축 위에 두 기둥. 시간은 아래로 흐르므로(앱의 스크롤과 같다)
+    '지금'이 바닥이고, 그래서 AI 기둥은 **바닥 쪽 3분의 1**만 차 있다. 인류사 기둥은 끝까지 간다.
+    16px에서는 두 개의 표식으로 읽히고, 32px부터 그 길이 차이가 보인다.
+    색은 globals.css의 --region-ai / --ink-900과 같은 값을 손으로 맞춘 사본이다(SVG는 변수를 못 받는다).
+  -->
+  <rect width="32" height="32" rx="7" fill="#fbfaf8"/>
+  <rect x="8" y="19" width="6" height="8" rx="2" fill="#a1490b"/>
+  <rect x="18" y="5" width="6" height="22" rx="2" fill="#191713"/>
+</svg>
