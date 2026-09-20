@@ -61,6 +61,16 @@ const SOURCES = {
   ],
   us: [
     { wiki: "en", title: "Timeline of pre–United States history", slug: "en-us-pre" },
+    /*
+      **1760~1789가 통째로 비어 있었다.** 아래 연대별 문서가 1790년부터 시작해서, 미국 열에
+      1776년 독립선언도 1787년 헌법도 **행 자체가 없었다**(2026-09-21 실측: 그 구간은 전부 전투였다.
+      전투는 위키데이터 쪽에서 왔다). 대표가 "국가 설립이 왜 안 나오냐"고 물었을 때
+      한국·중국은 순위 문제였지만 미국은 데이터가 없는 문제였다.
+
+      「Timeline of United States history (1760–1789)」는 이 문서로 넘겨준다.
+      연도가 **절 제목**에 있고 줄에는 `(July 4)`처럼 날짜만 끝에 붙는 꼴이라 `mode`가 필요하다.
+    */
+    { wiki: "en", title: "Timeline of the American Revolution", slug: "en-us-revolution", mode: "headingList" },
     ...["1790–1819", "1820–1859", "1860–1899", "1900–1929", "1930–1949",
         "1950–1969", "1970–1989", "1990–2009", "2010–present"].map((p) => ({
       wiki: "en",
@@ -215,6 +225,50 @@ function scanListItems(fragment, items, shape, carriedYear) {
   return carriedYear;
 }
 
+/** 절 제목. `<h2 …>1776</h2>` · `<h3>1776</h3>` — 안쪽 `<span>`까지 벗겨서 본다. */
+const HEADING_RE = /<h[23]\b[^>]*>([\s\S]*?)<\/h[23]>/g;
+
+/**
+ * **연도가 절 제목에 있는 문서.** 목록 줄에는 날짜가 `(July 4)`처럼 **끝에 괄호로** 붙고
+ * 연도는 아예 없다 — 그 해 절 안에 있으니 적을 이유가 없기 때문이다.
+ *
+ * 기본 `extract`는 줄 안에서 연도를 찾으므로 이런 문서에서 **아무것도 못 건진다.**
+ * 실제로 미국 열이 그 모양으로 비어 있었다: 원천이 「pre–United States history」 다음
+ * 바로 「1790–1819」로 건너뛰어 **1760~1789가 통째로 없었고**, 그래서 1776년 독립선언도
+ * 1787년 헌법도 데이터에 존재하지 않았다(2026-09-21 실측 — 그 구간은 전부 전투였다).
+ *
+ * 이 모드는 **원천마다 켠다**(`mode: "headingList"`). 모든 문서에 적용하면 연도 없는 줄이
+ * 앞 절의 해로 쏟아져 들어온다 — 기존 열의 수집 결과를 건드리지 않으려는 것이다.
+ */
+function extractHeadingList(html) {
+  const items = [];
+  // 제목 위치로 잘라 각 절의 몸통을 얻는다
+  const heads = [...html.matchAll(HEADING_RE)].map((m) => ({ at: m.index ?? 0, len: m[0].length, text: strip(m[1]) }));
+  for (let i = 0; i < heads.length; i++) {
+    const h = heads[i];
+    // 제목이 연도(또는 연도로 시작)일 때만. 「Aftermath」 같은 절은 건너뛴다
+    const year = /^-?\d{3,4}\b/.test(h.text) ? parseYear(h.text) : null;
+    if (!year) continue;
+    const body = html.slice(h.at + h.len, heads[i + 1]?.at ?? html.length);
+    for (const m of body.matchAll(LI_RE)) {
+      const li = m[0];
+      const text = strip(li);
+      if (!text || text.length < 12) continue;
+      // 줄이 자기 연도를 말하면 그것을 믿는다. 아니면 절의 해다.
+      const own = isDayMonth(text) ? null : parseYear(text);
+      items.push({
+        shape: "list",
+        yearText: h.text.slice(0, 24),
+        text,
+        links: bodyLinks(li),
+        date: own ?? year,
+        kind: looksLikePeriod(text) ? "period?" : "event",
+      });
+    }
+  }
+  return items;
+}
+
 /**
  * 문서 HTML → 후보 항목. 표와 목록을 모두 본다.
  *
@@ -224,7 +278,9 @@ function scanListItems(fragment, items, shape, carriedYear) {
  * ②를 "셀 2개 미만"으로 건너뛰고 표 안 목록을 본문 목록 분기에서도 제외하면
  * 근현대가 통째로 사라진다(1945년 이후 360 → 205건으로 줄었던 원인).
  */
-function extract(html) {
+function extract(html, mode) {
+  // 연도가 절 제목에 있는 문서는 다른 길로 간다(위)
+  if (mode === "headingList") return extractHeadingList(html);
   const items = [];
 
   for (const table of html.match(TABLE_RE) ?? []) {
@@ -347,7 +403,7 @@ async function main() {
       continue;
     }
     const { text: html, revid, title: resolved } = j.parse;
-    const items = extract(html);
+    const items = extract(html, src.mode);
 
     const titles = [...new Set(items.flatMap((it) => it.links))];
     const qidMap = await attachQids(src.wiki, titles);
