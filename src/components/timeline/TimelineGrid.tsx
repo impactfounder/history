@@ -30,6 +30,7 @@ import { assignLanes, baseTier, SPAN_MIN_PX } from "@/lib/timeline/rank";
 import { layoutCell } from "@/lib/timeline/layout-cell";
 import { originalTag } from "@/lib/timeline/item-kind";
 import {
+  colsForWidth,
   AXIS_LABEL_W,
   AXIS_LABEL_W_COMPACT,
   CARD_GAP,
@@ -419,12 +420,21 @@ export function TimelineGrid() {
         // pendingTop을 여기서 쓰면 안 된다 — 이 효과와 같은 커밋에서 아래 적용 효과가 먼저 소비해 버려
         // 아직 s=8 높이인 스페이서에 s=40용 scrollTop을 넣고 끝난다(1882 요청이 45년에 착지했다)
         landing.current = { y: url.y ?? LANDING_YEAR, s, vh };
-        // 폰은 열을 줄인다(§5-7): <360px 1열 · <600px 2열. 열당 150px을 지키기 위해서다.
+        // 열이 너무 좁아지면 개수를 줄인다(§5-7) — 규칙은 하나이고 **열 폭**으로 적는다.
+        //
+        // 폰(<600px)은 두 줄 헤더라 고정분이 작다. <360px 1열 · <600px 2열은 390px에서 손으로
+        // 검증된 값이라(왕조 이름 129px) 그대로 둔다.
+        //
+        // 그 위는 한 줄 헤더라 고정분이 149px이고 전부 shrink-0이다. 열당 COL_W_MIN_WIDE(210px)를
+        // 못 주면 왕조 이름이 0px이 되고 조작 버튼이 옆 열로 넘친다 — AI 열이 기본이 되어 5열이 된
+        // 뒤 600~1024px이 그 상태였다(실측 2026-09-20, metrics.ts COL_W_MIN_WIDE 표).
+        //
         // URL에 ?r=이 있으면 그것이 우선 — 사용자가 고른 조합을 화면 크기로 덮지 않는다
         if (url.r) setCols(url.r);
         else {
           const w = el.clientWidth;
           if (w > 0 && w < 600) setCols(DEFAULT_COLS.slice(0, w < 360 ? 1 : 2));
+          else if (w > 0) setCols(DEFAULT_COLS.slice(0, colsForWidth(w)));
         }
         if (url.lang) setLocale(url.lang);
         setAxis({ s, viewportH: vh });

@@ -9,6 +9,8 @@ import {
   AXIS_W_COMPACT,
   CARD_GAP,
   CELL_PAD,
+  COL_W_MIN_WIDE,
+  colsForWidth,
   COLUMN_HEADER_H,
   COLUMN_HEADER_H_COMPACT,
   ERA_TICK_W,
@@ -219,5 +221,53 @@ describe("토큰 층 구조", () => {
     expect(theme).not.toMatch(/--shadow-/);
     expect(code).toMatch(/--shadow-float:/);
     expect(code).toMatch(/--shadow-sheet:/);
+  });
+});
+
+/**
+ * **열 폭의 하한.** 규칙은 코드 주석에 "열당 150px을 지킨다"로 먼저 적혀 있었는데, 실제 구현은
+ * 폰 구간(<600px) 두 breakpoint에만 있었다. AI 열이 기본이 되어 4열 → 5열이 된 뒤 600~1024px에서
+ * 열이 93~178px로 눌렸고, 왕조 이름이 0px이 되고 조작 버튼이 옆 열로 넘쳤다(실측 2026-09-20).
+ *
+ * 아래 수는 전부 브라우저 실측에서 왔다 — 헤더 고정분 149px, 넘침이 멈추는 열 폭 153px,
+ * 「조선 1392–1897」 89px · 「무로마치 시대 1336–1573」 141px.
+ */
+describe("colsForWidth — 열이 COL_W_MIN_WIDE 밑으로 내려가지 않는다", () => {
+  /** 실제 열 폭. 격자에서 축을 빼고 열마다 CARD_GAP을 뗀다(실측 768px·5열 → 126px과 같은 식). */
+  const colW = (gridW: number, n: number) => (gridW - AXIS_W - n * CARD_GAP) / n;
+
+  it.each([600, 660, 720, 768, 820, 900, 1000, 1024, 1100, 1200, 1280, 1440, 1920])(
+    "%ipx — 고른 열 수로 나눠도 열이 %s 이상이다",
+    (w) => {
+      const n = colsForWidth(w);
+      expect(n).toBeGreaterThanOrEqual(1);
+      expect(colW(w, n), `${w}px에서 ${n}열 → 열 ${colW(w, n).toFixed(0)}px`).toBeGreaterThanOrEqual(COL_W_MIN_WIDE);
+    },
+  );
+
+  it("한 열 더 넣으면 하한을 깬다 — 하한을 지키는 **최대** 열 수다", () => {
+    for (const w of [768, 1024, 1280]) {
+      const n = colsForWidth(w);
+      expect(colW(w, n + 1), `${w}px에서 ${n + 1}열이면`).toBeLessThan(COL_W_MIN_WIDE);
+    }
+  });
+
+  it("깨져 있던 구간이 실제로 줄어든다", () => {
+    // 전: 전부 5열이었다. 후: 열 폭이 하한을 넘는 만큼만.
+    expect(colsForWidth(768)).toBe(3);
+    expect(colsForWidth(900)).toBe(3);
+    expect(colsForWidth(1024)).toBe(4);
+    expect(colsForWidth(1280)).toBe(5); // 흔한 노트북에서는 다섯 열이 그대로 선다
+  });
+
+  it("좁아도 최소 한 열은 남는다 — 마지막 한 열은 뺄 수 없다(§4-1)", () => {
+    expect(colsForWidth(200)).toBe(1);
+    expect(colsForWidth(0)).toBe(1);
+    expect(colsForWidth(-100)).toBe(1);
+  });
+
+  it("폰 구간은 이 함수가 정하지 않는다 — 두 줄 헤더라 고정분이 다르다", () => {
+    // 390px에서 2열(열 153px)은 손으로 검증된 값이다. 이 함수에 물리면 1열이 되어 비교가 사라진다.
+    expect(colsForWidth(390)).toBe(1);
   });
 });
