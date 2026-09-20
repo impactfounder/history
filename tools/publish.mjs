@@ -368,7 +368,20 @@ const counts = {
 spans.sort((a, b) => a.y0 - b.y0 || a.r.localeCompare(b.r));
 write("spans.json", { spans });
 
-write("manifest.json", { version: "v1", stage, publishedAt: new Date().toISOString(), counts, chunks });
+/*
+  **manifest는 작아야 한다.** 그리드가 첫 로드에 `cache: "no-cache"`로 받아 **매번 재검증**하는
+  파일이고(발행 버전을 알아야 나머지 URL에 ?v=를 붙일 수 있다), 읽는 값은 셋뿐이다 —
+  `stage` · `counts.events` · `publishedAt`.
+
+  한때 파일 무결성 색인(`chunks`: 경로 → sha256)이 여기 같이 들어 있었다. 항목 13,217개 중
+  11,365개가 `events/detail/*.json`이라 **1,321KB(gzip 574KB)**였고, 그것을 첫 화면마다 받아
+  세 값을 읽고 버렸다. 읽는 코드는 레포 어디에도 없었다(TimelineGrid의 `chunks`는 이름만 같은
+  로컬 useRef 캐시다). 2026-09-20 실측으로 찾아 `chunks.json`으로 뺐다.
+
+  무결성 색인은 여전히 발행한다 — 지운 것이 아니라 **첫 화면의 길에서 치운 것**이다.
+*/
+write("chunks.json", { version: "v1", chunks });
+write("manifest.json", { version: "v1", stage, publishedAt: new Date().toISOString(), counts });
 
 console.log(`발행 — stage=${stage} → ${OUT}
   사건        ${all.length}  (${Object.entries(counts.byRegion).map(([k, v]) => `${k} ${v}`).join(" · ")})
