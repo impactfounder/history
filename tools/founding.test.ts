@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { FOUND_VERB, foundsNear, politiyCore } from "./founding.mjs";
+import { FOUND_VERB, FOUND_VERB_STRONG, foundStrength, foundsNear, politiyCore } from "./founding.mjs";
 
 /**
  * 나라·시대의 시작을 알아보는 규칙. 틀리면 **첫 화면에 엉뚱한 것이 맨 앞에 선다** —
@@ -106,5 +106,47 @@ describe("건국 동사 표", () => {
     for (const w of ["전투", "조약", "사고", "멸망", "함락", "정복"]) {
       expect(FOUND_VERB.test(w), w).toBe(false);
     }
+  });
+});
+
+describe("시작을 얼마나 분명히 말하는가", () => {
+  it.each([
+    ["독립 선언문 공포", 0],
+    ["대한민국 정부 수립", 0],
+    ["헤이안 시대 시작", 0],
+    ["메이지 천황 즉위", 1],
+    ["스태튼아일랜드 평화 회의", 2],
+    ["롱아일랜드 전투", 2],
+    [null, 2],
+  ])("%s → %d", (name, want) => {
+    expect(foundStrength(name as string | null)).toBe(want);
+  });
+
+  /*
+    **「즉위」는 약한 말이다.** 정치체 이름을 곁에 둔 줄에서는 받아야 한다 — 메이지 시대의
+    유일한 표식이 「메이지 천황 즉위」다. 그러나 이름만 보고 고르는 자리에서 받으면 -205년
+    한나라 칸에 「항우 서초패왕 즉위」가 선다. 한나라는 -202년 유방의 즉위로 서므로 그것은
+    그 나라의 시작이 아니다.
+  */
+  it("즉위는 약한 표에만 있다", () => {
+    expect(FOUND_VERB.test("즉위")).toBe(true);
+    expect(FOUND_VERB_STRONG.test("즉위")).toBe(false);
+  });
+
+  it("분명한 말은 두 표에 다 있다", () => {
+    for (const w of ["건국", "수립", "국호", "독립 선언", "제헌"]) {
+      expect(FOUND_VERB_STRONG.test(w), w).toBe(true);
+      expect(FOUND_VERB.test(w), w).toBe(true);
+    }
+  });
+
+  /*
+    미국 열이 걸렸던 자리. 1776년 줄 이름에 「미국」이 없어 `foundsNear`로는 못 잡고, 대신
+    본문에 「미국의 독립 선언」이 있는 9월 11일 평화 회의가 걸렸다. 이름만 보면 갈린다.
+  */
+  it("본문이 아니라 이름을 보면 미국의 1776이 갈린다", () => {
+    expect(foundsNear("스태튼아일랜드 평화 회의. 영국 당국과 대륙회의 대표들이 미국의 독립 선언 철회를 논의함", "미국")).toBe(true);
+    expect(foundStrength("스태튼아일랜드 평화 회의")).toBe(2);
+    expect(foundStrength("독립 선언문 공포")).toBe(0);
   });
 });

@@ -24,7 +24,7 @@
 
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { FOUND_VERB, foundsNear, politiyCore } from "./founding.mjs";
+import { FOUND_VERB_STRONG, foundStrength, foundsNear, politiyCore } from "./founding.mjs";
 import { isEventLike } from "./event-kind.mjs";
 import path from "node:path";
 
@@ -385,9 +385,21 @@ for (const { id } of REGIONS) {
       가장 깨끗한 이름을 못 보고 원문만 봤다(실측: 1368년이 통째로 빠졌다).
     */
     const textOf = (r) => [nameOf(r), r.title_ko, r.title].filter(Boolean).join(" | ");
+    /*
+      후보는 **두 갈래**다.
+
+        1) 본문이 정치체 이름을 건국 동사 곁에 쓴 줄 — 「고려 건국」·「대한민국 정부 수립」.
+        2) **정확한 시작 해에 이름이 건국을 분명히 말하는 줄** — 정치체 이름을 요구하지 않는다.
+
+      2)가 필요한 이유: 미국의 1776년 줄 이름은 「독립 선언문 공포」이고 「미국」이 없다. 1)만
+      보면 미국 열은 그 해에 「스태튼아일랜드 평화 회의」를 골랐다 — 본문의 「미국의 독립 선언」이
+      18자 창에 들었을 뿐 건국 행이 아니다. 이름 조건을 푸는 대신 **해를 ±0으로 조인다**.
+      (2026-09-21 실측: 2)를 더해 채워지는 정치체가 25 → 30이 되고 미국의 오탐이 사라진다.)
+    */
     const cand = all.filter((r) => {
       if (r.region !== id || Math.abs(r.date.year - p.y0) > 1) return false;
-      return foundsNear(textOf(r), core);
+      if (foundsNear(textOf(r), core)) return true;
+      return r.date.year === p.y0 && FOUND_VERB_STRONG.test(nameOf(r) ?? "");
     });
     if (!cand.length) continue;
     /*
@@ -396,16 +408,22 @@ for (const { id } of REGIONS) {
         1) **정치체가 말하는 바로 그 해** — ±1을 받아들이되 정확한 해가 이긴다. 이것이 없어서
            1393년 「국호 조선 개칭」이 1392년 「조선 건국」을 이겼다(마지막 동점 처리가 원문
            길이여서 사실상 자의적이었다).
-        2) **이름이 건국을 말하는가** — 960년에는 「진교의 변」과 「송나라 건국」이 함께 있다.
-           둘 다 같은 사건이어도 칩에 설 이름은 뒤쪽이다.
-        3) 중요도 · 순위 점수 · 이름 유무 · 짧은 원문.
+        2) **이름이 시작을 얼마나 분명히 말하는가**(`foundStrength`) — 960년에는 「진교의 변」과
+           「송나라 건국」이 함께 있다. 둘 다 같은 사건이어도 칩에 설 이름은 뒤쪽이다. 「즉위」가
+           약한 말인 이유는 `founding.mjs`에 적었다.
+        3) **이름이 이 정치체를 부르는가** — 1948년에는 「대한민국 정부 수립」과 「북한 정부
+           수립」이 나란히 있다. 둘 다 2)에서 동점이라 이 줄이 없으면 갈리지 않는다. 같은 이유로
+           581년의 「수나라 건국」이 「수 건국」을, 960년의 「송나라 건국」이 「북송 건국」을 이긴다.
+           **본문이 아니라 이름만 본다** — 본문을 보면 위의 스태튼아일랜드 오탐이 되돌아온다.
+        4) 중요도 · 순위 점수 · 이름 유무 · 짧은 원문.
     */
-    const namedFounding = (r) => (FOUND_VERB.test(nameOf(r) ?? "") ? 0 : 1);
     const yearDist = (r) => Math.abs(r.date.year - p.y0);
+    const namesCore = (r) => ((nameOf(r) ?? "").includes(core) ? 0 : 1);
     cand.sort(
       (a, b) =>
         yearDist(a) - yearDist(b) ||
-        namedFounding(a) - namedFounding(b) ||
+        foundStrength(nameOf(a)) - foundStrength(nameOf(b)) ||
+        namesCore(a) - namesCore(b) ||
         (b.importance_auto ?? 0) - (a.importance_auto ?? 0) ||
         (b.rank_score ?? 0) - (a.rank_score ?? 0) ||
         (nameOf(a) ? 0 : 1) - (nameOf(b) ? 0 : 1) ||

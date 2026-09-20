@@ -55,6 +55,11 @@ describe.skipIf(!published)("나라의 시작은 그 해의 맨 앞에 선다", 
     ["kr", 918, "고려 건국"],
     ["cn", 1949, "중화인민공화국"],
     ["cn", 1368, "명나라 건국"],
+    // 이름이 그 나라를 말하지 않는 건국. 「미국」도 「건국」도 없어 1차 규칙에 안 걸렸다.
+    ["us", 1776, "독립 선언문 공포"],
+    // 일본 열의 정치체는 나라가 아니라 시대다. 「…시대 시작」·「…시대 개막」이 그 자리의 사실이다.
+    ["jp", 1603, "에도 시대 시작"],
+    ["jp", 2019, "레이와 시대 개막"],
   ])("%s %i — %s 가 세기 레벨에 있다", (region, year, needle) => {
     const hit = century(region).filter((e) => e.y0 === year && labelOf(e).includes(needle));
     expect(hit.length, `${region} ${year}년 세기 레벨에 「${needle}」이 없다`).toBeGreaterThan(0);
@@ -64,6 +69,22 @@ describe.skipIf(!published)("나라의 시작은 그 해의 맨 앞에 선다", 
     const cell = century("kr").filter((e) => e.y0 === 1948);
     expect(cell.length).toBeGreaterThan(1); // 경쟁자가 있어야 순서 검사가 뜻을 가진다
     expect(labelOf(cell[0]!)).toContain("대한민국 정부 수립");
+  });
+
+  /**
+   * **미국이 걸렸던 자리.** 1776년 줄의 이름은 「독립 선언문 공포」이고 「미국」이 없다. 이름으로
+   * 찾는 1차 규칙이 그것을 못 보는 사이, 본문에 「미국의 독립 선언」이라는 구절이 있는 9월 11일
+   * 「스태튼아일랜드 평화 회의」가 대신 걸렸다 — 그 줄은 건국이 아니라 그것을 되돌리려던 회담이다.
+   */
+  it("1776년 미국 열에서 「독립 선언문 공포」가 맨 앞이다", () => {
+    const cell = century("us").filter((e) => e.y0 === 1776);
+    expect(cell.length).toBeGreaterThan(1);
+    expect(labelOf(cell[0]!)).toContain("독립 선언문 공포");
+  });
+
+  it("건국을 되돌리려던 회담이 건국으로 표시되지 않는다", () => {
+    const wrong = load("us").filter((e) => e.f && labelOf(e).includes("평화 회의"));
+    expect(wrong.map(labelOf)).toEqual([]);
   });
 
   /**
