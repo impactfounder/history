@@ -48,6 +48,15 @@ export function baseTier(imp: number): Tier {
  * @param index 청크 안에서의 위치(0부터). 청크는 imp desc → sl desc로 정렬돼 있다.
  * @param n     청크 건수
  */
+/**
+ * **지금 소비자가 없다**(2026-09-20). 유일한 소비자가 기간 프레임의 자격 판정이었는데,
+ * 프레임이 청크 대신 `spans.json`을 보게 되면서 `baseTier(imp)`로 옮겼다 — 청크 안 순위는
+ * **줌 레벨마다 달라져서** 같은 기간이 십년 화면에서는 프레임을 갖고 연도 화면에서는 잃었다.
+ * 프레임은 어느 줌에서 보든 같아야 한다.
+ *
+ * 지우지 않고 남긴다. 1b 설계의 "셀 안 선별 순서"(README §7-5)가 아직 이 값을 쓰지 않을 뿐이고,
+ * 그때 필요한 것은 여기 있는 계산 그대로다. 테스트도 함께 남는다.
+ */
 export function tierOf(imp: number, index: number, n: number): Tier {
   const base = baseTier(imp);
   if (n < RANK_MIN_N) return base;

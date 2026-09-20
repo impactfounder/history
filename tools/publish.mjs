@@ -263,6 +263,8 @@ write("polities.json", { regions: polities });
 const byLevel = { century: 0, decade: 0, year: 0 };
 let officialMatched = 0;
 let spanDupes = 0;
+/** 기간 프레임 원천(아래 루프가 채운다) → spans.json */
+const spans = [];
 let spanKept = 0;
 for (const region of REGIONS.map((x) => x.id)) {
   const rs = all.filter((r) => r.region === region);
@@ -280,6 +282,18 @@ for (const region of REGIONS.map((x) => x.id)) {
     if (seenSpan.has(key)) { delete e.y1; spanDupes++; } else seenSpan.add(key);
   }
   spanKept += seenSpan.size;
+  /*
+    기간 프레임의 원천. **청크와 따로 내보낸다.**
+
+    프레임은 지금까지 로드된 청크에서 파생했는데, 연도 레벨의 청크는 10년 단위라
+    **시작 연도가 실리지 않은 구간에서는 프레임이 사라졌다.** 실측(2026-09-20): 133건 중
+    39건(29%)이 10년 경계를 넘고, 쿠빌라이-카이두 전쟁(1268–1301)은 1272년에서는 그려지는데
+    1295년에서는 0개였다. 한 파일로 내면 어느 지점에서 보든 같다.
+  */
+  for (const e of recs) {
+    if (e.y1 === undefined) continue;
+    spans.push({ r: region, id: e.id, y0: e.y0, y1: e.y1, ...(e.m ? { m: e.m } : {}), imp: e.regions[0]?.imp ?? 3 });
+  }
   // §6-2: imp desc → 언어판 수 desc → y0 asc → id. 클라이언트는 재정렬하지 않고 앞에서부터 셀 높이만큼 보인다
   const sortKey = (a, b) => b.regions[0].imp - a.regions[0].imp || (b.sl ?? 0) - (a.sl ?? 0) || a.y0 - b.y0 || (a.id < b.id ? -1 : 1);
 
@@ -351,6 +365,9 @@ const counts = {
   officialYears,
   skipped,
 };
+spans.sort((a, b) => a.y0 - b.y0 || a.r.localeCompare(b.r));
+write("spans.json", { spans });
+
 write("manifest.json", { version: "v1", stage, publishedAt: new Date().toISOString(), counts, chunks });
 
 console.log(`발행 — stage=${stage} → ${OUT}

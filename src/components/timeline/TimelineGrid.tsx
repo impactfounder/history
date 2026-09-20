@@ -26,7 +26,7 @@ import {
   type Axis,
   type Level,
 } from "@/lib/timeline/axis";
-import { assignLanes, baseTier, SPAN_MIN_PX, tierOf, type Tier } from "@/lib/timeline/rank";
+import { assignLanes, baseTier, SPAN_MIN_PX } from "@/lib/timeline/rank";
 import { layoutCell } from "@/lib/timeline/layout-cell";
 import { originalTag } from "@/lib/timeline/item-kind";
 import {
@@ -79,7 +79,6 @@ const DEFAULT_COLS: readonly RegionId[] = ["ai", "kr", "cn", "jp", "us"];
  * 티어는 이제 **글자 크기에 쓰지 않는다**(그건 itemKind가 맡는다). 남은 쓰임은 둘 —
  * 셀 안 선별 순서(청크 정렬)와 기간 프레임 자격("티어 3은 프레임을 갖지 못한다").
  */
-const tierOfEvent = (ev: PublishedEvent): Tier => ev.tier ?? baseTier(ev.regions[0]?.imp ?? 3);
 
 /** 행 안 보조선: 십년 행은 연 단위, 연도 행은 월 단위. 행이 이만큼 높을 때만(선 사이 20px 이상). */
 const subdivisions = (level: Level, h: number): number => (level === "decade" && h >= 200 ? 10 : level === "year" && h >= 240 ? 12 : 0);
@@ -119,12 +118,6 @@ interface PublishedEvent {
   date_ko: string;
   /** 국사편찬위 연표에 맞춰진 공식 항목 수(한국 열). */
   official?: number;
-  /**
-   * 표시 등급 1~3. 발행 데이터에는 없고 **청크가 도착할 때 한 번** 계산해 박아 둔다
-   * (lib/timeline/rank.ts). 렌더 중에는 읽기만 하므로 비용이 0이고, 스크롤·줌 사이에
-   * 같은 칩의 굵기가 흔들리지 않는다.
-   */
-  tier?: Tier;
 }
 interface Chunk { events: PublishedEvent[] }
 /** 국사편찬위원회 연표 한 항목 — 원문 그대로. */
@@ -153,6 +146,19 @@ interface Detail {
 /** official/kr/{연도}.json — 이 해의 공식 연표. */
 interface OfficialYear { year: number; count: number; shown: number; license: string; entries: OfficialEntry[] }
 interface Manifest { stage: "published" | "preview"; counts: { events: number; officialMatched?: number } }
+/**
+ * 기간 프레임의 원천(spans.json, tools/publish.mjs). **청크와 따로 받는다.**
+ *
+ * 프레임을 로드된 청크에서 파생하면 연도 레벨(10년 청크)에서 **시작 연도가 안 실린 구간에서
+ * 사라진다.** 실측(2026-09-20): 133건 중 39건이 10년 경계를 넘고, 쿠빌라이-카이두 전쟁
+ * (1268–1301)은 1272년에서 그려지는데 1295년에서는 0개였다.
+ *
+ * 티어는 싣지 않는다 — `tier`는 청크 도착 시 순위로 계산하는 값이라 **줌 레벨마다 달라진다.**
+ * 프레임은 `baseTier(imp)`만 본다. 그래서 어느 줌에서 보든 같은 기간이 같은 프레임을 갖는다
+ * (그 결과 순위로 강등되던 4건이 프레임을 되찾는다 — 전부 imp 4다).
+ */
+interface Span { r: RegionId; id: string; y0: number; y1: number; m?: number; imp: number }
+
 /** 정치체 밴드(polities.json, tools/polities.mjs). y1 null = 진행 중. */
 interface Polity {
   id: string;
@@ -247,6 +253,7 @@ export function TimelineGrid() {
    * 상세 패널이 밀어내기(push)인가. 폭 사다리에서 >1440만 비모달이고, 그 아래(오버레이·바텀 시트)는
    * 격자를 덮으므로 **모달**이어야 한다 — role·포커스 트랩·inert가 여기서 갈린다.
    */
+  const [spans, setSpans] = useState<Span[]>([]);
   const [pushMode, setPushMode] = useState(false);
   /**
    * 포인터가 굵은가(터치). 항목 높이의 하한을 24px로 올리는 데만 쓴다 — 폭이 아니라
@@ -354,17 +361,25 @@ export function TimelineGrid() {
   const withV = useCallback((path: string) => `${path}?v=${encodeURIComponent(dataVersion ?? "")}`, [dataVersion]);
 
   useEffect(() => {
+    /*
+      한 번만 받는 것 셋: manifest(버전) · polities(왕조 밴드) · spans(기간 프레임).
+      spans는 청크와 달리 **전부 한 파일**이다 — 기간은 어느 지점에서 보든 같아야 하는데,
+      청크에서 파생하면 시작 연도가 안 실린 구간에서 사라졌다(Span 타입 주석).
+    */
     fetch(`${DATA}/manifest.json`, { cache: "no-cache" })
       .then((r) => (r.ok ? (r.json() as Promise<Manifest & { publishedAt?: string }>) : null))
-      .then((m) => {
+      .then(async (m) => {
         setManifest(m);
-        const v = m?.publishedAt ?? String(Date.now());
-        setDataVersion(v);
-        return fetch(`${DATA}/polities.json?v=${encodeURIComponent(v)}`);
+        const v = encodeURIComponent(m?.publishedAt ?? String(Date.now()));
+        setDataVersion(m?.publishedAt ?? String(Date.now()));
+        const [pol, spn] = await Promise.all([
+          fetch(`${DATA}/polities.json?v=${v}`).then((r) => (r.ok ? (r.json() as Promise<{ regions: Polities }>) : null)),
+          fetch(`${DATA}/spans.json?v=${v}`).then((r) => (r.ok ? (r.json() as Promise<{ spans: Span[] }>) : null)),
+        ]);
+        setPolities(pol?.regions ?? {});
+        setSpans(spn?.spans ?? []);
       })
-      .then((r) => (r?.ok ? (r.json() as Promise<{ regions: Polities }>) : null))
-      .then((p) => setPolities(p?.regions ?? {}))
-      .catch(() => { setManifest(null); setPolities({}); });
+      .catch(() => { setManifest(null); setPolities({}); setSpans([]); });
   }, []);
 
   const ensureChunk = useCallback((region: RegionId, key: string) => {
@@ -376,9 +391,6 @@ export function TimelineGrid() {
       .then((r) => (r.ok ? (r.json() as Promise<Chunk>) : null))
       .then((c) => {
         const evs = c?.events ?? null;
-        // 표시 등급을 여기서 한 번 계산해 박는다. 청크는 발행 시 `imp desc → sl desc`로 정렬돼
-        // 있으므로 배열 인덱스가 곧 순위다 — 재발행 없이 레벨 안 상대 위계를 얻는다(rank.ts).
-        if (evs) for (let i = 0; i < evs.length; i++) evs[i]!.tier = tierOf(evs[i]!.regions[0]?.imp ?? 3, i, evs.length);
         chunks.current.set(path, evs); // 404도 기록 — 빈 구간은 다시 묻지 않는다
       })
       .catch(() => chunks.current.set(path, null))
@@ -943,6 +955,8 @@ export function TimelineGrid() {
                 배경 농도 교대는 글자 대비를 깎으면서 그 대가로 아무 이름도 알려주지 않았다.
                 이름은 열 헤더가 맡고, 여기서는 "언제 바뀌었나"만 말한다.
                 약 40개라 가상화하지 않는다(§5-5A 레이어) */}
+            {/* 이 층은 pointer-events-none이라 title 툴팁이 뜰 수 없다 — 범위는 칩 라벨의
+                "1592–1598"이 말한다. 그래서 spans.json에 제목을 싣지 않는다(9KB로 끝난다). */}
             <div className="pointer-events-none absolute inset-0 flex" aria-hidden>
               <div className="shrink-0" style={{ width: axisLabelW }} />
               {shown.map((c) => (
@@ -975,15 +989,15 @@ export function TimelineGrid() {
             <div className="pointer-events-none absolute inset-0 flex" aria-hidden>
               <div className="shrink-0" style={{ width: axisLabelW }} />
               {shown.map((c) => {
-                const cand = chunkKeys
-                  .flatMap((key) => chunks.current.get(`${DATA}/events/${c.id}/${key}.json`) ?? [])
+                const cand = spans
+                  .filter((sp) => sp.r === c.id)
                   // 티어 3은 프레임을 갖지 못한다. 프레임은 "이 안의 일들이 그 기간에 일어났다"는 강한 주장인데,
                   // 셀을 이끌 만하지 않은 항목이 그 주장을 하면 사실관계를 왜곡한다. 실제로 오파싱된
                   // "프룬제 아카데미아 …(1980–1994, 실제 1992년)"이 5·18 광주 민주화 운동을 감싸고 있었다
-                  .filter((ev) => ev.y1 !== undefined && ev.y1 > ev.y0 && tierOfEvent(ev) <= 2)
-                  .map((ev) => {
-                    const top = yearToY(ev.y0 + ((ev.m ?? 1) - 1) / 12, axis) + CELL_PAD;
-                    return { ev, top, bottom: yearToY(ev.y1! + 1, axis) };
+                  .filter((sp) => sp.y1 > sp.y0 && baseTier(sp.imp) <= 2)
+                  .map((sp) => {
+                    const top = yearToY(sp.y0 + ((sp.m ?? 1) - 1) / 12, axis) + CELL_PAD;
+                    return { ev: sp, top, bottom: yearToY(sp.y1 + 1, axis) };
                   })
                   .filter((s) => s.bottom - s.top >= SPAN_MIN_PX)
                   .sort((a, b) => a.top - b.top);
@@ -998,7 +1012,6 @@ export function TimelineGrid() {
                           key={s.ev.id}
                           className="absolute rounded-chip border"
                           style={{ top: s.top, height: s.bottom - s.top, left: 2 + lane * 4, right: 2, borderColor: "var(--color-span-frame)" }}
-                          title={`${s.ev.title} · ${s.ev.y0}–${s.ev.y1}`}
                         />
                       );
                     })}
