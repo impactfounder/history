@@ -24,6 +24,7 @@
 
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { FOUND_VERB, foundsNear, politiyCore } from "./founding.mjs";
 import path from "node:path";
 
 const OUT = "public/data/v1";
@@ -133,6 +134,8 @@ function toRecord(r) {
     lang: r.lang,
     names,
     regions: [{ r: r.region, imp: r.importance_auto, role: "primary" }],
+    // 나라·시대의 시작(아래 markFounding). 같은 중요도 안에서 sl보다 먼저 선다
+    ...(r.founding ? { f: 1 } : {}),
     // 같은 중요도 안의 순서(언어판 수). 셀이 좁을 때 어느 것을 먼저 보일지 — 연도순이면 "겨울연가"가 세기 대표가 된다
     ...(r.rank_score ? { sl: r.rank_score } : {}),
     date_ko: formatYear(r.date.year, r.date.approximate),
@@ -189,6 +192,7 @@ for (const f of files) {
 */
 const byId = new Map(all.map((r) => [r.source_id, r]));
 let mergedRows = 0;
+let liftedRows = 0;
 for (const r of all) {
   const into = clash.drop.get(r.source_id);
   const primary = into ? byId.get(into) : null;
@@ -197,6 +201,27 @@ for (const r of all) {
     if (src.kind === "wikipedia") primary.sources.push({ ...src, lang: r.lang, text: r.text, alt: true });
     else if (!primary.sources.some((p) => p.kind === src.kind && p.id === src.id)) primary.sources.push(src);
   }
+  /*
+    **중요도는 묶음의 최댓값을 따른다.** 합치기는 행을 지우는 일이 아니라 관점을 모으는 일이므로
+    (위 주석), 모인 것이 원래 대표보다 중요하면 그 사실도 함께 모여야 한다.
+
+    그러지 않아서 벌어지던 일(2026-09-20 대표 지적 "국가 설립이 왜 안 나오냐"):
+
+      대표  imp2 sl=없음  「8월 15일 대한민국 정부 수립」                 ← 국사편찬위, QID 없음
+      버림  imp5 sl=82    「이승만을 대통령으로 하는 대한민국이 수립된다」  ← 위키, QID Q171684
+
+    이름은 국편 쪽이 나아서 대표로 고른 것이 맞는데, **중요도가 위키 쪽에만 있었고 버려졌다.**
+    세기 레벨은 imp>=5, 십년은 imp>=4만 실으므로 대한민국 정부 수립은 연도 레벨까지 확대해야만
+    보였다. 실측: same=true 301묶음 중 **104묶음(35%)**이 이렇게 중요도를 잃고 있었다
+    (2→5가 24 · 2→4가 50 · 2→3이 16 · 나머지 14).
+
+    `rank_score`(발행의 `sl`, 같은 중요도 안의 정렬 키)도 같이 올린다 — 중요도만 올리고 정렬 키를
+    두고 오면 같은 imp 안에서 맨 뒤에 서서 좁은 셀에서는 여전히 안 보인다.
+  */
+  const impBefore = primary.importance_auto ?? 0;
+  primary.importance_auto = Math.max(impBefore, r.importance_auto ?? 0);
+  primary.rank_score = Math.max(primary.rank_score ?? 0, r.rank_score ?? 0);
+  if (primary.importance_auto > impBefore) liftedRows++;
   r.merged_into = into;
   mergedRows++;
 }
@@ -260,6 +285,69 @@ for (const { id } of REGIONS) {
 }
 write("polities.json", { regions: polities });
 
+/*
+  **나라의 시작은 그 해의 맨 앞에 선다** (대표 결정 2026-09-20: "국가 설립이 가장 중요한 것 아니냐").
+
+  증상은 이랬다 — 세기 레벨 한국 열 1900년대에 「삼성 설립」·「남극 첫 탐험」·「엠폭스 유행」은
+  있는데 **「대한민국 정부 수립」이 없었다.** 중요도가 위키백과 언어판 수에서 나오는데(derive.mjs
+  score), 국내 연표에만 있는 사건은 언어판이 없어 구조적으로 눌린다.
+
+  절반은 위 병합 수정(중요도 승계)이 풀었다. 나머지 절반이 **순서**다 — imp가 같으면 언어판 수로
+  줄을 세우므로 「제주 4·3 사건」(sl 23)이 「대한민국 정부 수립」(sl 12) 앞에 섰다.
+
+  **새로 알아내지 않는다.** 나라·시대의 시작 연도는 이미 `curation/polities/`에 있다(격자가 왕조
+  밴드를 그리는 그 값). 그 해에서 그 이름을 건국 동사와 **가까이** 쓴 줄을 찾아 **정치체마다 한
+  줄만** 고른다. 한 줄만 고르는 것이 오탐 방어다 — 진짜 건국 행이 있으면 점수로 그것이 이기므로,
+  「중화인민공화국 성립 이래 최대의 탄광 사고」 같은 줄이 대표가 되는 일은 그 해에 진짜가 아예
+  없을 때만 생긴다.
+
+  일본 열의 정치체는 나라가 아니라 **시대**다(헤이안·에도·헤이세이). 그래서 이 표시는 "국가 설립"이
+  아니라 "그 열의 시대가 바뀌는 지점"을 뜻하고, 일본에서는 그쪽이 같은 자리의 사실이다.
+*/
+let foundingRows = 0;
+for (const { id } of REGIONS) {
+  for (const p of polities[id] ?? []) {
+    const core = politiyCore(p.name);
+    if (!core) continue;
+    /*
+      **`nameOf(r)`를 함께 본다.** 지은 제목(tools/name.mjs)은 원본 행에 없고 이름 캐시에 있다 —
+      처음 판이 `r.name_ko`를 읽어 늘 undefined였고, 그래서 「명나라 건국」·「송나라 건국」처럼
+      가장 깨끗한 이름을 못 보고 원문만 봤다(실측: 1368년이 통째로 빠졌다).
+    */
+    const textOf = (r) => [nameOf(r), r.title_ko, r.title].filter(Boolean).join(" | ");
+    const cand = all.filter((r) => {
+      if (r.region !== id || Math.abs(r.date.year - p.y0) > 1) return false;
+      return foundsNear(textOf(r), core);
+    });
+    if (!cand.length) continue;
+    /*
+      그 해의 대표 한 줄. 순서대로:
+
+        1) **정치체가 말하는 바로 그 해** — ±1을 받아들이되 정확한 해가 이긴다. 이것이 없어서
+           1393년 「국호 조선 개칭」이 1392년 「조선 건국」을 이겼다(마지막 동점 처리가 원문
+           길이여서 사실상 자의적이었다).
+        2) **이름이 건국을 말하는가** — 960년에는 「진교의 변」과 「송나라 건국」이 함께 있다.
+           둘 다 같은 사건이어도 칩에 설 이름은 뒤쪽이다.
+        3) 중요도 · 순위 점수 · 이름 유무 · 짧은 원문.
+    */
+    const namedFounding = (r) => (FOUND_VERB.test(nameOf(r) ?? "") ? 0 : 1);
+    const yearDist = (r) => Math.abs(r.date.year - p.y0);
+    cand.sort(
+      (a, b) =>
+        yearDist(a) - yearDist(b) ||
+        namedFounding(a) - namedFounding(b) ||
+        (b.importance_auto ?? 0) - (a.importance_auto ?? 0) ||
+        (b.rank_score ?? 0) - (a.rank_score ?? 0) ||
+        (nameOf(a) ? 0 : 1) - (nameOf(b) ? 0 : 1) ||
+        (a.title?.length ?? 0) - (b.title?.length ?? 0),
+    );
+    const win = cand[0];
+    win.founding = true;
+    win.importance_auto = 5;
+    foundingRows++;
+  }
+}
+
 const byLevel = { century: 0, decade: 0, year: 0 };
 let officialMatched = 0;
 let spanDupes = 0;
@@ -294,8 +382,10 @@ for (const region of REGIONS.map((x) => x.id)) {
     if (e.y1 === undefined) continue;
     spans.push({ r: region, id: e.id, y0: e.y0, y1: e.y1, ...(e.m ? { m: e.m } : {}), imp: e.regions[0]?.imp ?? 3 });
   }
-  // §6-2: imp desc → 언어판 수 desc → y0 asc → id. 클라이언트는 재정렬하지 않고 앞에서부터 셀 높이만큼 보인다
-  const sortKey = (a, b) => b.regions[0].imp - a.regions[0].imp || (b.sl ?? 0) - (a.sl ?? 0) || a.y0 - b.y0 || (a.id < b.id ? -1 : 1);
+  // §6-2: imp desc → **나라의 시작** → 언어판 수 desc → y0 asc → id.
+  // 클라이언트는 재정렬하지 않고 앞에서부터 셀 높이만큼 보인다
+  const sortKey = (a, b) =>
+    b.regions[0].imp - a.regions[0].imp || (b.f ?? 0) - (a.f ?? 0) || (b.sl ?? 0) - (a.sl ?? 0) || a.y0 - b.y0 || (a.id < b.id ? -1 : 1);
 
   const groups = {
     century: { all: recs.filter((e) => e.regions[0].imp >= 5) },
@@ -386,7 +476,8 @@ write("manifest.json", { version: "v1", stage, publishedAt: new Date().toISOStri
 console.log(`발행 — stage=${stage} → ${OUT}
   사건        ${all.length}  (${Object.entries(counts.byRegion).map(([k, v]) => `${k} ${v}`).join(" · ")})
   제외        rejected ${skipped.rejected} · period ${skipped.period}
-  겹침 합침   ${mergedRows}행 (같은 열·같은 해·같은 제목 — 원문은 대표의 alt로)
+  겹침 합침   ${mergedRows}행 (같은 열·같은 해·같은 제목 — 원문은 대표의 alt로) · 중요도 승계 ${liftedRows}건
+  나라의 시작 ${foundingRows}건 (정치체마다 한 줄, 그 해의 맨 앞)
   청크 수록   century ${byLevel.century} · decade ${byLevel.decade} · year ${byLevel.year}
   기간        막대 ${spanKept}건 (중복 제거 ${spanDupes})
   공식 출처   매칭 사건 ${officialMatched} · 연도 파일 ${officialYears} (항목 ${officialEntries})

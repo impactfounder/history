@@ -762,7 +762,7 @@ export function TimelineGrid() {
   let tabStopClaimed = activeVisible;
 
   return (
-    <div className="flex h-full flex-col text-[13px]">
+    <div className="flex h-full flex-col text-item">
       {/* 상단바 — 44px 한 줄(README 7-1). 알약·사각 버튼을 걷어내고 텍스트 링크로 낮췄다.
           「자리 고정」 규약은 유지한다 — 언어를 바꿔도 각 조각의 폭이 변하지 않아야 한다 */}
       <header className="flex shrink-0 items-center gap-4 border-b border-line px-4" style={{ height: TOPBAR_H }}>
@@ -1025,7 +1025,7 @@ export function TimelineGrid() {
                       return (
                         <div
                           key={s.ev.id}
-                          className="absolute rounded-chip border"
+                          className="absolute rounded-item border"
                           style={{ top: s.top, height: s.bottom - s.top, left: 2 + lane * 4, right: 2, borderColor: "var(--color-span-frame)" }}
                         />
                       );
