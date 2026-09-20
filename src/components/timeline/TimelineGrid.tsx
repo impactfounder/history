@@ -185,9 +185,14 @@ const LANDING_S = 8;
 /** 스크롤이 이만큼 멎으면 URL을 갱신한다(ms). */
 const URL_IDLE_MS = 300;
 
-/** `/?y=1882&s=40` → 중앙 연도·스케일. 없거나 망가졌으면 null. */
-function readUrlState(): { y: number | null; s: number | null; r: RegionId[] | null; lang: Locale | null } {
-  if (typeof location === "undefined") return { y: null, s: null, r: null, lang: null };
+/**
+ * `/?y=1882&s=40&e=ev_…` → 중앙 연도·스케일·열·언어·**열린 사건**. 없거나 망가졌으면 null.
+ *
+ * `e`가 있는 이유: 열린 사건이 순수 로컬 상태여서 **새로고침·공유에서 사라졌다.** 특정 사건을
+ * 가리키는 주소가 없으면 "이걸 봐"라고 말할 방법이 없다.
+ */
+function readUrlState(): { y: number | null; s: number | null; r: RegionId[] | null; lang: Locale | null; e: string | null } {
+  if (typeof location === "undefined") return { y: null, s: null, r: null, lang: null, e: null };
   const q = new URLSearchParams(location.search);
   const lang = q.get("lang");
   const y = Number(q.get("y"));
@@ -200,6 +205,8 @@ function readUrlState(): { y: number | null; s: number | null; r: RegionId[] | n
     s: q.has("s") && Number.isFinite(s) && s > 0 ? s : null,
     r: r.length ? r : null,
     lang: isLocale(lang) ? lang : null,
+    // 발행 id의 모양만 받는다 — 아무 문자열이나 받아 fetch하지 않는다
+    e: /^ev_[0-9a-f]{12}$/.test(q.get("e") ?? "") ? q.get("e") : null,
   };
 }
 
@@ -311,6 +318,14 @@ export function TimelineGrid() {
   const [selected, setSelected] = useState<{ ev: PublishedEvent; detail: Detail | null | "error" } | null>(null);
   /** 검색 오버레이. 색인은 열 때 받는다(src/lib/search.ts) — 첫 화면 예산에 얹지 않는다. */
   const [searchOpen, setSearchOpen] = useState(false);
+  /**
+   * **열어야 할 사건의 id.** `?e=`로 들어왔거나 검색에서 골랐을 때 여기 담긴다.
+   *
+   * 곧바로 열 수 없는 이유: 패널은 발행 레코드(`PublishedEvent`)를 받는데 그것은 **청크가
+   * 도착해야** 생긴다. 상세 파일만으로 레코드를 지어내면 라벨·중복 규칙·정치체가 실제 화면과
+   * 어긋난다. 그래서 그 해로 먼저 내려놓고, 청크가 오면 id로 찾아 연다.
+   */
+  const wantOpen = useRef<string | null>(null);
   /** 패널이 격자를 덮는가 — 덮으면 모달이고, 격자는 inert가 된다. */
   const modalPanel = selected !== null && !pushMode;
   /** 상세 제목 — 모달로 열릴 때 포커스가 여기로 간다. */
@@ -413,6 +428,20 @@ export function TimelineGrid() {
       });
   }, [dataVersion, withV]);
 
+  /**
+   * 열어야 할 사건이 청크에 들어왔으면 연다. `ensureChunk`가 `bump`를 올릴 때마다 본다.
+   * 못 찾으면 그대로 둔다 — 다음 청크에 있을 수 있고, 끝내 없으면 조용히 포기한다
+   * (그 해에 내려놓는 것까지는 이미 했으므로 화면은 쓸 만하다).
+   */
+  useEffect(() => {
+    const id = wantOpen.current;
+    if (!id || selected) return;
+    for (const evs of chunks.current.values()) {
+      const ev = evs?.find((x) => x.id === id);
+      if (ev) { wantOpen.current = null; openDetail(ev); return; }
+    }
+  });
+
   // ── 뷰포트 높이 추적 + 착지 ───────────────────────────────────────────────
   // 첫 측정에서 URL(?y=&s=)이 있으면 그 자리로, 없으면 최근 수십 년(§5-7 착지, C-1 권고안)으로.
   // 브라우저 스크롤 복원은 끈다 — 스페이서 높이가 s에 따라 달라 저장된 scrollTop이 다른 해를 가리킨다.
@@ -450,6 +479,25 @@ export function TimelineGrid() {
         }
         if (url.lang) setLocale(url.lang);
         setAxis({ s, viewportH: vh });
+        /*
+          `?e=`로 들어왔다. 상세 파일 하나만 받아 **그 해·그 열**을 알아낸 뒤 거기로 간다.
+          상세에 `r`이 실려 있는 이유가 이것이다(publish.mjs) — 열이 꺼져 있으면 사건이 화면에
+          없고, 그러면 링크를 연 뜻이 없다.
+
+          `?y=`가 함께 있으면 그쪽을 존중한다. 공유된 주소는 대개 둘 다 들고 있고, 사용자가
+          그 화면을 보고 있었다는 뜻이다.
+        */
+        if (url.e) {
+          wantOpen.current = url.e;
+          fetch(withV(`${DATA}/events/detail/${url.e}.json`))
+            .then((r) => (r.ok ? (r.json() as Promise<Detail & { r?: RegionId }>) : null))
+            .then((d) => {
+              if (!d) { wantOpen.current = null; return; }
+              if (d.r) setCols((c) => (c.includes(d.r!) ? c : [...c, d.r!]));
+              if (url.y === null) goTo(d.year);
+            })
+            .catch(() => { wantOpen.current = null; });
+        }
       } else {
         // 창이 줄면 s도 함께 눌러야 한 행이 뷰포트를 넘지 않는다(§5-5A S_MAX)
         setAxis((a) => (a.viewportH === vh ? a : { s: clampScale(a.s, vh), viewportH: vh }));
@@ -469,11 +517,13 @@ export function TimelineGrid() {
     if (!landed.current || landing.current) return; // 착지 전의 scrollTop 0을 URL에 쓰지 않는다
     const t = setTimeout(() => {
       const y = Math.round(centerYear(scrollTop, axis));
-      const url = `${location.pathname}?r=${cols.join(",")}&y=${y}&s=${Number(axis.s.toFixed(2))}${locale === "ko" ? "" : `&lang=${locale}`}`;
+      // 열린 사건도 주소에 싣는다 — 닫으면 빠진다(뒤로 가기가 아니라 공유·새로고침을 위한 것이다)
+      const e = selected ? `&e=${selected.ev.id}` : "";
+      const url = `${location.pathname}?r=${cols.join(",")}&y=${y}&s=${Number(axis.s.toFixed(2))}${locale === "ko" ? "" : `&lang=${locale}`}${e}`;
       if (location.search !== url.slice(location.pathname.length)) history.replaceState(null, "", url);
     }, URL_IDLE_MS);
     return () => clearTimeout(t);
-  }, [scrollTop, axis, cols, locale]);
+  }, [scrollTop, axis, cols, locale, selected]);
 
   // ── 줌 결과 반영: 스페이서 height가 쓰인 뒤 같은 레이아웃 패스에서 ────────
   useLayoutEffect(() => {
@@ -879,6 +929,7 @@ export function TimelineGrid() {
             setSearchOpen(false);
             // 그 열이 꺼져 있으면 켠다 — 찾아 놓고 안 보이면 찾은 것이 아니다
             setCols((c) => (c.includes(hit.region) ? c : [...c, hit.region]));
+            wantOpen.current = hit.id; // 청크가 오면 패널이 열린다(위 효과)
             goTo(hit.year);
           }}
         />

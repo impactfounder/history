@@ -158,6 +158,9 @@ function toDetail(r, id) {
       : {}),
     lang: r.lang,
     year: r.date.year,
+    // 딥링크(?e=)가 이 파일만 받아 보고 **어느 열을 켜고 어느 해로 갈지** 정한다.
+    // 열이 꺼져 있으면 사건이 화면에 없고, 그러면 링크를 연 뜻이 없다.
+    r: r.region,
     license: nikhPrimary ? "KOGL 제1유형(이용허락범위 제한 없음)" : "CC BY-SA 4.0", // 본문의 라이선스
     official: r.sources
       .filter((s) => s.kind === "nikh")
