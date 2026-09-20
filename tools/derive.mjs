@@ -25,7 +25,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { bestMatches, parseWikiDate, stripYear } from "../src/lib/curation/nikh-match.mjs";
 import { textEndYear } from "./text-range.mjs";
-import { isEventNameAny } from "../src/lib/event-name.mjs";
+import { isEventLike, isPersonOrPlace } from "./event-kind.mjs";
 
 const REGIONS = process.argv.slice(2).filter((a) => /^[a-z]{2}$/.test(a));
 const regions = REGIONS.length ? REGIONS : ["kr", "cn", "jp", "ai", "us"];
@@ -50,30 +50,14 @@ const isWork = (r) => (facts[r.qid]?.types ?? []).some((t) => WORK_TYPES.has(t))
  * 건물·작품 아닌 것)은 0.5. 2026-09-05: 인물 QID(김정은 144)와 나라·기관 QID(유엔 297, 일본 333)가 붙은 줄이
  * 그 실체의 언어판 수로 세기 대표가 됐다. 사건 여부는 표제어 꼴(event-name.mjs)로 판정한다
  */
-const NON_EVENT_TYPES = new Set([
-  "Q5", "Q6256", "Q3624078", "Q515", "Q1549591", "Q1637706", "Q486972", "Q532", "Q43229", "Q4830453", "Q484652", "Q5107",
-  "Q7278", "Q3918", "Q1093829", "Q7930989", "Q23442", "Q82794", "Q56061", "Q10864048", "Q35657", "Q6465", "Q15284", "Q3024240",
-  "Q41710", "Q11446", "Q4022", "Q8502", "Q34442", "Q46970", "Q3957", "Q1364",
-  "Q9430", "Q165", "Q23397", "Q46831", "Q33837", "Q34763", "Q39816", "Q1970725", // 바다·호수·산맥·군도·반도·계곡·삼림 — 지리
-]);
-/**
- * 사건 유형(위키데이터 P31) — tools/wikidata-events.mjs의 화이트리스트와 같은 뜻. 이름이 사건 꼴이
- * 아니어도 유형이 사건이면 사건으로 본다.
- */
-const EVENT_TYPES = new Set([
-  "Q178561", "Q188055", "Q198", "Q131569", "Q12890393", "Q124734", "Q10931", "Q7944", "Q3199915", "Q45382", "Q40231",
-  "Q1656682", "Q13418847", "Q350604", "Q168247", "Q2001676", "Q3839081", "Q8065", "Q1266946", "Q464980", "Q625298",
-  "Q1006311", "Q180684", "Q2223653", "Q18123741", "Q3241045", "Q1190554", "Q1190554",
-]);
 /**
  * 순위 점수 = 언어판 수 × 가중치. **사건임을 증명해야 1점**이다(2026-09-05 두 번째 손질). 이름이 사건
  * 꼴이거나 P31이 사건 유형이면 1, 사람·나라·기관이면 0.15, 나머지(불교·컴퓨터·철기 시대 같은 개념)는 0.3.
  * 개념 항목이 언어판 200개를 업고 세기 레벨에 올라오던 문제.
  */
 const score = (r) => {
-  const f = facts[r.qid];
-  const isEvent = isEventNameAny(r.names_native) || (f?.types ?? []).some((t) => EVENT_TYPES.has(t));
-  const w = isEvent ? 1 : (f?.human || (f?.types ?? []).some((t) => NON_EVENT_TYPES.has(t))) ? 0.15 : 0.3;
+  // 판정은 tools/event-kind.mjs 한 벌 — 교차 사건 묶기가 같은 것을 쓴다
+  const w = isEventLike(r, facts) ? 1 : isPersonOrPlace(r, facts) ? 0.15 : 0.3;
   return (r.sitelinks ?? 0) * w;
 };
 /**

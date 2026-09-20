@@ -107,6 +107,10 @@ export interface Strings {
   /** 빈 구간 힌트(PRD §5-4). `다음 사건 1392년` / `이전 사건 1356년` */
   nextEvent: (year: string) => string;
   prevEvent: (year: string) => string;
+  /** 교차 사건 — 같은 사건을 다른 열이 각자의 이름으로 적은 것(PRD §4-1·§5-6). */
+  crossTitle: string;
+  /** 칩에 붙는 글리프의 이름. `다른 2개 열에도 있다` */
+  crossGlyph: (n: number) => string;
   zoomGroup: string;
   zoomOut: string;
   zoomIn: string;
@@ -183,6 +187,8 @@ export const T: Record<Locale, Strings> = {
     goToYear: (y) => `${y}으로 가기`,
     nextEvent: (y) => `다음 사건 ${y}`,
     prevEvent: (y) => `이전 사건 ${y}`,
+    crossTitle: "다른 열에서는",
+    crossGlyph: (n) => `다른 ${n}개 열에도 있다`,
     zoomGroup: "확대·축소",
     zoomOut: "축소",
     zoomIn: "확대",
@@ -248,6 +254,8 @@ export const T: Record<Locale, Strings> = {
     goToYear: (y) => `Go to ${y}`,
     nextEvent: (y) => `Next: ${y}`,
     prevEvent: (y) => `Previous: ${y}`,
+    crossTitle: "In other columns",
+    crossGlyph: (n) => `Also in ${n} other column${n > 1 ? "s" : ""}`,
     zoomGroup: "Zoom",
     zoomOut: "Zoom out",
     zoomIn: "Zoom in",
@@ -313,6 +321,8 @@ export const T: Record<Locale, Strings> = {
     goToYear: (y) => `${y}へ移動`,
     nextEvent: (y) => `次の出来事 ${y}`,
     prevEvent: (y) => `前の出来事 ${y}`,
+    crossTitle: "他の列では",
+    crossGlyph: (n) => `他の${n}列にもある`,
     zoomGroup: "拡大・縮小",
     zoomOut: "縮小",
     zoomIn: "拡大",
@@ -378,6 +388,8 @@ export const T: Record<Locale, Strings> = {
     goToYear: (y) => `前往${y}`,
     nextEvent: (y) => `下一事件 ${y}`,
     prevEvent: (y) => `上一事件 ${y}`,
+    crossTitle: "其他列中",
+    crossGlyph: (n) => `另有${n}列`,
     zoomGroup: "缩放",
     zoomOut: "缩小",
     zoomIn: "放大",

@@ -115,6 +115,11 @@ interface PublishedEvent {
   title_ko?: string;
   /** 지은 제목(tools/name.mjs). 원문 표제어가 사건 꼴이 아닐 때 칩 라벨이 된다. */
   name_ko?: string;
+  /**
+   * **교차 사건 묶음 id**(publish.mjs). 같은 사건을 여러 열이 **각자의 이름으로** 적었다는 표시.
+   * 그 열들의 이름·해·id는 `cross.json`이 들고 있다 — 다른 열의 청크를 받지 않고 보여 주려고.
+   */
+  x?: string;
   /** 연결 문서의 짧은 설명("일본의 무장") — 칩 툴팁. */
   desc?: string;
   /** 위키데이터 구조 라벨. "accession" = 재위 시작 — 라벨에 언어별 "즉위"가 붙는다. */
@@ -273,6 +278,14 @@ export function TimelineGrid() {
    * (빈 구간에서는 받을 청크가 없어 다음 사건이 어디인지 모른다). gzip 1.3KB라 첫 로드에 싣는다.
    */
   const [yearIndex, setYearIndex] = useState<Partial<Record<RegionId, number[]>>>({});
+  /**
+   * **교차 사건 묶음.** 같은 사건을 여러 열이 각자의 이름으로 적은 것 — 이 제품의 간판이다.
+   * 묶음 id(`ev.x`) → 그 열들의 [열·id·해·자국어 이름].
+   *
+   * 청크와 따로 받는 이유: 상세가 "다른 열은 이렇게 적었다"를 보이려면 **그 열의 청크를 받지
+   * 않고도** 이름을 알아야 한다. 50묶음 111행으로 gzip 3.4KB다.
+   */
+  const [cross, setCross] = useState<Record<string, { r: RegionId; id: string; y: number; name: string | null }[]>>({});
   const [pushMode, setPushMode] = useState(false);
   /**
    * 포인터가 굵은가(터치). 항목 높이의 하한을 24px로 올리는 데만 쓴다 — 폭이 아니라
@@ -404,7 +417,7 @@ export function TimelineGrid() {
   useEffect(() => {
     /*
       한 번만 받는 것 넷: manifest(버전) · polities(왕조 밴드) · spans(기간 프레임) ·
-      years(열별로 사건이 있는 해 — 빈 구간 힌트).
+      years(열별로 사건이 있는 해 — 빈 구간 힌트) · cross(교차 사건 묶음).
       spans는 청크와 달리 **전부 한 파일**이다 — 기간은 어느 지점에서 보든 같아야 하는데,
       청크에서 파생하면 시작 연도가 안 실린 구간에서 사라졌다(Span 타입 주석).
     */
@@ -414,17 +427,19 @@ export function TimelineGrid() {
         setManifest(m);
         const v = encodeURIComponent(m?.publishedAt ?? String(Date.now()));
         setDataVersion(m?.publishedAt ?? String(Date.now()));
-        const [pol, spn, yrs] = await Promise.all([
+        const [pol, spn, yrs, crs] = await Promise.all([
           fetch(`${DATA}/polities.json?v=${v}`).then((r) => (r.ok ? (r.json() as Promise<{ regions: Polities }>) : null)),
           fetch(`${DATA}/spans.json?v=${v}`).then((r) => (r.ok ? (r.json() as Promise<{ spans: Span[] }>) : null)),
           fetch(`${DATA}/years.json?v=${v}`).then((r) => (r.ok ? (r.json() as Promise<{ years: Record<string, number[]> }>) : null)),
+          fetch(`${DATA}/cross.json?v=${v}`).then((r) => (r.ok ? (r.json() as Promise<{ groups: typeof cross }>) : null)),
         ]);
         setPolities(pol?.regions ?? {});
         setSpans(spn?.spans ?? []);
         // 델타로 실려 온다(gzip 1.3KB). 여기서 한 번 되돌려 두면 그 뒤로는 이분 탐색만 한다
         setYearIndex(Object.fromEntries(Object.entries(yrs?.years ?? {}).map(([r, d]) => [r, decodeYears(d)])));
+        setCross(crs?.groups ?? {});
       })
-      .catch(() => { setManifest(null); setPolities({}); setSpans([]); setYearIndex({}); });
+      .catch(() => { setManifest(null); setPolities({}); setSpans([]); setYearIndex({}); setCross({}); });
   }, []);
 
   const ensureChunk = useCallback((region: RegionId, key: string) => {
@@ -1288,6 +1303,8 @@ export function TimelineGrid() {
                             : !tabStopClaimed && (tabStopClaimed = true);
                           const label = eventLabel(ev, locale, dup);
                           const tag = originalTag(ev, locale);
+                          // 교차 사건 — 같은 사건을 다른 열도 적었다. 글리프 하나로만 말한다
+                          const xn = ev.x ? (cross[ev.x]?.length ?? 0) - 1 : 0;
                           const meta = [
                             ev.y1 !== undefined && ev.y1 > ev.y0 ? `${ev.y0}–${ev.y1}` : "",
                             ev.official ? t.nikhShort : "",
@@ -1315,6 +1332,17 @@ export function TimelineGrid() {
                                 {label.name ?? label.text}
                               </span>
                               {meta && !narrow && <span className="min-w-0 truncate text-item-meta text-fg-subtle tabular-nums">{meta}</span>}
+                              {/*
+                                교차 사건 글리프(§4-1 「링크 글리프」). **한 글자만** 쓴다 —
+                                1b가 채널을 아홉에서 넷으로 줄인 화면이라, 여기에 색이나 테두리를
+                                더하면 그 정리를 되돌리는 셈이 된다. 자세한 것은 상세의 「다른 열에서는」에 있다.
+                                aria-hidden이 아니다 — 이것은 장식이 아니라 사실의 표시다.
+                              */}
+                              {xn > 0 && (
+                                <span className="shrink-0 text-item-meta text-fg-subtle" title={t.crossGlyph(xn)} aria-label={t.crossGlyph(xn)} role="img">
+                                  ⇄
+                                </span>
+                              )}
                             </button>
                           );
                         })}
@@ -1533,6 +1561,34 @@ export function TimelineGrid() {
                       <p className={BLOCK_META}>
                         <a href={selected.detail.about.url} target="_blank" rel="noreferrer" className="underline">{t.viewDoc}</a> ({selected.detail.about.license})
                       </p>
+                    </section>
+                  )}
+                  {/*
+                    **다른 열에서는**(§4-1·§5-6 교차 사건). 아래 「이 사건을 부르는 이름」과 다르다 —
+                    그쪽은 **위키데이터 사이트링크**(그 언어판의 표제어)이고, 이쪽은 **그 열의 연표가
+                    실제로 실은 줄**이다. 눌러서 그 열의 그 자리로 갈 수 있다.
+
+                    이 제품의 간판("같은 사건을 나라마다 다르게 부른다")이 실제로 성립하는 자리다.
+                    실측(2026-09-21): 50묶음 111행. 663년 백강 전투가 中 白江口之战 · 日 白村江の戦い ·
+                    韓 백강 전투로, 1945년이 日本投降 · 日本の降伏 · Surrender of Japan으로 선다.
+                  */}
+                  {selected.ev.x && (cross[selected.ev.x]?.length ?? 0) > 1 && (
+                    <section className={BLOCK}>
+                      <h3 className={BLOCK_LABEL}>{t.crossTitle}</h3>
+                      <ul className="mt-1.5 space-y-1.5">
+                        {cross[selected.ev.x]!.filter((s2) => s2.id !== selected.ev.id).map((s2) => (
+                          <li key={s2.id} className="flex gap-2">
+                            <span className="w-[34px] shrink-0 text-item-meta leading-[1.6]" style={{ color: regionVar(s2.r) }}>{regionLabel(s2.r)}</span>
+                            <button
+                              type="button"
+                              onClick={() => { setCols((c) => (c.includes(s2.r) ? c : [...c, s2.r])); wantOpen.current = s2.id; goTo(s2.y); }}
+                              className="min-w-0 flex-1 text-left text-item leading-[1.6] underline decoration-line-strong underline-offset-2 hover:decoration-current"
+                            >
+                              {s2.name ?? formatYearL(s2.y, locale)}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
                     </section>
                   )}
                   {/* 이 사건을 부르는 이름 (§5-9) — 사이트링크 원문. 표가 아니라 라벨 + 값의 행이다 */}

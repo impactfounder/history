@@ -25,6 +25,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { FOUND_VERB, foundsNear, politiyCore } from "./founding.mjs";
+import { isEventLike } from "./event-kind.mjs";
 import path from "node:path";
 
 const OUT = "public/data/v1";
@@ -136,6 +137,8 @@ function toRecord(r) {
     regions: [{ r: r.region, imp: r.importance_auto, role: "primary" }],
     // 나라·시대의 시작(아래 markFounding). 같은 중요도 안에서 sl보다 먼저 선다
     ...(r.founding ? { f: 1 } : {}),
+    // 교차 사건 묶음 id — 같은 사건을 여러 열이 각자의 이름으로 적은 경우(아래)
+    ...(r.cross ? { x: r.cross } : {}),
     // 같은 중요도 안의 순서(언어판 수). 셀이 좁을 때 어느 것을 먼저 보일지 — 연도순이면 "겨울연가"가 세기 대표가 된다
     ...(r.rank_score ? { sl: r.rank_score } : {}),
     date_ko: formatYear(r.date.year, r.date.approximate),
@@ -287,6 +290,70 @@ for (const { id } of REGIONS) {
   }));
 }
 write("polities.json", { regions: polities });
+
+/*
+  **교차 사건 — 같은 사건을 여러 열이 각자의 이름으로 적은 것.**
+
+  이 제품의 간판("같은 사건을 나라마다 다르게 부른다")인데 발행 데이터에 **0건**이었다 —
+  `regions`가 늘 한 열 하드코딩이었다. 원재료는 있었다: 같은 QID가 2열 이상에 나오는 경우 **98개**.
+
+  ── QID만으로는 안 된다 (2026-09-21 실측) ────────────────────────────────
+  98개 중 **40개는 QID가 사건이 아니라 나라·개념**이었다. 「고구려」 QID가 기원전 36년 건국과
+  668년 멸망을 한 사건으로 묶고, 「이탈리아」가 1601년 마테오 리치와 2019년 미국을 묶는다.
+  그래서 `isEventLike`(tools/event-kind.mjs — 중요도 점수가 쓰는 것과 **같은 판정**)를 통과해야 한다.
+
+  남은 58개 중 연도가 ±1 안인 것이 **56개**다. ±1을 받는 이유는 원천이 해를 달리 잡기 때문이다
+  (병자호란 kr 1636 · cn 1637, 울산성 전투 kr 1597 · cn 1598). 그보다 벌어진 둘은 베트남 전쟁처럼
+  **참전 시점이 나라마다 다른** 경우라 같은 사건으로 묶지 않는다 — 그것은 다른 국면이다.
+
+  묶음은 `cross.json`으로 따로 낸다. 상세가 "다른 열은 이렇게 적었다"를 보여줄 때 **다른 열의
+  청크를 받지 않고** 이름·해·id를 바로 쓸 수 있어야 한다.
+*/
+const qidFacts = (() => {
+  const p = "curation/raw/_qid-sitelinks.json";
+  return existsSync(p) ? (JSON.parse(readFileSync(p, "utf8")).facts ?? {}) : {};
+})();
+const crossGroups = {};
+{
+  const byQid = new Map();
+  for (const r of all) {
+    if (!r.qid) continue;
+    (byQid.get(r.qid) ?? byQid.set(r.qid, []).get(r.qid)).push(r);
+  }
+  for (const [qid, rs] of byQid) {
+    if (new Set(rs.map((r) => r.region)).size < 2) continue;
+    if (!isEventLike(rs[0], qidFacts)) continue;
+    const ys = rs.map((r) => r.date.year);
+    if (Math.max(...ys) - Math.min(...ys) > 1) continue;
+    /*
+      **열마다 한 줄만.** 같은 열에 같은 QID가 여러 줄 있는 일이 흔하다(의화단 운동은 중국 열에
+      다섯 줄이다 — derive의 secondaryByQid가 그중 하나만 대표로 두고 나머지를 눌러 둔 그 상태다).
+      전부 묶으면 "다른 열에서는" 목록이 같은 나라 이름으로 도배된다.
+      열 안에서는 **중요도가 가장 높은 줄**이 그 열을 대표한다.
+    */
+    const perRegion = new Map();
+    for (const r of rs) {
+      const cur = perRegion.get(r.region);
+      if (!cur || (r.importance_auto ?? 0) > (cur.importance_auto ?? 0)) perRegion.set(r.region, r);
+    }
+    if (perRegion.size < 2) continue;
+    const gid = sha(qid).slice(0, 8);
+    // 표시는 대표 줄만 하지만, **묶음 표시(x)는 그 열의 모든 줄**이 받는다 —
+    // 가려진 줄을 클릭해도 "이 사건은 다른 열에도 있다"는 사실은 같다
+    for (const r of rs) r.cross = gid;
+    crossGroups[gid] = [...perRegion.values()]
+      .map((r) => ({
+        r: r.region,
+        id: eventId(r),
+        y: r.date.year,
+        // 그 열의 **자국어 이름**. 이 기능의 뜻이 "중국은 이것을 义和团运动이라 부른다"이므로
+        // 한국어 지은 제목이 아니라 그쪽 말이 와야 한다. 없으면 지은 제목으로 떨어진다.
+        name: r.names_native?.[REGION_LANG[r.region]] ?? nameOf(r) ?? null,
+      }))
+      .sort((a, b) => (a.r < b.r ? -1 : 1));
+  }
+}
+write("cross.json", { groups: crossGroups });
 
 /*
   **나라의 시작은 그 해의 맨 앞에 선다** (대표 결정 2026-09-20: "국가 설립이 가장 중요한 것 아니냐").
@@ -530,6 +597,7 @@ console.log(`발행 — stage=${stage} → ${OUT}
   제외        rejected ${skipped.rejected} · period ${skipped.period}
   겹침 합침   ${mergedRows}행 (같은 열·같은 해·같은 제목 — 원문은 대표의 alt로) · 중요도 승계 ${liftedRows}건
   나라의 시작 ${foundingRows}건 (정치체마다 한 줄, 그 해의 맨 앞)
+  교차 사건   ${Object.keys(crossGroups).length}묶음 ${Object.values(crossGroups).reduce((a, g) => a + g.length, 0)}행 (같은 사건을 여러 열이 각자 적은 것)
   검색 색인   ${searchItems.length}건 (이름이 있는 것만 · 첫 화면에서는 받지 않는다)
   연도 색인   ${Object.values(yearsByRegion).reduce((a, d) => a + d.length, 0)}개 해 (빈 구간 힌트용)
   청크 수록   century ${byLevel.century} · decade ${byLevel.decade} · year ${byLevel.year}
