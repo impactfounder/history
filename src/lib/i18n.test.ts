@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { LOCALES, PREFIXED_LOCALES, eventLabel, formatRowLabelL, formatYearL, isEventName, localePath, type LabelSource } from "./i18n";
+import { LOCALES, PREFIXED_LOCALES, REGION_LABEL, eventLabel, formatRowLabelL, formatYearL, isEventName, localePath, type LabelSource } from "./i18n";
+import { YEAR } from "./i18n-pages";
 
 describe("formatYearL / formatRowLabelL", () => {
   it("연도를 언어 관용대로", () => {
@@ -78,5 +79,24 @@ describe("localePath", () => {
   it("접두 목록에 한국어는 없다 — 루트가 한국어다", () => {
     expect(PREFIXED_LOCALES).toEqual(["en", "ja", "zh"]);
     expect(LOCALES.filter((l) => !PREFIXED_LOCALES.includes(l as never))).toEqual(["ko"]);
+  });
+});
+
+/**
+ * 열을 늘리면 **카피 네 벌이 같이 늘어야 한다.** AI 열을 넣을 때 ko만 고치고 en·ja·zh의
+ * 연도 페이지 제목이 "Korea, China, Japan and the United States"로 남아 있었다(2026-09-20).
+ * 타입은 통과한다 — 문자열이 있기는 하니까. 그래서 **내용**을 검사한다.
+ */
+describe("연도 페이지 카피가 모든 열을 나열한다", () => {
+  const cols = Object.keys(REGION_LABEL.ko) as Array<keyof typeof REGION_LABEL.ko>;
+
+  it.each(LOCALES)("%s 제목에 모든 열 이름이 있다", (locale) => {
+    const title = YEAR[locale].metaTitle("1592");
+    for (const c of cols) expect(title, `${locale} · ${c}`).toContain(REGION_LABEL[locale][c]);
+  });
+
+  it.each(LOCALES)("%s 대체 요약에 모든 열 이름이 있다", (locale) => {
+    const summary = YEAR[locale].summaryFallback("1592");
+    for (const c of cols) expect(summary, `${locale} · ${c}`).toContain(REGION_LABEL[locale][c]);
   });
 });

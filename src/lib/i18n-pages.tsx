@@ -80,10 +80,10 @@ export const YEAR: Record<Locale, YearCopy> = {
     noEvents: "이 해 수록 사건 없음",
   },
   en: {
-    metaTitle: (y) => `What happened in ${y} — Korea, China, Japan and the United States side by side`,
+    metaTitle: (y) => `What happened in ${y} — AI, Korea, China, Japan and the United States side by side`,
     h1: (y) => `${y}: what happened in each country that year`,
     toGrid: (y) => `← See ${y} on the timeline`,
-    summaryFallback: (y) => `What happened in Korea, China, Japan and the United States in ${y}, on one shared year axis.`,
+    summaryFallback: (y) => `What happened in AI, Korea, China, Japan and the United States in ${y}, on one shared year axis.`,
     note: (total, link, ctx) => (
       <>{total} events. The text is the source chronology verbatim; the terms are in {link}. The grey lines above and below are the surrounding {ctx} years.</>
     ),
@@ -91,10 +91,10 @@ export const YEAR: Record<Locale, YearCopy> = {
     noEvents: "No events recorded for this year",
   },
   ja: {
-    metaTitle: (y) => `${y}に何があったか — 韓国・中国・日本・アメリカを同じ年で比べる`,
+    metaTitle: (y) => `${y}に何があったか — AI・韓国・中国・日本・アメリカを同じ年で比べる`,
     h1: (y) => `${y}、その年に各国で何があったか`,
     toGrid: (y) => `← 年表で${y}を見る`,
-    summaryFallback: (y) => `${y}に韓国・中国・日本・アメリカであった出来事を同じ年の軸に並べる。`,
+    summaryFallback: (y) => `${y}にAI・韓国・中国・日本・アメリカであった出来事を同じ年の軸に並べる。`,
     note: (total, link, ctx) => (
       <>出来事{total}件。本文は原典の年表の原文のままで、出典は{link}にある。上下の灰色の行は前後{ctx}年の文脈だ。</>
     ),
@@ -102,10 +102,10 @@ export const YEAR: Record<Locale, YearCopy> = {
     noEvents: "この年の収録なし",
   },
   zh: {
-    metaTitle: (y) => `${y}发生了什么 — 韩国·中国·日本·美国同年对照`,
+    metaTitle: (y) => `${y}发生了什么 — 人工智能·韩国·中国·日本·美国同年对照`,
     h1: (y) => `${y}，那一年各国发生了什么`,
     toGrid: (y) => `← 在年表中查看${y}`,
-    summaryFallback: (y) => `把${y}韩国·中国·日本·美国发生的事放在同一条年份轴上并列。`,
+    summaryFallback: (y) => `把${y}人工智能·韩国·中国·日本·美国发生的事放在同一条年份轴上并列。`,
     note: (total, link, ctx) => (
       <>事件{total}条。正文照录原始年表原文，来源见{link}。上下灰色行是前后{ctx}年的脉络。</>
     ),
