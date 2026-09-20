@@ -32,12 +32,15 @@ const OFFICIAL_PER_YEAR = 80;
 
 /** 기본 4열(PRD §5-2). 미국은 1607년부터 수록(§11 C-3). 정치체 밴드는 M1 수작업 후. */
 const REGIONS = [
+  /*
+    순서가 곧 연도 페이지의 열 순서다 — 그리드의 COLUMNS와 맞춰야 한 제품으로 읽힌다.
+    ai에 coverage_from을 두지 않는다: 이 연표는 고대(기원전 10세기 언사의 기계 인형)부터
+    다루므로 하한이 없는 것이 사실이다. **성긴 것과 미수록은 다르다.**
+  */
+  { id: "ai", label_ko: "AI" },
   { id: "kr", label_ko: "한국" },
   { id: "cn", label_ko: "중국" },
   { id: "jp", label_ko: "일본" },
-  // 유일한 비지리적 열. coverage_from을 두지 않는다 — 이 연표는 고대(기원전 10세기 언사의
-  // 기계 인형)부터 다루므로 하한이 없는 것이 사실이다. 성긴 것과 미수록은 다르다.
-  { id: "ai", label_ko: "AI" },
   { id: "us", label_ko: "미국", coverage_from: 1607 },
 ];
 

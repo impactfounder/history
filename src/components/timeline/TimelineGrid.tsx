@@ -53,22 +53,25 @@ import {
 import { LOCALES, LOCALE_LABEL, LOCALE_REGION, REGION_LABEL, T, eventLabel, formatRowLabelL, formatYearL, isEventName, isLocale, localePath, nameIn, type Locale } from "@/lib/i18n";
 
 /**
- * 존재하는 열 전부. **처음 보이는 열은 DEFAULT_COLS**이고 그 둘은 다르다 —
- * ai는 판단 재료로 넣은 열이라 「+ 열」이나 `?r=`로만 켠다(대표 결정 2026-09-20).
+ * 존재하는 열 전부. `COLUMNS`는 "있는 열", `DEFAULT_COLS`는 "처음 보이는 열"로 뜻이 다르다 —
+ * 지금은 같지만, 열을 늘리면서 기본을 그대로 두고 싶을 때 이 구분이 필요하다.
  *
- * ai를 **배열 끝에** 두는 것이 중요하다. 좁은 화면은 `COLUMNS.slice(0, 1|2)`로 앞쪽을
- * 남기므로(아래 착지 효과), 앞에 넣으면 폰 기본 열이 바뀐다.
+ * **ai가 맨 앞이다**(대표 결정 2026-09-20, "AI & Human History"). AI의 역사를 인류사와
+ * 같은 축에 놓는 것이 이 제품의 주장이 되었고, 주장은 첫 열에 선다.
  */
 const COLUMNS = [
+  { id: "ai", label: "AI" },
   { id: "kr", label: "한국" },
   { id: "cn", label: "중국" },
   { id: "jp", label: "일본" },
   { id: "us", label: "미국" },
-  { id: "ai", label: "AI" },
 ] as const;
 type RegionId = (typeof COLUMNS)[number]["id"];
-/** 처음 보이는 열. 여기 없는 열은 「+ 열」 메뉴에 자동으로 나타난다(hiddenCols가 파생값이다). */
-const DEFAULT_COLS: readonly RegionId[] = ["kr", "cn", "jp", "us"];
+/**
+ * 처음 보이는 열과 그 순서. 좁은 화면은 여기서 `slice(0, 1|2)`로 앞쪽을 남기므로
+ * 폰에서는 AI·한국 두 열이 된다.
+ */
+const DEFAULT_COLS: readonly RegionId[] = ["ai", "kr", "cn", "jp", "us"];
 
 /** 셀당 최대 칩 수(PRD §5-3). 넘치면 `+N`. */
 /**
@@ -740,14 +743,18 @@ export function TimelineGrid() {
       {/* 상단바 — 44px 한 줄(README 7-1). 알약·사각 버튼을 걷어내고 텍스트 링크로 낮췄다.
           「자리 고정」 규약은 유지한다 — 언어를 바꿔도 각 조각의 폭이 변하지 않아야 한다 */}
       <header className="flex shrink-0 items-center gap-4 border-b border-line px-4" style={{ height: TOPBAR_H }}>
-        <span className="shrink-0 font-semibold tracking-tight">history</span>
+        <span className="shrink-0 font-semibold tracking-tight">AI &amp; Human History</span>
         {/*
-          추천 연도(§11 C-1) — 네 열이 동시에 촘촘한 해. 조작을 배우기 전에 제품의 답을 먼저 보여준다.
+          추천 연도(§11 C-1). 조작을 배우기 전에 제품의 답을 먼저 보여준다.
+          AI 열이 맨 앞에 서면서 세 해가 **없음 → 태동 → 만남**을 가르치게 골랐다(실측 2026-09-20):
+            1592 축이 2,500년이라는 것. AI 열은 바로 위 1580년 「골렘 창조」뿐이고 그게 정직한 답이다
+            1945 다섯 열이 모두 촘촘하고 AI가 태동한다(게임 이론·「우리가 생각하는 대로」 / 한 11 · 일 32)
+            2016 AI와 한국이 같은 해에 만난다 — 알파고·이세돌 옆에 박근혜 탄핵소추안 발의
           390px에서는 이 다섯 조각의 합이 496px이라 마지막 「출처」가 잘려 나갔다.
           좁은 화면에서는 추천 연도·배지·출처를 ☰ 메뉴로 접고 언어만 남긴다(README §화면 → 모바일).
         */}
         <nav className="hidden shrink-0 gap-4 text-meta sm:flex" aria-label={t.recommended}>
-          {[1592, 1882, 1945].map((y) => (
+          {[1592, 1945, 2016].map((y) => (
             <button key={y} type="button" onClick={() => goTo(y)} className="text-fg-subtle tabular-nums hover:text-fg">
               {formatYearL(y, locale)}
             </button>
@@ -780,7 +787,7 @@ export function TimelineGrid() {
           <summary className="flex cursor-pointer list-none items-center justify-center text-fg-subtle" style={{ width: HIT_COMFORT, height: HIT_COMFORT }} aria-label={t.recommended}>☰</summary>
           <div className="absolute right-0 top-full z-40 flex w-max flex-col gap-2 rounded-lg border border-line bg-surface p-3 text-meta shadow-[var(--shadow-float)]">
             <div className="flex gap-4">
-              {[1592, 1882, 1945].map((y) => (
+              {[1592, 1945, 2016].map((y) => (
                 <button key={y} type="button" onClick={(e) => { goTo(y); (e.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open"); }} className="tabular-nums text-fg-subtle">
                   {formatYearL(y, locale)}
                 </button>

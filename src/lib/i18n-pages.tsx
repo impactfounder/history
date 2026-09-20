@@ -32,23 +32,23 @@ export function languageAlternates(path: string): Record<string, string> {
 // ── 사이트 머리말 ────────────────────────────────────────────────────────────
 export const SITE_COPY: Record<Locale, { tagline: string; description: string; ogLocale: string }> = {
   ko: {
-    tagline: "나라별 비교 연표",
+    tagline: "AI의 역사를 인류사와 같은 축에",
     description: SITE_DESCRIPTION,
     ogLocale: "ko_KR",
   },
   en: {
-    tagline: "A side-by-side timeline of nations",
-    description: "Put the histories of several countries on one shared year axis. What happened in that country, in that year.",
+    tagline: "AI history beside human history",
+    description: "Put the history of AI beside the histories of Korea, China, Japan and the United States on one shared year axis. What happened in that column, in that year.",
     ogLocale: "en_US",
   },
   ja: {
-    tagline: "国別の比較年表",
-    description: "いくつかの国の歴史を同じ年の軸に並べて比べる。その年、その国に何があったのか。",
+    tagline: "AIの歴史を人類史と同じ軸に",
+    description: "AIの歴史と韓国・中国・日本・アメリカの歴史を同じ年の軸に並べる。その年、その列に何があったのか。",
     ogLocale: "ja_JP",
   },
   zh: {
-    tagline: "各国对照年表",
-    description: "把几个国家的历史放在同一条年份轴上并列比较。那一年，那个国家发生了什么。",
+    tagline: "把人工智能史与人类史放在同一条轴上",
+    description: "把人工智能史与韩国、中国、日本、美国的历史放在同一条年份轴上。那一年，那一列发生了什么。",
     ogLocale: "zh_CN",
   },
 };
@@ -69,10 +69,10 @@ export interface YearCopy {
 
 export const YEAR: Record<Locale, YearCopy> = {
   ko: {
-    metaTitle: (y) => `${y}에 무슨 일이 있었나 — 한국·중국·일본·미국 같은 해 비교`,
+    metaTitle: (y) => `${y}에 무슨 일이 있었나 — AI·한국·중국·일본·미국 같은 해 비교`,
     h1: (y) => `${y}, 그 해 각 나라에 무슨 일이 있었나`,
     toGrid: (y) => `← 연표에서 ${y} 보기`,
-    summaryFallback: (y) => `${y}에 한국·중국·일본·미국에서 있었던 일을 같은 해 축 위에 나란히 놓는다.`,
+    summaryFallback: (y) => `${y}에 AI·한국·중국·일본·미국에서 있었던 일을 같은 해 축 위에 나란히 놓는다.`,
     note: (total, link, ctx) => (
       <>사건 {total}건. 본문은 원천 연표 원문 그대로이며 출처는 {link}에 있다. 아래위 회색 줄은 앞뒤 {ctx}년 문맥이다.</>
     ),
@@ -129,6 +129,7 @@ export interface SourcesCopy {
 
 /** 원천 문서 제목은 각 언어판의 표기 그대로 — 옮기지 않는다(§3 고유명사). */
 const WIKI_TITLE = {
+  ai: <>&ldquo;Timeline of artificial intelligence&rdquo;</>,
   kr: <>「한국사 연표」</>,
   krEn: <>&ldquo;Timeline of Korean history&rdquo;</>,
   cn: <>&ldquo;Timeline of Chinese history&rdquo;</>,
@@ -161,8 +162,9 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
       <>이 연표의 사건 본문은 우리가 쓴 문장이 아니다. 아래 원천의 연표 한 줄을 <b>그대로</b> 싣고, 사건마다 어디서 왔는지와 어떤 조건으로 쓸 수 있는지를 적는다. 상세 패널의 &ldquo;출처&rdquo; 줄이 그 사건의 것이다. 수록 범위는 기원전 500년부터 <b>2025년까지</b>다 &mdash; 올해는 비운다. 올해의 연표는 아직 움직이는 문서라서다.</>
     ),
     wiki: {
-      h: "위키백과 연표 — 네 열 모두",
+      h: "위키백과 연표 — 다섯 열 모두",
       items: [
+        <>AI: 영어판 {WIKI_TITLE.ai}. 이 열만 자국어판이 없어 <b>전부 영어 원문</b>이고, 한국어 제목은 기계가 지은 것이다.</>,
         <>한국: 한국어판 {WIKI_TITLE.kr}, 영어판 {WIKI_TITLE.krEn}</>,
         <>중국: 영어판 {WIKI_TITLE.cn}</>,
         <>일본: 영어판 {WIKI_TITLE.jp}</>,
@@ -205,8 +207,9 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
       <>The event text on this timeline is not our writing. We carry one line from each source chronology <b>verbatim</b>, and record for every event where it came from and on what terms it may be reused. The &ldquo;Sources&rdquo; line in the detail panel is that event&rsquo;s own. Coverage runs from 500 BC <b>through 2025</b> &mdash; the current year is left out, because this year&rsquo;s chronology is still a moving document.</>
     ),
     wiki: {
-      h: "Wikipedia chronologies — all four columns",
+      h: "Wikipedia chronologies — all five columns",
       items: [
+        <>AI: English {WIKI_TITLE.ai}. This column alone has no native-language edition, so every line is the English original.</>,
         <>Korea: Korean Wikipedia {WIKI_TITLE.kr}, English {WIKI_TITLE.krEn}</>,
         <>China: English {WIKI_TITLE.cn}</>,
         <>Japan: English {WIKI_TITLE.jp}</>,
@@ -249,8 +252,9 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
       <>この年表の出来事の本文は私たちが書いた文章ではない。下記の原典の年表の一行を<b>そのまま</b>載せ、出来事ごとにどこから来たのか、どの条件で使えるのかを記す。詳細パネルの「出典」の行がその出来事のものだ。収録範囲は紀元前500年から<b>2025年まで</b> &mdash; 今年は空けている。今年の年表はまだ動いている文書だからだ。</>
     ),
     wiki: {
-      h: "Wikipedia年表 — 四つの列すべて",
+      h: "Wikipedia年表 — 五つの列すべて",
       items: [
+        <>AI: 英語版 {WIKI_TITLE.ai}。この列だけ自国語版がなく、すべて英語原文である。</>,
         <>韓国: 韓国語版 {WIKI_TITLE.kr}、英語版 {WIKI_TITLE.krEn}</>,
         <>中国: 英語版 {WIKI_TITLE.cn}</>,
         <>日本: 英語版 {WIKI_TITLE.jp}</>,
@@ -293,8 +297,9 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
       <>本年表中事件的正文并非我们撰写的文字。我们把下列原始年表中的一行<b>照录</b>，并为每一条事件标明它来自哪里、可在什么条件下使用。详情面板中的“来源”一行即属于该事件。收录范围为公元前500年至<b>2025年</b> &mdash; 今年留空，因为今年的年表仍是不断变动的文档。</>
     ),
     wiki: {
-      h: "维基百科年表 — 四列均适用",
+      h: "维基百科年表 — 五列均适用",
       items: [
+        <>AI：英语版 {WIKI_TITLE.ai}。只有这一列没有本国语言版本，全部为英文原文。</>,
         <>韩国：韩语版 {WIKI_TITLE.kr}、英语版 {WIKI_TITLE.krEn}</>,
         <>中国：英语版 {WIKI_TITLE.cn}</>,
         <>日本：英语版 {WIKI_TITLE.jp}</>,

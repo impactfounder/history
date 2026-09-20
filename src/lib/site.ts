@@ -11,5 +11,5 @@ export const SITE_URL = (() => {
   return "http://localhost:3000";
 })();
 
-export const SITE_NAME = "history";
-export const SITE_DESCRIPTION = "여러 나라의 역사를 같은 연도 축 위에 나란히 놓고 비교한다. 그 해, 그 나라에 무슨 일이 있었나.";
+export const SITE_NAME = "AI & Human History";
+export const SITE_DESCRIPTION = "AI의 역사와 한국·중국·일본·미국의 역사를 같은 연도 축 위에 나란히 놓는다. 그 해, 그 열에 무슨 일이 있었나.";
