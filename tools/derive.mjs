@@ -27,7 +27,7 @@ import { bestMatches, parseWikiDate, stripYear } from "../src/lib/curation/nikh-
 import { isEventNameAny } from "../src/lib/event-name.mjs";
 
 const REGIONS = process.argv.slice(2).filter((a) => /^[a-z]{2}$/.test(a));
-const regions = REGIONS.length ? REGIONS : ["kr", "cn", "jp", "us"];
+const regions = REGIONS.length ? REGIONS : ["kr", "cn", "jp", "ai", "us"];
 
 /**
  * 언어판 수 → 중요도. **열 안에서의 상대 순위**다(§4-3).
@@ -115,7 +115,8 @@ const historicityOf = (region, year) => (year < (TRADITIONAL_BEFORE[region] ?? -
 const LICENSE_WIKI = "CC BY-SA 4.0";
 const LICENSE_NIKH = "KOGL 제1유형(이용허락범위 제한 없음)";
 /** 열의 자국어판. 같은 사건이 두 언어판에 있으면 이쪽 줄이 대표가 된다. */
-const REGION_LANG = { kr: "ko", cn: "zh", jp: "ja", us: "en" };
+/* ai는 대응 언어판이 없다 — 원천이 en 문서 하나뿐이라 대표 줄 선정에서 en이 자국어 자리에 선다. */
+const REGION_LANG = { kr: "ko", cn: "zh", jp: "ja", ai: "en", us: "en" };
 
 /**
  * 같은 열·같은 해·같은 QID(링크 앵커가 줄에 있는 유효 QID)면 같은 사건이다(data-model §4-2 [정규화]).

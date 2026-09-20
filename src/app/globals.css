@@ -57,6 +57,8 @@
   --region-cn: #c8102e;
   --region-jp: #6d28d9;
   --region-us: #1f6e43;
+  /* AI 열 — 나라가 아니다. 남은 색상대(주황)라 네 나라색과 겹치지 않는다. 흰 바탕 6.05 */
+  --region-ai: #a1490b;
 
   /* 경고(프리뷰 배지) */
   --amber-surface: oklch(96.2% 0.059 95.617);
@@ -100,6 +102,7 @@
   --night-region-cn: #ff8a95;
   --night-region-jp: #c0a6ff;
   --night-region-us: #5fc98d;
+  --night-region-ai: #f0a05a; /* 어두운 면 8.08 */
 
   /* 경고 — 어두운 면 위 9.08 */
   --night-warn-surface: #2e2717;
@@ -235,6 +238,7 @@
   --color-region-cn: var(--region-cn);
   --color-region-jp: var(--region-jp);
   --color-region-us: var(--region-us);
+  --color-region-ai: var(--region-ai);
 
   --shadow-float: 0 4px 14px rgb(0 0 0 / 0.06);
   --shadow-sheet: 0 -10px 30px rgb(0 0 0 / 0.10);
@@ -291,6 +295,7 @@
     --color-region-cn: var(--night-region-cn);
     --color-region-jp: var(--night-region-jp);
     --color-region-us: var(--night-region-us);
+    --color-region-ai: var(--night-region-ai);
 
     /* 검은 그림자 대신 위로 향한 테두리 한 겹 + 더 깊은 그림자 */
     --shadow-float: 0 0 0 1px rgb(255 255 255 / 0.06), 0 8px 24px rgb(0 0 0 / 0.55);
@@ -338,6 +343,7 @@
   --color-region-cn: var(--night-region-cn);
   --color-region-jp: var(--night-region-jp);
   --color-region-us: var(--night-region-us);
+  --color-region-ai: var(--night-region-ai);
 
   --shadow-float: 0 0 0 1px rgb(255 255 255 / 0.06), 0 8px 24px rgb(0 0 0 / 0.55);
   --shadow-sheet: 0 -1px 0 0 rgb(255 255 255 / 0.08), 0 -12px 36px rgb(0 0 0 / 0.6);

@@ -35,6 +35,9 @@ const REGIONS = [
   { id: "kr", label_ko: "한국" },
   { id: "cn", label_ko: "중국" },
   { id: "jp", label_ko: "일본" },
+  // 유일한 비지리적 열. coverage_from을 두지 않는다 — 이 연표는 고대(기원전 10세기 언사의
+  // 기계 인형)부터 다루므로 하한이 없는 것이 사실이다. 성긴 것과 미수록은 다르다.
+  { id: "ai", label_ko: "AI" },
   { id: "us", label_ko: "미국", coverage_from: 1607 },
 ];
 

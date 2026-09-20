@@ -78,7 +78,7 @@ const done = new Set(
     : [],
 );
 
-const FILES = ["kr", "kr-nikh", "cn", "jp", "us"];
+const FILES = ["kr", "kr-nikh", "cn", "jp", "ai", "us"];
 const groups = new Map();
 for (const stem of FILES) {
   const f = `curation/events/${stem}.jsonl`;

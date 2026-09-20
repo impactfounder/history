@@ -24,15 +24,19 @@ export const localePath = (locale: Locale, path: string): string => (locale === 
 /** 접두가 붙는 언어 — `app/(intl)/[locale]`이 정적 생성하는 목록. 한국어는 여기 없다(루트에 있다). */
 export const PREFIXED_LOCALES = ["en", "ja", "zh"] as const satisfies readonly Locale[];
 
-export type RegionId = "kr" | "cn" | "jp" | "us";
+/**
+ * 열의 id. `ai`만 나라가 아니다 — 국기·정치체·자국어판이 없고, 그래서 `LOCALE_REGION`에도
+ * 들어가지 않는다(어떤 UI 언어의 홈도 아니다). 라벨은 지은 제목(name_ko)이 맡는다.
+ */
+export type RegionId = "kr" | "cn" | "jp" | "ai" | "us";
 /** 열 → 그 열의 자국어판(관점 명칭 원문). 사건 라벨을 언어별로 고를 때 names[열]을 쓴다. */
 export const LOCALE_REGION: Record<Locale, RegionId> = { ko: "kr", en: "us", ja: "jp", zh: "cn" };
 
 export const REGION_LABEL: Record<Locale, Record<RegionId, string>> = {
-  ko: { kr: "한국", cn: "중국", jp: "일본", us: "미국" },
-  en: { kr: "Korea", cn: "China", jp: "Japan", us: "United States" },
-  ja: { kr: "韓国", cn: "中国", jp: "日本", us: "アメリカ" },
-  zh: { kr: "韩国", cn: "中国", jp: "日本", us: "美国" },
+  ko: { kr: "한국", cn: "중국", jp: "일본", ai: "AI", us: "미국" },
+  en: { kr: "Korea", cn: "China", jp: "Japan", ai: "AI", us: "United States" },
+  ja: { kr: "韓国", cn: "中国", jp: "日本", ai: "AI", us: "アメリカ" },
+  zh: { kr: "韩国", cn: "中国", jp: "日本", ai: "人工智能", us: "美国" },
 };
 
 export interface Strings {

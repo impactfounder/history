@@ -18,6 +18,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { setTimeout as sleep } from "node:timers/promises";
 import { createHash } from "node:crypto";
 
+import { parseYear } from "./parse-year.mjs";
+
 /**
  * 후보 행의 안정 id. 재수집해도 원문·리비전이 같으면 같은 값이다.
  * 행 번호(index)는 재수집마다 바뀌므로 다른 파일이 참조하면 안 된다 —
@@ -46,6 +48,16 @@ const SOURCES = {
   jp: [
     { wiki: "ja", title: "日本史の出来事一覧", slug: "ja-japanese-timeline" },
     { wiki: "en", title: "Timeline of Japanese history", slug: "en-japanese-timeline" },
+  ],
+  /*
+    AI 열 — 유일한 비지리적 열(대표 아이디어 2026-09-20, "데이터부터 만들고 보고 결정").
+    ko.wikipedia 「인공지능의 역사」는 연표가 아니라 **산문**이라 이 수집기가 쓸 수 없다.
+    구조화된 원천은 en 문서 하나뿐이고, 그래서 이 열은 100% 영문 원문 → 기계 번역 +
+    지은 제목에 의존한다. 대신 그 문서는 **고대부터** 다룬다(탈로스·알자자리 오토마타·
+    파스칼린·배비지 해석기관) — 1900년 이전에도 35~40건이라 빈 열이 되지 않는다.
+  */
+  ai: [
+    { wiki: "en", title: "Timeline of artificial intelligence", slug: "en-ai-timeline" },
   ],
   us: [
     { wiki: "en", title: "Timeline of pre–United States history", slug: "en-us-pre" },
@@ -112,65 +124,6 @@ function bodyLinks(html) {
     if (!SKIP_NS.test(title) && !YEARISH_TITLE.test(title)) out.add(title);
   }
   return [...out];
-}
-
-/**
- * 연도 파싱. 천문학적 연수로 돌려준다(1 BC = 0, data-model §4-4).
- * 파싱 실패는 null — 오탐 판정의 1차 관문이다.
- */
-function parseYear(text) {
-  const t = text.replace(/,/g, "").trim();
-  let m;
-  // 기간 표현은 연도가 아니다 — "3年間弱に及ぶ民主党中心の政権が…"(3년간)이 서기 3년으로 읽혔다(2026-09-05)
-  if (/^(?:約|约|およそ)?\s*\d{1,4}\s*(?:年間|年余|年余り|ヶ年|か年|年多)/.test(t)) return null;
-  // 한자권(ja·zh, 2026-09-05 C-12): 前386年 / 紀元前2万年頃 / 約前1747年 / 607年 / 1159年（平治元年） / 前3世紀
-  if ((m = t.match(/^(?:約|约|およそ)?\s*(紀元前|公元前|西元前|前)\s*(\d{1,2})\s*(?:世紀|世纪)/))) {
-    const c = Number(m[2]);
-    return { year: 1 - (c * 100 - 50), precision: "century", approximate: true, era: "bc" };
-  }
-  if ((m = t.match(/^(?:約|约|およそ)?\s*(\d{1,2})\s*(?:世紀|世纪)/))) {
-    const c = Number(m[1]);
-    return { year: (c - 1) * 100 + 50, precision: "century", approximate: true, era: "ad" };
-  }
-  if ((m = t.match(/^(約|约|およそ)?\s*(紀元前|公元前|西元前|前)\s*(\d+)\s*(万|萬)?\s*年?\s*(頃|ごろ|左右|前後)?/))) {
-    const mult = m[4] ? 10000 : 1;
-    return { year: 1 - Number(m[3]) * mult, precision: mult > 1 ? "millennium" : "year", era: "bc", ...(m[1] || m[5] ? { approximate: true } : {}) };
-  }
-  if ((m = t.match(/^(約|约|およそ)?\s*(\d{1,4})\s*年(?!代)\s*(頃|ごろ|左右|前後)?/))) {
-    return { year: Number(m[2]), precision: "year", era: "ad", ...(m[1] || m[3] ? { approximate: true } : {}) };
-  }
-  // 1960年代 — 십년 단위 항목. 그대로 두면 아래 영어 규칙이 1960을 연도로 읽는다
-  if ((m = t.match(/^(\d{3,4})\s*年代/))) return { year: Number(m[1]) + 5, precision: "decade", approximate: true, era: "ad" };
-  // 세기 규칙이 먼저다 — 아래 BC 규칙이 "BC.4세기"의 "BC.4"를 연도 4로 먹어 버린다(파일럿 #8).
-  // 세기: BC.4세기경 / 15세기 → 세기 중앙값, precision century. "BC 4세기"는 BC 400~301이므로 중앙 BC 350
-  if ((m = t.match(/^(?:기원전|BC\.?)\s*(\d{1,2})\s*세기/i))) {
-    const c = Number(m[1]);
-    return { year: 1 - (c * 100 - 50), precision: "century", approximate: true, era: "bc" };
-  }
-  if ((m = t.match(/^(\d{1,2})\s*세기/))) {
-    const c = Number(m[1]);
-    return { year: (c - 1) * 100 + 50, precision: "century", approximate: true, era: "ad" };
-  }
-  // 한국어: BC.70만 / 기원전 500년 / 1592년
-  if ((m = t.match(/^(?:기원전|BC\.?)\s*(\d+)\s*(만|천)?\s*년?/i))) {
-    const mult = m[2] === "만" ? 10000 : m[2] === "천" ? 1000 : 1;
-    return { year: 1 - Number(m[1]) * mult, precision: mult > 1 ? "millennium" : "year", era: "bc" };
-  }
-  if ((m = t.match(/^(\d{1,4})\s*년/))) return { year: Number(m[1]), precision: "year", era: "ad" };
-  // 영어: 300 BC / 1592 / c. 1500 / 1860–1899
-  if ((m = t.match(/^c\.?\s*(\d{1,7})\s*(BCE?)?/i))) {
-    const y = Number(m[1]);
-    return { year: m[2] ? 1 - y : y, precision: "year", approximate: true, era: m[2] ? "bc" : "ad" };
-  }
-  if ((m = t.match(/^(\d{1,7})\s*(BCE?|CE|AD)?\b/i))) {
-    const y = Number(m[1]);
-    const bc = /^BCE?$/i.test(m[2] ?? "");
-    // 한자권 줄의 맨 앞 숫자는 목록 번호일 때가 많다 — "1 大化 (645年-650年)"가 서기 1년이 됐다.
-    // 한자·가나가 이어지는데 연호 표시(BC/AD)도 없으면 연도로 보지 않는다(2026-09-05)
-    if (!m[2] && /^[\s.:·-]*[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(t.slice(m[1].length))) return null;
-    return { year: bc ? 1 - y : y, precision: "year", era: bc ? "bc" : "ad" };
-  }
-  return null;
 }
 
 const MONTHS =

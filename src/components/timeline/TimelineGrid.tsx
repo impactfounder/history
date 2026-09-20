@@ -52,14 +52,23 @@ import {
 } from "@/lib/design/metrics";
 import { LOCALES, LOCALE_LABEL, LOCALE_REGION, REGION_LABEL, T, eventLabel, formatRowLabelL, formatYearL, isEventName, isLocale, localePath, nameIn, type Locale } from "@/lib/i18n";
 
-/** 기본 4열 (PRD §5-2). */
+/**
+ * 존재하는 열 전부. **처음 보이는 열은 DEFAULT_COLS**이고 그 둘은 다르다 —
+ * ai는 판단 재료로 넣은 열이라 「+ 열」이나 `?r=`로만 켠다(대표 결정 2026-09-20).
+ *
+ * ai를 **배열 끝에** 두는 것이 중요하다. 좁은 화면은 `COLUMNS.slice(0, 1|2)`로 앞쪽을
+ * 남기므로(아래 착지 효과), 앞에 넣으면 폰 기본 열이 바뀐다.
+ */
 const COLUMNS = [
   { id: "kr", label: "한국" },
   { id: "cn", label: "중국" },
   { id: "jp", label: "일본" },
   { id: "us", label: "미국" },
+  { id: "ai", label: "AI" },
 ] as const;
 type RegionId = (typeof COLUMNS)[number]["id"];
+/** 처음 보이는 열. 여기 없는 열은 「+ 열」 메뉴에 자동으로 나타난다(hiddenCols가 파생값이다). */
+const DEFAULT_COLS: readonly RegionId[] = ["kr", "cn", "jp", "us"];
 
 /** 셀당 최대 칩 수(PRD §5-3). 넘치면 `+N`. */
 /**
@@ -188,7 +197,7 @@ function readUrlState(): { y: number | null; s: number | null; r: RegionId[] | n
  */
 const regionVar = (id: RegionId) => `var(--color-region-${id})`;
 /** 국기(public/flags, 위키미디어 공용의 공유 저작물). 윈도우는 국기 이모지를 못 그려서 SVG로. */
-const FLAG: Record<RegionId, string> = { kr: "/flags/kr.svg", cn: "/flags/cn.svg", jp: "/flags/jp.svg", us: "/flags/us.svg" };
+const FLAG: Record<RegionId, string> = { kr: "/flags/kr.svg", cn: "/flags/cn.svg", jp: "/flags/jp.svg", us: "/flags/us.svg", ai: "/flags/ai.svg" };
 
 /**
  * 왕조 러그 — 배경 밴드를 대신한다(README 7-4). 색이 아니라 명암 두 톤이므로 네 열이
@@ -319,7 +328,7 @@ export function TimelineGrid() {
       return next;
     });
   /** 보이는 열과 순서(PRD §4-1 열 추가·삭제·순서). URL ?r=로 왕복. 첫 열이 홈 열(시대 레일). */
-  const [cols, setCols] = useState<RegionId[]>(() => COLUMNS.map((c) => c.id));
+  const [cols, setCols] = useState<RegionId[]>(() => [...DEFAULT_COLS]);
   const shown = cols.map((id) => COLUMNS.find((c) => c.id === id)!);
   const hiddenCols = COLUMNS.filter((c) => !cols.includes(c.id));
   const removeCol = (id: RegionId) => setCols((cs) => (cs.length > 1 ? cs.filter((x) => x !== id) : cs));
@@ -400,7 +409,7 @@ export function TimelineGrid() {
         if (url.r) setCols(url.r);
         else {
           const w = el.clientWidth;
-          if (w > 0 && w < 600) setCols(COLUMNS.slice(0, w < 360 ? 1 : 2).map((c) => c.id));
+          if (w > 0 && w < 600) setCols(DEFAULT_COLS.slice(0, w < 360 ? 1 : 2));
         }
         if (url.lang) setLocale(url.lang);
         setAxis({ s, viewportH: vh });
@@ -716,6 +725,12 @@ export function TimelineGrid() {
   const jumpFromRail = (clientY: number) => jumpTo(railRef.current, clientY);
   const jumpFromScrub = (clientY: number) => jumpTo(scrubRef.current, clientY);
 
+  /**
+   * 시대 레일(미니맵·스크러버)이 쓰는 열. 첫 열을 그대로 쓰면 **정치체가 없는 열**(ai)을
+   * 맨 앞에 놓는 순간 왕조 계단이 통째로 빈다. 정치체를 가진 첫 열로 떨어진다.
+   */
+  const railCol: RegionId = cols.find((c) => polities[c]?.length) ?? "kr";
+
   const activeVisible = active !== null && buckets.includes(active.b) && cols.includes(active.col);
   /** 렌더 중에 한 번만 세워진다(위 주석). 매 렌더마다 새로 만들어지므로 상태가 새지 않는다. */
   let tabStopClaimed = activeVisible;
@@ -795,7 +810,7 @@ export function TimelineGrid() {
           title={t.minimapTitle}
         >
           {/* 홈 열(첫 열) 왕조를 무채색 두 톤 계단으로 — 연도 도메인으로 매핑한다(§5-5A: 스크롤 비율이 아니다) */}
-          {(polities[cols[0] ?? "kr"] ?? []).map((p, i) => {
+          {(polities[railCol] ?? []).map((p, i) => {
             const y0 = Math.max(p.y0, AXIS_YEAR_START);
             const y1 = Math.min(p.y1 ?? AXIS_YEAR_END + 1, AXIS_YEAR_END + 1);
             if (y1 <= y0) return null;
@@ -1134,7 +1149,7 @@ export function TimelineGrid() {
           className="relative w-4 shrink-0 touch-none border-l border-line bg-surface-sunken select-none md:hidden"
           title={t.minimapTitle}
         >
-          {(polities[cols[0] ?? "kr"] ?? []).map((p, i) => {
+          {(polities[railCol] ?? []).map((p, i) => {
             const y0 = Math.max(p.y0, AXIS_YEAR_START);
             const y1 = Math.min(p.y1 ?? AXIS_YEAR_END + 1, AXIS_YEAR_END + 1);
             if (y1 <= y0) return null;

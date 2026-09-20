@@ -186,7 +186,7 @@ describe("토큰 층 구조", () => {
   });
 
   it("지역 4색이 전부 원시로 정의돼 있다", () => {
-    for (const r of ["kr", "cn", "jp", "us"]) expect(css).toMatch(new RegExp(`--region-${r}:`));
+    for (const r of ["kr", "cn", "jp", "ai", "us"]) expect(css).toMatch(new RegExp(`--region-${r}:`));
   });
 
   it("정치체 밴드 토큰은 전부 사라졌다 — 1b는 열 배경을 칠하지 않는다", () => {
@@ -204,7 +204,7 @@ describe("토큰 층 구조", () => {
     // 컴포넌트가 template literal로 var(--color-region-${id})를 만들면 리터럴 이름이 소스에
     // 없어 Tailwind가 "미사용"으로 지운다. 2026-09-09에 실제로 지워져 나라 색이 통째로 죽었다.
     const theme = code.slice(code.indexOf("@theme"), code.indexOf("}", code.indexOf("--radius-item")));
-    for (const r of ["kr", "cn", "jp", "us"]) {
+    for (const r of ["kr", "cn", "jp", "ai", "us"]) {
       expect(theme).not.toMatch(new RegExp(`--color-region-${r}:`));
       expect(code).toMatch(new RegExp(`--color-region-${r}: var\\(--region-${r}\\)`));
     }

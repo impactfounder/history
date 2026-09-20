@@ -64,8 +64,8 @@ const cache = new Set(existsSync(CACHE) ? readFileSync(CACHE, "utf8").split("\n"
  * 빠뜨리면 2,143건이 통째로 새는데, 하필 그것이 가장 심한 경우다 — 90%가 14자를 넘고
  * 이 프로젝트에서 가장 질 좋은 본문이다.
  */
-const FILES = { kr: ["kr", "kr-nikh"], cn: ["cn"], jp: ["jp"], us: ["us"] };
-const regions = REGION ? [REGION] : ["kr", "cn", "jp", "us"];
+const FILES = { kr: ["kr", "kr-nikh"], cn: ["cn"], jp: ["jp"], ai: ["ai"], us: ["us"] };
+const regions = REGION ? [REGION] : ["kr", "cn", "jp", "ai", "us"];
 let items = [];
 const skipped = { 이름있음: 0, 이미짧음: 0, 캐시: 0 };
 for (const stem of regions.flatMap((r) => FILES[r] ?? [r])) {

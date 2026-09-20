@@ -49,7 +49,7 @@ const SYSTEM = `너는 역사 연표를 한국어로 옮기는 번역기다. 입
 // ── 대상 모으기 ─────────────────────────────────────────────────────────────
 mkdirSync("curation/translations", { recursive: true });
 const cache = new Set(existsSync(CACHE) ? readFileSync(CACHE, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l).h) : []);
-const regions = REGION ? [REGION] : ["kr", "cn", "jp", "us"];
+const regions = REGION ? [REGION] : ["kr", "cn", "jp", "ai", "us"];
 let items = [];
 for (const region of regions) {
   const f = `curation/events/${region}.jsonl`;

@@ -140,8 +140,8 @@ describe("본문 4.5:1 — 실제로 쓰이는 글자·표면 짝", () => {
     expect(ratio(TEXT[fg], SURFACE[bg])).toBeGreaterThanOrEqual(4.5);
   });
 
-  it("나라 4색은 흰 바탕에서 AA를 넘는다 — 열 이름·관점별 명칭에 쓴다", () => {
-    for (const r of ["kr", "cn", "jp", "us"]) {
+  it("열 5색은 흰 바탕에서 AA를 넘는다 — 열 이름·3px 밑선·관점별 명칭에 쓴다(ai는 나라가 아니다)", () => {
+    for (const r of ["kr", "cn", "jp", "ai", "us"]) {
       expect(ratio(`region-${r}`, "ink-0")).toBeGreaterThanOrEqual(4.5);
     }
   });
@@ -176,9 +176,9 @@ describe("[3] 다크 — 라이트와 같은 계약을 받는다", () => {
     expect((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it("다크에서도 나라 4색이 표면 위 AA를 넘는다 — 흰 바탕용 값을 그대로 쓰면 안 보인다", () => {
+  it("다크에서도 열 5색이 표면 위 AA를 넘는다 — 흰 바탕용 값을 그대로 쓰면 안 보인다", () => {
     const bg = luminance(primitive(darkPrimitive("surface")));
-    for (const r of ["kr", "cn", "jp", "us"]) {
+    for (const r of ["kr", "cn", "jp", "ai", "us"]) {
       const a = luminance(primitive(darkPrimitive(`region-${r}`)));
       expect((Math.max(a, bg) + 0.05) / (Math.min(a, bg) + 0.05)).toBeGreaterThanOrEqual(4.5);
     }

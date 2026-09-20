@@ -21,7 +21,7 @@ mkdirSync("curation/summaries", { recursive: true });
 const cached = new Set(existsSync(CACHE) && !refresh ? readFileSync(CACHE, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l).title) : []);
 
 const titles = new Set();
-for (const region of ["kr", "cn", "jp", "us"]) {
+for (const region of ["kr", "cn", "jp", "ai", "us"]) {
   const f = `curation/events/${region}.jsonl`;
   if (!existsSync(f)) continue;
   for (const line of readFileSync(f, "utf8").split("\n").filter(Boolean)) {
