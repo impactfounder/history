@@ -18,6 +18,7 @@ const notoSerifKr = Noto_Serif_KR({
   display: "swap",
 });
 import { PREFIXED_LOCALES, isLocale } from "@/lib/i18n";
+import { ThemeScript } from "@/components/ThemeScript";
 import { rootMetadata } from "@/lib/metadata";
 
 /**
@@ -42,7 +43,10 @@ export default async function IntlRootLayout({ children, params }: { children: R
   // 한국어가 접두로 들어오면(`/ko/…`) 그 URL은 없다 — 정본은 접두 없는 `/`다
   if (!isLocale(locale) || locale === "ko") notFound();
   return (
-    <html lang={locale} className={notoSerifKr.variable}>
+    <html lang={locale} className={notoSerifKr.variable} suppressHydrationWarning>
+      <head>
+        <ThemeScript />
+      </head>
       <body className="h-full overflow-hidden bg-surface text-fg antialiased">
         {children}
       </body>

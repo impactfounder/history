@@ -39,6 +39,20 @@ export const REGION_LABEL: Record<Locale, Record<RegionId, string>> = {
   zh: { kr: "韩国", cn: "中国", jp: "日本", ai: "人工智能", us: "美国" },
 };
 
+/**
+ * 「로」/「으로」 — 받침이 없거나 ㄹ이면 「로」, 그 밖에는 「으로」.
+ * 「시스템으로」 · 「밝게로」. 조사를 고정하면 UI 언어가 한국어인 제품에서 바로 눈에 띈다.
+ * 한글이 아닌 말(영문 약어 등)은 그냥 「로」로 둔다 — 읽는 법이 말마다 달라 규칙으로 못 정한다.
+ */
+export function euro(word: string): string {
+  const last = word.codePointAt(word.length - 1);
+  if (last === undefined) return "로";
+  const i = last - 0xac00;
+  if (i < 0 || i > 11171) return "로";
+  const jong = i % 28;
+  return jong === 0 || jong === 8 ? "로" : "으로";
+}
+
 export interface Strings {
   badgePreview: (n: number) => string;
   badge: (n: number) => string;
@@ -87,6 +101,12 @@ export interface Strings {
   center: string;
   ariaSheetHandle: string;
   language: string;
+  /** 테마 스위치의 이름(aria-label 앞부분). */
+  theme: string;
+  /** 세 상태의 이름. 「시스템」은 값이 없는 것이 아니라 상태 하나다(lib/theme.ts). */
+  themeName: Record<"system" | "light" | "dark", string>;
+  /** 누르면 무엇이 되는지 — title. 순환 버튼이라 다음 상태를 미리 말해 준다. */
+  themeNext: (name: string) => string;
   /** 재위 시작 라벨 — 위키데이터 P39/P580에서 온 줄에 붙인다(구조 라벨, 우리가 쓴 문장이 아니다). */
   accession: string;
   /** `+26` → `26건 더`. 셀 오른쪽 아래 배지. */
@@ -148,6 +168,9 @@ export const T: Record<Locale, Strings> = {
     center: "중앙",
     ariaSheetHandle: "시트 크기",
     language: "언어",
+    theme: "화면 밝기",
+    themeName: { system: "시스템", light: "밝게", dark: "어둡게" },
+    themeNext: (n) => `${n}${euro(n)} 바꾸기`,
     accession: "즉위",
     moreCount: (n: number) => `${n.toLocaleString("ko-KR")}건 더`,
     originalIn: (lang: string) => `원문 ${lang.toUpperCase()}`,
@@ -201,6 +224,9 @@ export const T: Record<Locale, Strings> = {
     center: "Center",
     ariaSheetHandle: "Sheet size",
     language: "Language",
+    theme: "Appearance",
+    themeName: { system: "System", light: "Light", dark: "Dark" },
+    themeNext: (n) => `Switch to ${n}`,
     accession: "accession",
     moreCount: (n: number) => `${n.toLocaleString("en-US")} more`,
     originalIn: (lang: string) => `verbatim ${lang.toUpperCase()}`,
@@ -254,6 +280,9 @@ export const T: Record<Locale, Strings> = {
     center: "中央",
     ariaSheetHandle: "シートの大きさ",
     language: "言語",
+    theme: "表示",
+    themeName: { system: "システム", light: "ライト", dark: "ダーク" },
+    themeNext: (n) => `${n}に切り替える`,
     accession: "即位",
     moreCount: (n: number) => `他 ${n.toLocaleString("ja-JP")}件`,
     originalIn: (lang: string) => `原文 ${lang.toUpperCase()}`,
@@ -307,6 +336,9 @@ export const T: Record<Locale, Strings> = {
     center: "中心",
     ariaSheetHandle: "面板大小",
     language: "语言",
+    theme: "显示",
+    themeName: { system: "跟随系统", light: "浅色", dark: "深色" },
+    themeNext: (n) => `切换为${n}`,
     accession: "即位",
     moreCount: (n: number) => `另 ${n.toLocaleString("zh-CN")}条`,
     originalIn: (lang: string) => `原文 ${lang.toUpperCase()}`,

@@ -52,6 +52,7 @@ import {
   ZOOM_FLOAT_INSET,
 } from "@/lib/design/metrics";
 import { LOCALES, LOCALE_LABEL, LOCALE_REGION, REGION_LABEL, T, eventLabel, formatRowLabelL, formatYearL, isEventName, isLocale, localePath, nameIn, type Locale } from "@/lib/i18n";
+import { ThemeToggle } from "./ThemeToggle";
 
 /**
  * 존재하는 열 전부. `COLUMNS`는 "있는 열", `DEFAULT_COLS`는 "처음 보이는 열"로 뜻이 다르다 —
@@ -804,6 +805,8 @@ export function TimelineGrid() {
         </nav>
         {/* 언어마다 길이가 다른 마지막 조각(출처/Sources/出典/来源)도 고정 폭 — 아니면 왼쪽 언어 묶음이 밀린다 */}
         <a href={localePath(locale, "/sources")} className="hidden w-14 shrink-0 truncate text-right text-meta text-fg-subtle underline sm:block">{t.sources}</a>
+        {/* 화면 밝기 — 오른쪽 끝. 글리프 하나라 언어가 바뀌어도 폭이 그대로다(「자리 고정」 규약) */}
+        <ThemeToggle t={t} className="hidden sm:flex" />
         {/* 좁은 화면의 ☰ — 접어 둔 세 조각이 여기 들어간다. 타깃은 44px(HIT_COMFORT) */}
         <details className="relative shrink-0 sm:hidden">
           <summary className="flex cursor-pointer list-none items-center justify-center text-fg-subtle" style={{ width: HIT_COMFORT, height: HIT_COMFORT }} aria-label={t.recommended}>☰</summary>
@@ -817,6 +820,8 @@ export function TimelineGrid() {
             </div>
             <span className="whitespace-nowrap text-fg-subtle">{manifest ? t.badge(manifest.counts.events) : t.noData}</span>
             <a href={localePath(locale, "/sources")} className="text-fg-subtle underline">{t.sources}</a>
+            {/* 좁은 화면에서도 밝기를 바꿀 수 있어야 한다 — 상단바에는 자리가 없어 여기 들어간다 */}
+            <span className="flex items-center gap-2 text-fg-subtle">{t.theme}<ThemeToggle t={t} /></span>
           </div>
         </details>
       </header>

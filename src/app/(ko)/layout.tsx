@@ -16,6 +16,7 @@ const notoSerifKr = Noto_Serif_KR({
   variable: "--font-noto-serif-kr",
   display: "swap",
 });
+import { ThemeScript } from "@/components/ThemeScript";
 import { rootMetadata } from "@/lib/metadata";
 
 /**
@@ -27,7 +28,10 @@ export const metadata: Metadata = rootMetadata("ko");
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko" className={notoSerifKr.variable}>
+    <html lang="ko" className={notoSerifKr.variable} suppressHydrationWarning>
+      <head>
+        <ThemeScript />
+      </head>
       <body className="h-full overflow-hidden bg-surface text-fg antialiased">
         {children}
       </body>
