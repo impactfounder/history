@@ -53,6 +53,7 @@ import {
   ZOOM_FLOAT_INSET,
 } from "@/lib/design/metrics";
 import { LOCALES, LOCALE_LABEL, LOCALE_REGION, REGION_LABEL, T, dupNames, eventLabel, formatRowLabelL, formatYearL, isEventName, isLocale, localePath, nameIn, type Locale } from "@/lib/i18n";
+import { CellSheet } from "./CellSheet";
 import { SearchOverlay } from "./SearchOverlay";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -326,6 +327,11 @@ export function TimelineGrid() {
    * 어긋난다. 그래서 그 해로 먼저 내려놓고, 청크가 오면 id로 찾아 연다.
    */
   const wantOpen = useRef<string | null>(null);
+  /**
+   * `+N` 배지를 눌러 연 셀 목록. 그 셀의 사건을 **통째로** 담는다(보이던 것 + 가려진 것) —
+   * 셀 사건은 렌더 안에서 계산되므로 밖에서 다시 구하는 것보다 열 때 담는 쪽이 정직하다.
+   */
+  const [cellSheet, setCellSheet] = useState<{ region: RegionId; b: number; unit: number; evs: PublishedEvent[] } | null>(null);
   /** 패널이 격자를 덮는가 — 덮으면 모달이고, 격자는 inert가 된다. */
   const modalPanel = selected !== null && !pushMode;
   /** 상세 제목 — 모달로 열릴 때 포커스가 여기로 간다. */
@@ -935,6 +941,23 @@ export function TimelineGrid() {
         />
       )}
 
+      {cellSheet && (
+        <CellSheet
+          t={t}
+          locale={locale}
+          region={cellSheet.region}
+          bucket={cellSheet.b}
+          unit={cellSheet.unit}
+          events={cellSheet.evs}
+          onClose={() => setCellSheet(null)}
+          onPick={(id) => {
+            const ev = cellSheet.evs.find((x) => x.id === id);
+            setCellSheet(null);
+            if (ev) openDetail(ev);
+          }}
+        />
+      )}
+
       {/* 중간 영역. 배경이 캔버스라 열 카드 사이 10px으로 드러난다(README 7-3) */}
       <div className="relative flex min-h-0 flex-1 bg-canvas">
         {/*
@@ -942,7 +965,7 @@ export function TimelineGrid() {
           상세 패널은 **이 밖에** 둔다 — 모달일 때 여기에 inert를 걸기 때문이다. 안에 두면 패널 자신도
           비활성이 된다.
         */}
-        <main className="relative flex min-w-0 flex-1" aria-label={t.timelineAria} inert={modalPanel || searchOpen}>
+        <main className="relative flex min-w-0 flex-1" aria-label={t.timelineAria} inert={modalPanel || searchOpen || cellSheet !== null}>
         {/* 시대 미니맵 10px — 레일 64 + 거터 56 = 120px을 86px 한 축으로 합친 그 왼쪽 끝(README 7-2).
             라벨은 없앴다. 왕조 이름은 열 헤더(sticky)가 맡는다 */}
         <div
@@ -1235,11 +1258,23 @@ export function TimelineGrid() {
                             </button>
                           );
                         })}
-                        {/* `+26` → `26건 더`. 줄바꿈 금지 · 불투명 — 잘린 글줄 위에 겹쳐 찍히면 읽을 수 없다 */}
+                        {/*
+                          `+26` → `26건 더`. 줄바꿈 금지 · 불투명 — 잘린 글줄 위에 겹쳐 찍히면 읽을 수 없다.
+
+                          **누를 수 있다**(PRD §4-1·§5-3의 「+N 오버레이」). 한때 `pointer-events-none`인
+                          `<span>`이라 가려진 사건은 확대 말고는 닿을 길이 없었다.
+                          배지 레인 규칙(layout-cell.ts)은 그대로다 — 이 자리는 이미 비워져 있다.
+                        */}
                         {hidden > 0 && (
-                          <span className="pointer-events-none absolute bottom-[3px] whitespace-nowrap bg-surface px-[3px] text-item-meta text-fg-subtle tabular-nums" style={{ right: ITEM_INSET_END }}>
+                          <button
+                            type="button"
+                            onClick={() => setCellSheet({ region: c.id, b, unit: rows.unit, evs })}
+                            aria-label={t.moreCount(hidden)}
+                            className="absolute bottom-[3px] flex items-center whitespace-nowrap bg-surface px-[3px] text-item-meta tabular-nums text-fg-subtle hover:text-fg"
+                            style={{ right: ITEM_INSET_END, minHeight: HIT_MIN }}
+                          >
                             {narrow ? hidden : t.moreCount(hidden)}
-                          </span>
+                          </button>
                         )}
                       </div>
                     );

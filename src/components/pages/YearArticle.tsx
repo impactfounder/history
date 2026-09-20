@@ -86,8 +86,26 @@ export async function YearArticle({ year, locale }: { year: number; locale: Loca
                               const label = labelOf(e, locale, dup);
                               const kind = itemKind(e, locale);
                               return (
-                                <li key={e.id} className={kind === "lead" ? "font-semibold" : "text-fg-strong"}>
-                                  <span lang={label.lang} className={e.hist === "traditional" ? "italic" : ""}>{label.text}</span>
+                                /*
+                                  **줄마다 앵커를 준다.** `/y/1592#ev_…`가 특정 사건을 가리킨다 —
+                                  검색 결과·공유 링크가 닿을 자리가 여기 생긴다.
+
+                                  그리고 이름을 **격자 딥링크**로 건다. 연도 페이지의 내부 링크가
+                                  여태 연도±1뿐이라 2,525년짜리 선형 사슬이었는데, 이 링크가 그
+                                  사슬을 격자와 잇는다. `?e=`는 그 사건 패널까지 연다.
+
+                                  SEO 효과는 과장하지 않는다 — `/?…` 조합 URL은 noindex다.
+                                  이 변경의 값은 **사람이 찾아가는 길**이고, 크롤러에게는 앵커가
+                                  생기는 것까지다.
+                                */
+                                <li key={e.id} id={e.id} className={kind === "lead" ? "font-semibold" : "text-fg-strong"}>
+                                  <Link
+                                    href={`/?y=${e.y0}&s=40&e=${e.id}${locale === "ko" ? "" : `&lang=${locale}`}`}
+                                    lang={label.lang}
+                                    className={`hover:underline ${e.hist === "traditional" ? "italic" : ""}`}
+                                  >
+                                    {label.text}
+                                  </Link>
                                   {kind === "plain" && (
                                     <span className="ml-1.5 rounded border border-line px-1 align-[1px] text-block-label text-fg-subtle">{e.lang.toUpperCase()}</span>
                                   )}
@@ -103,9 +121,20 @@ export async function YearArticle({ year, locale }: { year: number; locale: Loca
                               {around.map((e) => {
                                 const label = labelOf(e, locale, dup);
                                 return (
-                                  <li key={e.id}>
-                                    <span className="mr-1 tabular-nums">{e.y0 <= 0 ? `BC${1 - e.y0}` : e.y0}</span>
-                                    <span lang={label.lang} className={e.hist === "traditional" ? "italic" : ""}>{label.text}</span>
+                                  <li key={e.id} id={e.id}>
+                                    {/*
+                                      연도 표기는 `formatYearL`로 — 이 줄만 손으로 "BC"를 쓰고 있어서
+                                      같은 페이지의 h1·요약이 「기원전 479년」·「公元前479年」일 때
+                                      여기만 `BC479`가 나왔다(ja·zh·en UI에서).
+                                    */}
+                                    <span className="mr-1 tabular-nums">{yl(e.y0)}</span>
+                                    <Link
+                                      href={`/?y=${e.y0}&s=40&e=${e.id}${locale === "ko" ? "" : `&lang=${locale}`}`}
+                                      lang={label.lang}
+                                      className={`hover:underline ${e.hist === "traditional" ? "italic" : ""}`}
+                                    >
+                                      {label.text}
+                                    </Link>
                                   </li>
                                 );
                               })}
