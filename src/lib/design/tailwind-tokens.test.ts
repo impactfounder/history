@@ -128,3 +128,43 @@ describe("임의값이 이미 있는 토큰을 베끼지 않는다", () => {
     expect(dupes).toEqual([]);
   });
 });
+
+/**
+ * **색 유틸리티도 같은 계약을 받는다.** `bg-*` · `ring-*` · `border-*`의 색 이름은
+ * `--color-*` 토큰에서 나온다. 토큰이 없으면 클래스가 만들어지지 않고 **아무 일도 하지 않는다** —
+ * `rounded-chip`이 기간 프레임을 각지게 만든 것과 같은 종류의 조용한 실패다.
+ *
+ * 이 검사가 없던 동안 교차 사건 호버 강조가 `ring-line-strong`을 썼다. 다행히 토큰이 있었지만,
+ * 없었어도 화면만 조용히 밋밋했을 것이다.
+ */
+describe("bg-* · ring-* · border-* 의 색 이름은 --color-* 토큰이어야 한다", () => {
+  /** Tailwind가 기본으로 주는 이름 — 색 토큰이 아니다(변·굵기·스타일·특수값). */
+  const BUILTIN = new Set([
+    "transparent", "current", "inherit", "black", "white",
+    "t", "b", "l", "r", "x", "y", "s", "e", // border 변
+    "0", "2", "4", "8", "collapse", "separate", "solid", "dashed", "dotted", "none", "hidden",
+  ]);
+
+  const used = new Map<string, string>();
+  for (const { file, text } of sources) {
+    for (const m of text.matchAll(/\b(?:bg|ring|border)-([a-z][a-z0-9-]*)\b/g)) {
+      const name = m[1]!;
+      // border-r-0 · border-y-2 처럼 변 뒤에 굵기가 붙는 꼴은 변 이름만 본다
+      const head = name.split("-")[0]!;
+      if (BUILTIN.has(head)) continue;
+      if (!used.has(name)) used.set(name, file);
+    }
+  }
+
+  it("이름을 하나 이상 찾았다", () => {
+    expect(used.size).toBeGreaterThan(0);
+  });
+
+  it.each([...used].map(([n, f2]) => [n, f2] as const))("--color-%s (%s)", (name, file) => {
+    if (BUILTIN.has(name)) return;
+    expect(
+      hasToken(`color-${name}`),
+      `globals.css에 --color-${name}이 없다 — ${file}의 그 클래스는 만들어지지 않아 아무 일도 하지 않는다`,
+    ).toBe(true);
+  });
+});

@@ -22,7 +22,7 @@ editorial-policy에 있다. 여기는 **지금 어디까지 왔고 다음에 무
 | AI 열 | **기본 1열(2026-09-20, A안)** — 265건. 세기 레벨 22건·4/26 세기, 십년 버킷 37/253(14.6%)로 가장 성기다. 상세의 관련 문서는 3% → **55.5%**(같은 날 파이프라인 되돌이 수정) |
 | 제목 | **지은 제목 7,764건 + 겹침 정리(2026-09-13)** — 이름으로 떨어지는 비율 8.5% → **76.9%**, 라벨 중앙값 26자 → **8자**, 324행이 하나로 모이며 관점별 원문을 가진 상세가 154 → **397**개 |
 | 접근성 | **P0·P1 닫힘(2026-09-12)** — 격자 구조·로빙 tabindex(탭 정류장 100+ → 24)·모달 패널에 더해, **대비와 터치 타깃을 브라우저에서 실측**해 위반을 0으로 만들었다. 좁은 폭(<600px) 눈 확인만 남았다(창이 최대화라 리사이즈 불가) |
-| 테스트 | **489개 통과**(metrics 50 · axis 46 · contrast 32 · layout-cell 20 · item-kind 19 · i18n 18 · rank 16 · text-range 15 · nikh-match 14 · parse-year 12 · name-rules 11 · name-precedence 8 · coverage 6 · summaries-coverage 10 · 열폭 하한 17 · theme 25 · data-budget 5 · perf-probe 5 · tailwind-tokens 32 · founding 27 · founding-visible 9 · original-tag 3 · dupNames 5 · search 28 · data-budget +4 · deep-link 11 · year-anchors 4 · gap 16 · event-kind 14 · cross 7). typecheck·build 통과 |
+| 테스트 | **503개 통과**(metrics 50 · axis 46 · contrast 32 · layout-cell 20 · item-kind 19 · i18n 18 · rank 16 · text-range 15 · nikh-match 14 · parse-year 12 · name-rules 11 · name-precedence 8 · coverage 6 · summaries-coverage 10 · 열폭 하한 17 · theme 25 · data-budget 5 · perf-probe 5 · tailwind-tokens 32 · founding 27 · founding-visible 9 · original-tag 3 · dupNames 5 · search 28 · data-budget +4 · deep-link 11 · year-anchors 4 · gap 16 · event-kind 14 · cross 7 · tailwind-tokens +14). typecheck·build 통과 |
 
 ## 대표 손이 필요한 것 (막힌 순서대로)
 
@@ -1332,5 +1332,47 @@ P31 화이트리스트다(「불교」가 언어판 200개를 업고 세기 레�
 **2·8 독립선언**이고 그 원칙을 문장 안에서 인용했을 뿐이다. QID가 그 줄의 주어가 아닌 경우이고,
 50개 중 1개(2%)라 규칙을 더 조이지 않았다.
 
-PRD가 더 요구하는 것은 아직이다 — **호버 시 다른 열 칩 동시 강조**, 2지역 브리지 선,
+PRD가 더 요구하는 것 중 **호버 강조는 들어왔다**(아래 절). 남은 것은 2지역 브리지 선,
 3지역 이상 행 배너, 선택 안 한 열에 속할 때의 「+1 지역」 글리프.
+
+## 교차 사건 호버 강조 (2026-09-21)
+
+글리프(`⇄`)만으로는 "다른 열에도 있다"까지만 알고 **어느 칩인지**는 상세를 열어야 알았다.
+한 칩에 손이 닿으면 **다른 열의 같은 사건이 함께 밝아진다**(PRD §5-6).
+
+### 색을 쓰지 않았다
+
+PRD §5-6은 「같은 색 좌측 보더」라 적었지만 그대로 하지 않았다. 1b가 "격자 안은 무채색"으로
+정리했고(나라색은 **열 헤더 이름 · 3px 밑선 · 상세의 관점별 명칭** 셋뿐, README 규칙 1),
+칩에 나라색을 들이면 그 정리를 되돌린다. 채널을 아홉에서 넷으로 줄인 것이 1b의 요지였다.
+
+같은 것을 가리키는 일은 **동시에 밝아지는 것**만으로 충분히 말해진다 —
+`bg-surface-hover` + `ring-1 ring-line-strong`, 선택된 칩의 `ring-2`보다 한 겹 얇게.
+
+### 실측
+
+```
+?r=kr,cn,jp&y=663&s=40  — 한국 열의 「백강 전투」에 마우스
+  밝아진 칩 3개: 백강 전투(한국) · 白江口之战(중국) · 白村江の戦い(일본)
+  떠나면 0 · 교차가 아닌 칩에 올리면 0
+```
+
+**합성 `mouseenter`로는 안 잡힌다** — React는 `mouseover`/`mouseout` 위임으로 enter/leave를
+만든다. 처음에 0건이 나와 기능이 안 도는 줄 알았다.
+
+### 키보드 경로는 브라우저로 못 쟀다
+
+`onFocus`에도 같은 강조를 달았지만 **확인은 코드 검토까지**다. 확장 탭이
+`document.hasFocus() === false`라 **포커스 이벤트가 아예 발생하지 않는다** — `.focus()`를 부르면
+`document.activeElement`는 바뀌는데 `focus`도 `focusin`도 안 뜬다.
+
+여기서 한 번 헛다리를 짚었다: "포커스에서 강조 0건"을 보고 결함이라고 판단할 뻔했다.
+**숨은 탭에서 못 재는 것이 하나 더 늘었다** — rAF · `setTimeout(16)` · **포커스 이벤트**.
+C-9 프레임 실측과 같은 자리에서 막힌다.
+
+### 곁가지 — 색 유틸리티도 계약에 넣었다
+
+`tailwind-tokens.test.ts`가 `rounded-*`·`text-*`만 보고 있었다. 이번에 쓴 `ring-line-strong`은
+다행히 토큰이 있었지만, 없었어도 **화면만 조용히 밋밋했을 것**이다 — `rounded-chip`이 기간 프레임을
+각지게 만든 것과 같은 종류다. `bg-*` · `ring-*` · `border-*`의 색 이름도 `--color-*` 토큰을
+요구하게 넓혔다(+14).

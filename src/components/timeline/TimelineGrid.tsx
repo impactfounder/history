@@ -286,6 +286,14 @@ export function TimelineGrid() {
    * 않고도** 이름을 알아야 한다. 50묶음 111행으로 gzip 3.4KB다.
    */
   const [cross, setCross] = useState<Record<string, { r: RegionId; id: string; y: number; name: string | null }[]>>({});
+  /**
+   * **지금 가리키고 있는 교차 묶음.** 한 칩에 손이나 포커스가 닿으면 다른 열의 같은 사건이
+   * 함께 밝아진다(PRD §5-6 「호버 시 다른 열 칩 동시 강조」).
+   *
+   * 글리프(`⇄`)만으로는 "다른 열에도 있다"까지만 알고 **어느 칩인지**는 상세를 열어야 알았다.
+   * 이 강조가 그 한 걸음을 없앤다 — 663년 세 열이 동시에 밝아지면 관계가 한눈에 보인다.
+   */
+  const [hoverX, setHoverX] = useState<string | null>(null);
   const [pushMode, setPushMode] = useState(false);
   /**
    * 포인터가 굵은가(터치). 항목 높이의 하한을 24px로 올리는 데만 쓴다 — 폭이 아니라
@@ -1316,7 +1324,10 @@ export function TimelineGrid() {
                               type="button"
                               // 같은 항목을 다시 누르면 닫는다(토글, 대표 지시 2026-09-05). 다른 항목이면 바꿔 연다
                               onClick={(e) => { lastChip.current = e.currentTarget; setActive({ col: c.id, b, i: idx }); if (selected?.ev.id === ev.id) setSelected(null); else openDetail(ev); }}
-                              onFocus={() => setActive({ col: c.id, b, i: idx })}
+                              onFocus={() => { setActive({ col: c.id, b, i: idx }); setHoverX(ev.x ?? null); }}
+                              onBlur={() => setHoverX((v) => (v === ev.x ? null : v))}
+                              onMouseEnter={() => ev.x && setHoverX(ev.x)}
+                              onMouseLeave={() => setHoverX((v) => (v === ev.x ? null : v))}
                               tabIndex={isTabStop ? 0 : -1}
                               aria-pressed={selected?.ev.id === ev.id}
                               title={ev.desc && locale === "ko" ? `${yearLabel(ev)} · ${ev.desc}` : yearLabel(ev)}
@@ -1324,7 +1335,20 @@ export function TimelineGrid() {
                               data-b={b}
                               data-i={idx}
                               style={{ top: itemTop, height: ih, left: ITEM_INSET_START, right: ITEM_INSET_END, paddingRight: laneEnd }}
-                              className={`absolute flex flex-col justify-center gap-px rounded-item px-1 text-left hover:bg-surface-hover/60 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus${selected?.ev.id === ev.id ? " bg-surface-hover ring-2 ring-selected-ring" : ""}`}
+                              /*
+                                교차 강조는 **무채색**이다. PRD §5-6은 「같은 색 좌측 보더」라 적었지만
+                                1b가 "격자 안은 무채색"으로 정리했고(나라색은 열 헤더 이름·3px 밑선·
+                                상세의 관점별 명칭 셋뿐, README 규칙 1), 칩에 나라색을 들이면 그 정리를
+                                되돌린다. 같은 것을 가리키는 일은 **동시에 밝아지는 것**만으로 충분히 말해진다.
+                                선택된 칩의 ring과 겹치지 않게 강조는 한 겹 얇다.
+                              */
+                              className={`absolute flex flex-col justify-center gap-px rounded-item px-1 text-left hover:bg-surface-hover/60 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus${
+                                selected?.ev.id === ev.id
+                                  ? " bg-surface-hover ring-2 ring-selected-ring"
+                                  : ev.x && ev.x === hoverX
+                                    ? " bg-surface-hover ring-1 ring-line-strong"
+                                    : ""
+                              }`}
                             >
                               <span
                                 className={`min-w-0 truncate ${kind === "lead" ? "text-item-lead font-semibold text-fg" : "text-item text-fg-muted"}${ev.hist === "traditional" ? " italic" : ""}`}
