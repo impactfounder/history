@@ -22,7 +22,7 @@ editorial-policy에 있다. 여기는 **지금 어디까지 왔고 다음에 무
 | AI 열 | **기본 1열(2026-09-20, A안)** — 265건. 세기 레벨 22건·4/26 세기, 십년 버킷 37/253(14.6%)로 가장 성기다. 상세의 관련 문서는 3% → **55.5%**(같은 날 파이프라인 되돌이 수정) |
 | 제목 | **지은 제목 7,764건 + 겹침 정리(2026-09-13)** — 이름으로 떨어지는 비율 8.5% → **76.9%**, 라벨 중앙값 26자 → **8자**, 324행이 하나로 모이며 관점별 원문을 가진 상세가 154 → **397**개 |
 | 접근성 | **P0·P1 닫힘(2026-09-12)** — 격자 구조·로빙 tabindex(탭 정류장 100+ → 24)·모달 패널에 더해, **대비와 터치 타깃을 브라우저에서 실측**해 위반을 0으로 만들었다. 좁은 폭(<600px) 눈 확인만 남았다(창이 최대화라 리사이즈 불가) |
-| 테스트 | **397개 통과**(metrics 50 · axis 46 · contrast 32 · layout-cell 20 · item-kind 19 · i18n 18 · rank 16 · text-range 15 · nikh-match 14 · parse-year 12 · name-rules 11 · name-precedence 8 · coverage 6 · summaries-coverage 10 · 열폭 하한 17 · theme 25 · data-budget 5 · perf-probe 5 · tailwind-tokens 32 · founding 27 · founding-visible 9). typecheck·build 통과 |
+| 테스트 | **400개 통과**(metrics 50 · axis 46 · contrast 32 · layout-cell 20 · item-kind 19 · i18n 18 · rank 16 · text-range 15 · nikh-match 14 · parse-year 12 · name-rules 11 · name-precedence 8 · coverage 6 · summaries-coverage 10 · 열폭 하한 17 · theme 25 · data-budget 5 · perf-probe 5 · tailwind-tokens 32 · founding 27 · founding-visible 9 · original-tag 3). typecheck·build 통과 |
 
 ## 대표 손이 필요한 것 (막힌 순서대로)
 
@@ -964,3 +964,34 @@ us(0)  ← 아래
 
 셋·넷은 브라우저 콘솔이 잡았다. **테스트·tsc·빌드가 전부 통과하는 상태에서 나온 결함**이라,
 화면을 실제로 열어 보는 것이 여전히 게이트의 일부다.
+
+## 「원문 EN」이 100% 거짓이었다 (2026-09-20)
+
+대표 지적: **"원문 en 이런 건 왜 있는 거야?"**
+
+그 태그와 회색 13px(`plain`)은 "아직 우리 말로 옮기지 못한 원문"이라는 뜻이고, 1b 설계가
+**데이터 품질의 계기판**으로 쓰기로 한 채널이다("번역이 채워지면 plain이 저절로 lead로 올라간다").
+
+**그런데 바늘이 통째로 거짓이었다.** 한국어 UI에서 plain으로 떨어진 **723건이 100% 한글 제목**:
+
+```
+[kr] 1950 lang=en  인천 상륙 작전      [kr] 1994 lang=en  고난의 행군
+[kr] 1592 lang=en  부산진 전투         [us] 2019 lang=en  코로나19 범유행
+```
+
+**원인**: `derive.mjs:309`가 언어를 **출처 URL에서** 뽑는다(`ko.wikipedia.org` → ko).
+위키데이터 행의 URL은 `www.wikidata.org`라 정규식이 맞지 않아 `"en"`으로 떨어지는데,
+본문은 `sl.ko ?? sl.en`이라 **한국어 사이트링크**다. 한국 열의 대표 사건들이
+"건너뛰어도 되는 것"으로 칠해지고 있었다.
+
+**고침**: 위키데이터 행이 `lang: sl.ko ? "ko" : "en"`을 들고 다니고, 파생은 행이 들고 온 언어를
+출처 URL보다 먼저 본다. 전 열 재파생 — `lang` **822행** 변경, 부수로 8행이 불필요한 번역을
+떼었다. 오탐 **723 → 0**.
+
+`original-tag.test.ts`가 양방향을 본다 — 한글 제목에 외국어 태그가 붙는지, 그리고 `ko`로
+표시됐는데 한글도 한자도 없는 제목이 있는지.
+
+**대조하다 배운 것**: 재파생 전후를 `source_id`로 짝지어 비교했더니 `date`가 56건 바뀐 것으로
+나왔다. 실제 변경이 아니라 **중복 `source_id`** 때문이었다(cn 56 · jp 2 · us 3 — 같은 줄이 여러
+해에 발행된다). 같은 키가 둘이면 Map이 뒤엣것만 남겨 서로 다른 행을 짝짓는다. 이 레포의
+`source_id`는 유일하지 않다 — 대조 스크립트를 쓸 때 전제로 삼으면 안 된다.

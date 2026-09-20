@@ -285,6 +285,17 @@ function wikidataRows(region, seenQids) {
       shape: "wikidata",
       ...(w.role ? { role: w.role } : {}),
       text: sl.ko ?? sl.en, // 라벨이 곧 본문 — 연표 줄이 없다
+      /*
+        **그 라벨이 무슨 언어인지 함께 들고 간다.** 아래 `lang`은 출처 URL에서 언어를 뽑는데
+        (`ko.wikipedia.org` → ko) 위키데이터 행의 URL은 `www.wikidata.org`라 정규식이 맞지 않아
+        `"en"`으로 떨어졌다. 그런데 본문은 위에서 보듯 **한국어 사이트링크**다.
+
+        결과: 한국어 UI에서 「인천 상륙 작전」·「고난의 행군」·「부산진 전투」 같은 한글 칩에
+        회색 13px + `[EN]` 태그가 붙었다(실측 2026-09-20: plain으로 떨어진 723건이 **100%**
+        한글 제목이었다). 그 태그는 "이 칩은 아직 옮기지 못한 원문"이라는 뜻이라, 한국 열의
+        대표 사건들이 "건너뛰어도 되는 것"으로 칠해지고 있었다.
+      */
+      lang: sl.ko ? "ko" : "en",
       date: w.date,
       qid: w.qid,
       names_native: sl,
@@ -306,7 +317,8 @@ for (const region of regions) {
   const stat = { published: 0, rejected: {}, qid: 0, matched: 0, official: 0, byImp: {} };
 
   for (const raw of raws) {
-    const lang = /https:\/\/([a-z]+)\.wikipedia/.exec(raw.source.url)?.[1] ?? "en";
+    // 행이 자기 언어를 들고 왔으면 그것이 먼저다(위키데이터 행). 연표 줄은 출처 URL에서 뽑는다.
+    const lang = raw.lang ?? /https:\/\/([a-z]+)\.wikipedia/.exec(raw.source.url)?.[1] ?? "en";
     const title = stripYear(raw.text);
     const reason = rejectReason(raw, title);
 
