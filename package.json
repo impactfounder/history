@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit",
     "publish": "node tools/publish.mjs",
     "publish:preview": "node tools/publish.mjs --stage preview",
-    "prebuild": "node tools/publish.mjs"
+    "prebuild": "vitest run && node tools/publish.mjs"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

@@ -42,6 +42,17 @@ const COVERAGE_TO: Record<string, number> = Object.fromEntries(
 );
 
 const THIS_YEAR = new Date().getFullYear();
+/**
+ * 아래 "낡지 않았다" 두 개만 **배포에서는 건너뛴다.**
+ *
+ * `prebuild`가 vitest를 물고 있어 나머지 계약 테스트는 배포를 막는다(tsc가 이미 그렇듯이).
+ * 하지만 이 둘은 시계에 달려 있어서, 그대로 두면 **1월 1일에 배포가 통째로 잠긴다** —
+ * 그날 급한 수정이 있어도 한 해 치 수집을 끝내기 전에는 아무것도 못 올린다.
+ * 이 둘이 잡는 것(한 해 밀림)은 며칠 늦어도 되는 일이라 그 대가가 맞지 않는다.
+ *
+ * 로컬 `npm test`와 (붙인다면) CI에서는 그대로 돈다 — 잔소리가 필요한 곳은 거기다.
+ */
+const onVercel = process.env.VERCEL === "1";
 
 describe("수록 끝 — 두 상수가 어긋나지 않는다", () => {
   it("열별 예외를 하나 이상 읽었다 — 정규식이 헛돌면 아래 검사가 전부 무의미해진다", () => {
@@ -66,14 +77,14 @@ describe("수록이 낡지 않았다", () => {
    * 다시 도는 것이다: collect → enrich → summaries → derive → translate → name → dedupe → publish.
    * 그다음에 이 두 상수를 올린다. 순서를 뒤집으면 비어 있는 해가 사이트맵에 올라간다.
    */
-  it(`기본 열이 전년도(${THIS_YEAR - 1})까지 수록돼 있다`, () => {
+  it.skipIf(onVercel)(`기본 열이 전년도(${THIS_YEAR - 1})까지 수록돼 있다`, () => {
     expect(
       DERIVE_END,
       `수집이 한 해 밀렸다. tools/collect.mjs부터 다시 돌리고 derive.mjs의 DATA_END_YEAR를 올려라.`,
     ).toBeGreaterThanOrEqual(THIS_YEAR - 1);
   });
 
-  it(`AI 열은 올해(${THIS_YEAR})까지 수록돼 있다 — 이 열만 올해를 싣는다`, () => {
+  it.skipIf(onVercel)(`AI 열은 올해(${THIS_YEAR})까지 수록돼 있다 — 이 열만 올해를 싣는다`, () => {
     expect(
       COVERAGE_TO.ai,
       `AI 열이 낡았다. "AI & Human History"에서 AI 열이 뒤처지면 제품이 낡아 보인다.`,

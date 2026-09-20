@@ -36,4 +36,5 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 치수는 `src/lib/design/metrics.ts`가 원본이고 globals.css의 `--size-*`가 사본이다.
 `metrics.test.ts`가 둘의 일치를 강제한다 — 한쪽만 고치면 `npm test`가 깨진다.
 이 레포에는 eslint가 없고(`next lint`는 Next 16에서 제거됐다) 게이트가 vitest·tsc뿐이라,
-규칙은 테스트로 만들어야 실제로 돈다.
+규칙은 테스트로 만들어야 실제로 돈다. **둘 다 배포를 막는다** — `prebuild`가 `vitest run`을
+물고 있고 `next build`가 TypeScript를 검사한다. 테스트가 빨가면 Vercel 배포가 안 나간다.
