@@ -156,12 +156,27 @@ function mergeDuplicates(recs, region) {
 const COVERAGE_FROM = { us: 1607 };
 /** 데이터의 끝(PRD §11 C-2, A-12 — 대표 결정 2026-09-05): 전년도까지. 올해 연표는 아직 움직이는 문서다. */
 export const DATA_END_YEAR = 2025;
+/**
+ * 열별 수록 끝(data-model §2-1 `coverage_to`). 기본은 위의 전년도 규칙이다.
+ *
+ * **AI 열만 올해를 싣는다**(대표 결정 2026-09-20). "AI & Human History"에서 AI 열이
+ * 9개월 전에 멈춰 있으면 제품이 낡아 보이고, 하필 그 9개월이 이 열에서 가장 밀도가 높다
+ * (2026년 19건 — Anthropic의 모델 중단, DeepMind CEO의 요구, 뉴욕주 규제, GPT-5.6 연구).
+ *
+ * 대가는 명시한다 — 올해 연표는 아직 움직이는 문서라 **불완전하고 나중에 바뀐다.**
+ * 출처 페이지가 그 사실을 적는다. 다른 네 열은 규칙을 그대로 지킨다.
+ *
+ * 상한 자체는 유지해야 한다. 이 필터가 오파싱 방어도 겸하고 있다 — 다른 열의 rejected에
+ * 10000·14000·50501년이 섞여 있다(위키 문서의 먼 미래 항목·연도 오파싱).
+ */
+const COVERAGE_TO = { ai: 2026 };
+const endYearFor = (region) => COVERAGE_TO[region] ?? DATA_END_YEAR;
 
 /** 사건이 아닌 줄 — 연도 범위 머리글("2010–present"), 날짜만("September 11"), 글자 없는 줄, 수록 범위 밖. */
 function rejectReason(raw, title) {
   if (raw.kind !== "event") return "시대 구분(kind=period) — 정치체 밴드로";
   if (raw.date.year < (COVERAGE_FROM[raw.region] ?? -Infinity)) return `수록 범위 밖(${COVERAGE_FROM[raw.region]}년 이전, C-3)`;
-  if (raw.date.year > DATA_END_YEAR) return `수록 범위 밖(${DATA_END_YEAR}년 이후 — 올해는 비운다, C-2)`;
+  if (raw.date.year > endYearFor(raw.region)) return `수록 범위 밖(${endYearFor(raw.region)}년 이후, C-2)`;
   const t = title.replace(/[–—-]/g, "-").trim();
   if (/^-?\s*(present|현재)\.?$/i.test(t) || /^\d{3,4}\s*-\s*(present|\d{3,4})\.?$/i.test(t)) return "연도 범위 머리글";
   const letters = t.replace(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/gi, "").replace(/[^\p{L}]/gu, "");

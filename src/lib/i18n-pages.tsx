@@ -159,7 +159,7 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
     title: "출처와 라이선스",
     metaDescription: "이 연표의 본문은 원천의 원문을 그대로 싣고 사건마다 출처와 라이선스를 표기한다.",
     intro: (
-      <>이 연표의 사건 본문은 우리가 쓴 문장이 아니다. 아래 원천의 연표 한 줄을 <b>그대로</b> 싣고, 사건마다 어디서 왔는지와 어떤 조건으로 쓸 수 있는지를 적는다. 상세 패널의 &ldquo;출처&rdquo; 줄이 그 사건의 것이다. 수록 범위는 기원전 500년부터 <b>2025년까지</b>다 &mdash; 올해는 비운다. 올해의 연표는 아직 움직이는 문서라서다.</>
+      <>이 연표의 사건 본문은 우리가 쓴 문장이 아니다. 아래 원천의 연표 한 줄을 <b>그대로</b> 싣고, 사건마다 어디서 왔는지와 어떤 조건으로 쓸 수 있는지를 적는다. 상세 패널의 &ldquo;출처&rdquo; 줄이 그 사건의 것이다. 수록 범위는 기원전 500년부터 <b>2025년까지</b>다 &mdash; 올해는 비운다. 올해의 연표는 아직 움직이는 문서라서다. 다만 <b>AI 열만 2026년까지</b> 싣는다. 그 열은 지금 일어나는 중이라 전년도에서 끊으면 가장 중요한 구간이 빠지기 때문이다 &mdash; 대신 그 해의 AI 항목은 <b>아직 불완전하고 나중에 바뀐다.</b></>
     ),
     wiki: {
       h: "위키백과 연표 — 다섯 열 모두",
@@ -204,7 +204,7 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
     title: "Sources & licenses",
     metaDescription: "This timeline carries the source text verbatim and records the source and license of every event.",
     intro: (
-      <>The event text on this timeline is not our writing. We carry one line from each source chronology <b>verbatim</b>, and record for every event where it came from and on what terms it may be reused. The &ldquo;Sources&rdquo; line in the detail panel is that event&rsquo;s own. Coverage runs from 500 BC <b>through 2025</b> &mdash; the current year is left out, because this year&rsquo;s chronology is still a moving document.</>
+      <>The event text on this timeline is not our writing. We carry one line from each source chronology <b>verbatim</b>, and record for every event where it came from and on what terms it may be reused. The &ldquo;Sources&rdquo; line in the detail panel is that event&rsquo;s own. Coverage runs from 500 BC <b>through 2025</b> &mdash; the current year is left out, because this year&rsquo;s chronology is still a moving document. The <b>AI column alone runs through 2026</b>: that history is happening now, and cutting it at last year would drop its most important stretch. Those entries are <b>incomplete and will change.</b></>
     ),
     wiki: {
       h: "Wikipedia chronologies — all five columns",
@@ -249,7 +249,7 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
     title: "出典とライセンス",
     metaDescription: "この年表は原典の原文をそのまま載せ、出来事ごとに出典とライセンスを記す。",
     intro: (
-      <>この年表の出来事の本文は私たちが書いた文章ではない。下記の原典の年表の一行を<b>そのまま</b>載せ、出来事ごとにどこから来たのか、どの条件で使えるのかを記す。詳細パネルの「出典」の行がその出来事のものだ。収録範囲は紀元前500年から<b>2025年まで</b> &mdash; 今年は空けている。今年の年表はまだ動いている文書だからだ。</>
+      <>この年表の出来事の本文は私たちが書いた文章ではない。下記の原典の年表の一行を<b>そのまま</b>載せ、出来事ごとにどこから来たのか、どの条件で使えるのかを記す。詳細パネルの「出典」の行がその出来事のものだ。収録範囲は紀元前500年から<b>2025年まで</b> &mdash; 今年は空けている。今年の年表はまだ動いている文書だからだ。ただし<b>AIの列だけは2026年まで</b>載せる。この列は今まさに進行中で、前年で切ると最も重要な区間が抜けるからだ &mdash; その代わり、その年の項目は<b>まだ不完全で後から変わる。</b></>
     ),
     wiki: {
       h: "Wikipedia年表 — 五つの列すべて",
@@ -294,7 +294,7 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
     title: "来源与许可",
     metaDescription: "本年表照录原始文本，并为每一条事件标明来源与许可。",
     intro: (
-      <>本年表中事件的正文并非我们撰写的文字。我们把下列原始年表中的一行<b>照录</b>，并为每一条事件标明它来自哪里、可在什么条件下使用。详情面板中的“来源”一行即属于该事件。收录范围为公元前500年至<b>2025年</b> &mdash; 今年留空，因为今年的年表仍是不断变动的文档。</>
+      <>本年表中事件的正文并非我们撰写的文字。我们把下列原始年表中的一行<b>照录</b>，并为每一条事件标明它来自哪里、可在什么条件下使用。详情面板中的“来源”一行即属于该事件。收录范围为公元前500年至<b>2025年</b> &mdash; 今年留空，因为今年的年表仍是不断变动的文档。但<b>人工智能一列收录至2026年</b>：这段历史正在发生，若止于去年则会漏掉最重要的区间 &mdash; 代价是该年的条目<b>尚不完整，日后会变。</b></>
     ),
     wiki: {
       h: "维基百科年表 — 五列均适用",

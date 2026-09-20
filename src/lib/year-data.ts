@@ -16,8 +16,14 @@ import { YEAR } from "@/lib/i18n-pages";
 const DATA_DIR = path.join(process.cwd(), "public", "data", "v1");
 /** 그 해 위아래로 함께 보이는 문맥 연도 수. */
 export const CONTEXT_YEARS = 2;
-/** 수록 끝(PRD C-2). tools/derive.mjs DATA_END_YEAR·sitemap과 같이 올린다. */
-export const DATA_END_YEAR = 2025;
+/**
+ * **어느 열이든** 사건이 있는 마지막 해. 연도 페이지 생성 범위·사이트맵·「다음 해」 링크가 쓴다.
+ *
+ * 기본 열의 끝은 전년도(2025)지만 AI 열만 올해를 싣기 때문에(tools/derive.mjs `COVERAGE_TO`)
+ * 페이지는 2026까지 있어야 한다 — 없으면 상세의 「2026년 페이지」 링크가 404가 된다.
+ * 그 해의 다른 네 열은 "이 해 수록 사건 없음"으로 나온다. 그것이 정직한 답이다.
+ */
+export const DATA_END_YEAR = 2026;
 
 export interface Region { id: RegionId; label_ko: string; coverage_from?: number }
 export interface Ev extends LabelSource {
