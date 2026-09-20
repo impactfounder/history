@@ -1311,8 +1311,17 @@ export function TimelineGrid() {
                             : !tabStopClaimed && (tabStopClaimed = true);
                           const label = eventLabel(ev, locale, dup);
                           const tag = originalTag(ev, locale);
-                          // 교차 사건 — 같은 사건을 다른 열도 적었다. 글리프 하나로만 말한다
-                          const xn = ev.x ? (cross[ev.x]?.length ?? 0) - 1 : 0;
+                          /*
+                            교차 사건 — 같은 사건을 다른 열도 적었다.
+
+                            **보이는 형제와 꺼진 형제를 가른다**(PRD §5-6 「+1 지역」). 처음에는 전부
+                            한데 세었는데, `?r=kr`처럼 일부 열만 켜면 **볼 수 없는 것을 있다고만**
+                            말하는 셈이었다. 꺼진 쪽은 `+N`으로 따로 세고, 켜는 길은 상세의
+                            「다른 열에서는」이 준다(누르면 그 열이 켜진다).
+                          */
+                          const sibs = ev.x ? (cross[ev.x] ?? []).filter((s2) => s2.id !== ev.id) : [];
+                          const xn = sibs.length;
+                          const xHidden = sibs.filter((s2) => !cols.includes(s2.r)).length;
                           const meta = [
                             ev.y1 !== undefined && ev.y1 > ev.y0 ? `${ev.y0}–${ev.y1}` : "",
                             ev.official ? t.nikhShort : "",
@@ -1363,8 +1372,13 @@ export function TimelineGrid() {
                                 aria-hidden이 아니다 — 이것은 장식이 아니라 사실의 표시다.
                               */}
                               {xn > 0 && (
-                                <span className="shrink-0 text-item-meta text-fg-subtle" title={t.crossGlyph(xn)} aria-label={t.crossGlyph(xn)} role="img">
-                                  ⇄
+                                <span
+                                  className="shrink-0 text-item-meta tabular-nums text-fg-subtle"
+                                  title={xHidden > 0 ? `${t.crossGlyph(xn)} · ${t.crossHidden(xHidden)}` : t.crossGlyph(xn)}
+                                  aria-label={xHidden > 0 ? `${t.crossGlyph(xn)} · ${t.crossHidden(xHidden)}` : t.crossGlyph(xn)}
+                                  role="img"
+                                >
+                                  ⇄{xHidden > 0 ? `+${xHidden}` : ""}
                                 </span>
                               )}
                             </button>
