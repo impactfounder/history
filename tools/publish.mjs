@@ -459,6 +459,36 @@ spans.sort((a, b) => a.y0 - b.y0 || a.r.localeCompare(b.r));
 write("spans.json", { spans });
 
 /*
+  **검색 색인.** 11,393건을 쌓아 두고 이름으로 찾을 길이 없었다 — 앱 안 검색은 PRD §5-10 상단바
+  도해(🔍)에 있는데 구현이 없었다.
+
+  **첫 화면의 길에 두지 않는다.** 착지 데이터가 이미 예산(50KB)의 다섯 배다. 이 파일은 검색을
+  **처음 열 때** 받는다(`src/lib/search.ts`). `data-budget.test.ts`가 그것을 지킨다.
+
+  한 항목은 `[이름, 연도, 열, id, 중요도]`다.
+   · **이름이 있는 것만** 싣는다. 지은 제목(name.mjs)이나 자국어 표제어가 없으면 찾을 이름 자체가
+     없다 — 문장을 실으면 색인만 부풀고 질의는 안 맞는다.
+   · **중요도를 함께** 싣는다. 「전쟁」처럼 수백 건이 맞는 질의를 줄 세우려면 필요하다.
+   · id는 `ev_` 접두를 뗀다. 10,406건 × 3자 = 30KB가 그냥 사라진다.
+   · 열·연도 순으로 정렬한다 — 같은 열의 비슷한 문자열이 붙어 있어야 gzip이 먹는다.
+   · **영문 별칭**(6번째)을 이름과 다를 때만 붙인다. 이름은 대개 한국어 지은 제목이라
+     「챗GPT 출시」를 `chatgpt`로 치면 0건이었다 — AI 열은 영어가 모국어인 열이고
+     제품 이름이 거기서 나온다. 실측: 4,139항목 · raw 68KB.
+     ja·zh 별칭은 넣지 않았다(색인이 두 배가 되고, 지금 지은 이름은 한국어뿐이다).
+*/
+const searchItems = [];
+for (const r of all) {
+  const name = nameOf(r) ?? r.names_native?.[REGION_LANG[r.region]] ?? null;
+  if (!name) continue;
+  const en = r.names_native?.en;
+  const item = [name, r.date.year, r.region, eventId(r).replace(/^ev_/, ""), r.importance_auto ?? 2];
+  if (en && en !== name) item.push(en);
+  searchItems.push(item);
+}
+searchItems.sort((a, b) => (a[2] < b[2] ? -1 : a[2] > b[2] ? 1 : 0) || a[1] - b[1]);
+write("search.json", { version: "v1", items: searchItems });
+
+/*
   **manifest는 작아야 한다.** 그리드가 첫 로드에 `cache: "no-cache"`로 받아 **매번 재검증**하는
   파일이고(발행 버전을 알아야 나머지 URL에 ?v=를 붙일 수 있다), 읽는 값은 셋뿐이다 —
   `stage` · `counts.events` · `publishedAt`.
@@ -478,6 +508,7 @@ console.log(`발행 — stage=${stage} → ${OUT}
   제외        rejected ${skipped.rejected} · period ${skipped.period}
   겹침 합침   ${mergedRows}행 (같은 열·같은 해·같은 제목 — 원문은 대표의 alt로) · 중요도 승계 ${liftedRows}건
   나라의 시작 ${foundingRows}건 (정치체마다 한 줄, 그 해의 맨 앞)
+  검색 색인   ${searchItems.length}건 (이름이 있는 것만 · 첫 화면에서는 받지 않는다)
   청크 수록   century ${byLevel.century} · decade ${byLevel.decade} · year ${byLevel.year}
   기간        막대 ${spanKept}건 (중복 제거 ${spanDupes})
   공식 출처   매칭 사건 ${officialMatched} · 연도 파일 ${officialYears} (항목 ${officialEntries})

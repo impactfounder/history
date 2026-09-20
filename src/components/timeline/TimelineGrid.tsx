@@ -27,6 +27,7 @@ import {
   type Level,
 } from "@/lib/timeline/axis";
 import { assignLanes, baseTier, SPAN_MIN_PX } from "@/lib/timeline/rank";
+import type { SearchHit } from "@/lib/search";
 import { layoutCell } from "@/lib/timeline/layout-cell";
 import { originalTag } from "@/lib/timeline/item-kind";
 import {
@@ -52,6 +53,7 @@ import {
   ZOOM_FLOAT_INSET,
 } from "@/lib/design/metrics";
 import { LOCALES, LOCALE_LABEL, LOCALE_REGION, REGION_LABEL, T, dupNames, eventLabel, formatRowLabelL, formatYearL, isEventName, isLocale, localePath, nameIn, type Locale } from "@/lib/i18n";
+import { SearchOverlay } from "./SearchOverlay";
 import { ThemeToggle } from "./ThemeToggle";
 
 /**
@@ -307,6 +309,8 @@ export function TimelineGrid() {
    * 읽는다. 곧 들어올 `?e=` 딥링크가 닿는 곳이 바로 이 패널이라 더더욱 구별해야 한다.
    */
   const [selected, setSelected] = useState<{ ev: PublishedEvent; detail: Detail | null | "error" } | null>(null);
+  /** 검색 오버레이. 색인은 열 때 받는다(src/lib/search.ts) — 첫 화면 예산에 얹지 않는다. */
+  const [searchOpen, setSearchOpen] = useState(false);
   /** 패널이 격자를 덮는가 — 덮으면 모달이고, 격자는 inert가 된다. */
   const modalPanel = selected !== null && !pushMode;
   /** 상세 제목 — 모달로 열릴 때 포커스가 여기로 간다. */
@@ -816,6 +820,17 @@ export function TimelineGrid() {
         </nav>
         {/* 언어마다 길이가 다른 마지막 조각(출처/Sources/出典/来源)도 고정 폭 — 아니면 왼쪽 언어 묶음이 밀린다 */}
         <a href={localePath(locale, "/sources")} className="hidden w-14 shrink-0 truncate text-right text-meta text-fg-subtle underline sm:block">{t.sources}</a>
+        {/* 검색(§5-10 도해의 🔍). 연도 이동도 같은 오버레이 안에 있다 — 44px 한 줄에 입력창 자리가 없다 */}
+        <button
+          type="button"
+          onClick={() => setSearchOpen(true)}
+          aria-label={t.search}
+          title={t.search}
+          style={{ minWidth: HIT_MIN, minHeight: HIT_MIN }}
+          className="hidden shrink-0 items-center justify-center text-meta text-fg-subtle hover:text-fg sm:flex"
+        >
+          <span aria-hidden>⌕</span>
+        </button>
         {/* 화면 밝기 — 오른쪽 끝. 글리프 하나라 언어가 바뀌어도 폭이 그대로다(「자리 고정」 규약) */}
         <ThemeToggle t={t} className="hidden sm:flex" />
         {/* 좁은 화면의 ☰ — 접어 둔 세 조각이 여기 들어간다. 타깃은 44px(HIT_COMFORT) */}
@@ -831,11 +846,43 @@ export function TimelineGrid() {
             </div>
             <span className="whitespace-nowrap text-fg-subtle">{manifest ? t.badge(manifest.counts.events) : t.noData}</span>
             <a href={localePath(locale, "/sources")} className="text-fg-subtle underline">{t.sources}</a>
+            <button
+              type="button"
+              onClick={(e) => { (e.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open"); setSearchOpen(true); }}
+              className="text-left text-fg-subtle underline"
+              style={{ minHeight: HIT_MIN }}
+            >
+              {t.search}
+            </button>
             {/* 좁은 화면에서도 밝기를 바꿀 수 있어야 한다 — 상단바에는 자리가 없어 여기 들어간다 */}
             <span className="flex items-center gap-2 text-fg-subtle">{t.theme}<ThemeToggle t={t} /></span>
           </div>
         </details>
       </header>
+
+      {/*
+        검색·연도 이동. 격자 **밖**에 둔다 — 상세 패널과 같은 이유로, 열릴 때 격자에 inert를 걸기
+        때문이다(안에 두면 오버레이 자신도 비활성이 된다).
+
+        고른 결과로는 **그 해로 이동**한다. 사건 패널까지 여는 것은 `?e=` 딥링크(계획 4번)가
+        들어온 뒤다 — 지금은 연도 레벨에 내려놓으면 그 칩이 화면에 있다.
+      */}
+      {searchOpen && (
+        <SearchOverlay
+          t={t}
+          locale={locale}
+          indexUrl={withV(`${DATA}/search.json`)}
+          dataEndYear={AXIS_YEAR_END}
+          onClose={() => setSearchOpen(false)}
+          onPickYear={(y) => { setSearchOpen(false); goTo(y); }}
+          onPickEvent={(hit: SearchHit) => {
+            setSearchOpen(false);
+            // 그 열이 꺼져 있으면 켠다 — 찾아 놓고 안 보이면 찾은 것이 아니다
+            setCols((c) => (c.includes(hit.region) ? c : [...c, hit.region]));
+            goTo(hit.year);
+          }}
+        />
+      )}
 
       {/* 중간 영역. 배경이 캔버스라 열 카드 사이 10px으로 드러난다(README 7-3) */}
       <div className="relative flex min-h-0 flex-1 bg-canvas">
@@ -844,7 +891,7 @@ export function TimelineGrid() {
           상세 패널은 **이 밖에** 둔다 — 모달일 때 여기에 inert를 걸기 때문이다. 안에 두면 패널 자신도
           비활성이 된다.
         */}
-        <main className="relative flex min-w-0 flex-1" aria-label={t.timelineAria} inert={modalPanel}>
+        <main className="relative flex min-w-0 flex-1" aria-label={t.timelineAria} inert={modalPanel || searchOpen}>
         {/* 시대 미니맵 10px — 레일 64 + 거터 56 = 120px을 86px 한 축으로 합친 그 왼쪽 끝(README 7-2).
             라벨은 없앴다. 왕조 이름은 열 헤더(sticky)가 맡는다 */}
         <div

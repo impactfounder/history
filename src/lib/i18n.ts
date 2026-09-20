@@ -97,6 +97,13 @@ export interface Strings {
   /** 상세를 못 받았을 때. 빈 화면이나 영원한 「불러오는 중」보다 낫다. */
   detailFailed: string;
   retry: string;
+  /** 검색(PRD §5-10 도해의 🔍). 연도 이동도 같은 오버레이 안에 있다. */
+  search: string;
+  searchPlaceholder: string;
+  searchNoResults: string;
+  searchFailed: string;
+  /** 질의가 연도일 때 맨 위에 서는 줄. `1592년으로 가기` */
+  goToYear: (year: string) => string;
   zoomGroup: string;
   zoomOut: string;
   zoomIn: string;
@@ -166,6 +173,11 @@ export const T: Record<Locale, Strings> = {
     loading: "불러오는 중…",
     detailFailed: "자세한 내용을 불러오지 못했습니다.",
     retry: "다시 시도",
+    search: "검색",
+    searchPlaceholder: "사건 이름 또는 연도 (예: 임진왜란, 1592)",
+    searchNoResults: "찾는 것이 없습니다.",
+    searchFailed: "검색 목록을 불러오지 못했습니다. 닫았다 다시 열어 보세요.",
+    goToYear: (y) => `${y}으로 가기`,
     zoomGroup: "확대·축소",
     zoomOut: "축소",
     zoomIn: "확대",
@@ -224,6 +236,11 @@ export const T: Record<Locale, Strings> = {
     loading: "Loading…",
     detailFailed: "Couldn't load the details.",
     retry: "Try again",
+    search: "Search",
+    searchPlaceholder: "Event name or year (e.g. Imjin, 1592)",
+    searchNoResults: "Nothing found.",
+    searchFailed: "Couldn't load the search index. Close and open again.",
+    goToYear: (y) => `Go to ${y}`,
     zoomGroup: "Zoom",
     zoomOut: "Zoom out",
     zoomIn: "Zoom in",
@@ -282,6 +299,11 @@ export const T: Record<Locale, Strings> = {
     loading: "読み込み中…",
     detailFailed: "詳細を読み込めませんでした。",
     retry: "再試行",
+    search: "検索",
+    searchPlaceholder: "出来事の名前または年 (例: 1592)",
+    searchNoResults: "見つかりません。",
+    searchFailed: "検索データを読み込めませんでした。閉じてもう一度開いてください。",
+    goToYear: (y) => `${y}へ移動`,
     zoomGroup: "拡大・縮小",
     zoomOut: "縮小",
     zoomIn: "拡大",
@@ -340,6 +362,11 @@ export const T: Record<Locale, Strings> = {
     loading: "加载中…",
     detailFailed: "无法加载详细内容。",
     retry: "重试",
+    search: "搜索",
+    searchPlaceholder: "事件名称或年份 (例: 1592)",
+    searchNoResults: "没有找到。",
+    searchFailed: "无法加载搜索索引。请关闭后重新打开。",
+    goToYear: (y) => `前往${y}`,
     zoomGroup: "缩放",
     zoomOut: "缩小",
     zoomIn: "放大",

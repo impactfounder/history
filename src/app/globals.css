@@ -125,6 +125,11 @@
   --color-canvas: var(--ink-100);        /* 열 카드 사이로 드러나는 바탕 */
   --color-surface-hover: var(--ink-100);
   --color-surface-inverse: var(--ink-900);
+  /*
+    모달 뒤를 덮는 막. 검색 오버레이가 격자를 가린다 — 뒤가 비치되 글자를 읽으려 들지
+    않을 만큼. 다크에서는 더 짙다(어두운 면 위에 옅은 막을 얹으면 경계가 안 보인다).
+  */
+  --color-scrim: rgb(25 23 20 / 0.45);
 
   /* 선 */
   --color-line-hairline: var(--ink-100);  /* 행 경계 · 열 구분 */
@@ -268,6 +273,7 @@
     --color-canvas: var(--night-canvas);
     --color-surface-hover: var(--night-hover);
     --color-surface-inverse: var(--night-fg);
+    --color-scrim: rgb(0 0 0 / 0.6);
 
     --color-line-hairline: var(--night-line-hairline);
     --color-line: var(--night-line);
@@ -316,6 +322,7 @@
   --color-canvas: var(--night-canvas);
   --color-surface-hover: var(--night-hover);
   --color-surface-inverse: var(--night-fg);
+  --color-scrim: rgb(0 0 0 / 0.6);
 
   --color-line-hairline: var(--night-line-hairline);
   --color-line: var(--night-line);

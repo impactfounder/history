@@ -59,3 +59,53 @@ describe.skipIf(!published)("manifest는 작아야 한다 — 매 첫 로드에 
     expect(gz).toBeLessThan(1024);
   });
 });
+
+/**
+ * **검색 색인은 첫 화면의 길에 없다.**
+ *
+ * `search.json`은 10,332항목 · gzip 256KB다. 착지 데이터가 이미 예산(50KB)의 다섯 배라
+ * 여기에 얹으면 안 된다 — 검색을 **처음 열 때** 받는다(`src/lib/search.ts`의 `loadSearchIndex`).
+ *
+ * 지키기 쉬운 약속이 아니다: 그리드 어딘가에서 한 줄만 무심코 부르면 256KB가 첫 로드로 돌아온다.
+ * 그래서 **소스를 읽어** 색인을 부르는 곳이 검색 모듈뿐인지 본다.
+ */
+describe("검색 색인은 지연 로드다", () => {
+  const grid = readFileSync(path.join(__dirname, "../components/timeline/TimelineGrid.tsx"), "utf8");
+  const overlay = readFileSync(path.join(__dirname, "../components/timeline/SearchOverlay.tsx"), "utf8");
+
+  it("그리드는 색인을 직접 받지 않는다", () => {
+    expect(grid).not.toContain("loadSearchIndex");
+  });
+
+  it("색인 URL은 오버레이에만 건네진다 — 오버레이는 열려야 생긴다", () => {
+    // 그리드는 URL을 만들어 넘기기만 한다(첫 로드에 받지 않는다)
+    expect(grid).toContain("search.json");
+    expect(grid).toContain("{searchOpen && (");
+    // 실제 fetch는 오버레이가 마운트된 뒤 effect에서
+    expect(overlay).toContain("loadSearchIndex");
+  });
+
+  it.skipIf(!published)("색인이 발행돼 있고 manifest와 따로다", () => {
+    const p = path.join(DATA, "search.json");
+    expect(existsSync(p)).toBe(true);
+    const j = JSON.parse(readFileSync(p, "utf8"));
+    expect(Array.isArray(j.items)).toBe(true);
+    expect(j.items.length).toBeGreaterThan(5000);
+    // manifest에 섞여 들어오면 매 첫 로드에 재검증된다 — 그것이 574KB 사고의 모양이었다
+    const m = JSON.parse(readFileSync(path.join(DATA, "manifest.json"), "utf8"));
+    expect(m.search).toBeUndefined();
+    expect(m.items).toBeUndefined();
+  });
+
+  it.skipIf(!published)("한 항목의 모양이 계약대로다", () => {
+    const j = JSON.parse(readFileSync(path.join(DATA, "search.json"), "utf8"));
+    for (const it of j.items.slice(0, 200)) {
+      expect(typeof it[0]).toBe("string"); // 이름
+      expect(typeof it[1]).toBe("number"); // 연도
+      expect(typeof it[2]).toBe("string"); // 열
+      expect(it[3]).toMatch(/^[0-9a-f]{12}$/); // id (ev_ 없음)
+      expect(it[4]).toBeGreaterThanOrEqual(1); // 중요도
+      expect(it[4]).toBeLessThanOrEqual(5);
+    }
+  });
+});
