@@ -104,6 +104,9 @@ export interface Strings {
   searchFailed: string;
   /** 질의가 연도일 때 맨 위에 서는 줄. `1592년으로 가기` */
   goToYear: (year: string) => string;
+  /** 빈 구간 힌트(PRD §5-4). `다음 사건 1392년` / `이전 사건 1356년` */
+  nextEvent: (year: string) => string;
+  prevEvent: (year: string) => string;
   zoomGroup: string;
   zoomOut: string;
   zoomIn: string;
@@ -178,6 +181,8 @@ export const T: Record<Locale, Strings> = {
     searchNoResults: "찾는 것이 없습니다.",
     searchFailed: "검색 목록을 불러오지 못했습니다. 닫았다 다시 열어 보세요.",
     goToYear: (y) => `${y}으로 가기`,
+    nextEvent: (y) => `다음 사건 ${y}`,
+    prevEvent: (y) => `이전 사건 ${y}`,
     zoomGroup: "확대·축소",
     zoomOut: "축소",
     zoomIn: "확대",
@@ -241,6 +246,8 @@ export const T: Record<Locale, Strings> = {
     searchNoResults: "Nothing found.",
     searchFailed: "Couldn't load the search index. Close and open again.",
     goToYear: (y) => `Go to ${y}`,
+    nextEvent: (y) => `Next: ${y}`,
+    prevEvent: (y) => `Previous: ${y}`,
     zoomGroup: "Zoom",
     zoomOut: "Zoom out",
     zoomIn: "Zoom in",
@@ -304,6 +311,8 @@ export const T: Record<Locale, Strings> = {
     searchNoResults: "見つかりません。",
     searchFailed: "検索データを読み込めませんでした。閉じてもう一度開いてください。",
     goToYear: (y) => `${y}へ移動`,
+    nextEvent: (y) => `次の出来事 ${y}`,
+    prevEvent: (y) => `前の出来事 ${y}`,
     zoomGroup: "拡大・縮小",
     zoomOut: "縮小",
     zoomIn: "拡大",
@@ -367,6 +376,8 @@ export const T: Record<Locale, Strings> = {
     searchNoResults: "没有找到。",
     searchFailed: "无法加载搜索索引。请关闭后重新打开。",
     goToYear: (y) => `前往${y}`,
+    nextEvent: (y) => `下一事件 ${y}`,
+    prevEvent: (y) => `上一事件 ${y}`,
     zoomGroup: "缩放",
     zoomOut: "缩小",
     zoomIn: "放大",

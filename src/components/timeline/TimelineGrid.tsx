@@ -21,12 +21,14 @@ import {
   scrollTopForYear,
   visibleRows,
   yToYear,
+  visibleYears,
   yearToY,
   zoomToYear,
   type Axis,
   type Level,
 } from "@/lib/timeline/axis";
 import { assignLanes, baseTier, SPAN_MIN_PX } from "@/lib/timeline/rank";
+import { decodeYears, isEmptyRange, nearestYears } from "@/lib/timeline/gap";
 import type { SearchHit } from "@/lib/search";
 import { layoutCell } from "@/lib/timeline/layout-cell";
 import { originalTag } from "@/lib/timeline/item-kind";
@@ -266,6 +268,11 @@ export function TimelineGrid() {
    * 격자를 덮으므로 **모달**이어야 한다 — role·포커스 트랩·inert가 여기서 갈린다.
    */
   const [spans, setSpans] = useState<Span[]>([]);
+  /**
+   * 열별로 **사건이 있는 해**(오름차순). 빈 구간 힌트가 쓴다 — 청크로는 계산할 수 없다
+   * (빈 구간에서는 받을 청크가 없어 다음 사건이 어디인지 모른다). gzip 1.3KB라 첫 로드에 싣는다.
+   */
+  const [yearIndex, setYearIndex] = useState<Partial<Record<RegionId, number[]>>>({});
   const [pushMode, setPushMode] = useState(false);
   /**
    * 포인터가 굵은가(터치). 항목 높이의 하한을 24px로 올리는 데만 쓴다 — 폭이 아니라
@@ -396,7 +403,8 @@ export function TimelineGrid() {
 
   useEffect(() => {
     /*
-      한 번만 받는 것 셋: manifest(버전) · polities(왕조 밴드) · spans(기간 프레임).
+      한 번만 받는 것 넷: manifest(버전) · polities(왕조 밴드) · spans(기간 프레임) ·
+      years(열별로 사건이 있는 해 — 빈 구간 힌트).
       spans는 청크와 달리 **전부 한 파일**이다 — 기간은 어느 지점에서 보든 같아야 하는데,
       청크에서 파생하면 시작 연도가 안 실린 구간에서 사라졌다(Span 타입 주석).
     */
@@ -406,14 +414,17 @@ export function TimelineGrid() {
         setManifest(m);
         const v = encodeURIComponent(m?.publishedAt ?? String(Date.now()));
         setDataVersion(m?.publishedAt ?? String(Date.now()));
-        const [pol, spn] = await Promise.all([
+        const [pol, spn, yrs] = await Promise.all([
           fetch(`${DATA}/polities.json?v=${v}`).then((r) => (r.ok ? (r.json() as Promise<{ regions: Polities }>) : null)),
           fetch(`${DATA}/spans.json?v=${v}`).then((r) => (r.ok ? (r.json() as Promise<{ spans: Span[] }>) : null)),
+          fetch(`${DATA}/years.json?v=${v}`).then((r) => (r.ok ? (r.json() as Promise<{ years: Record<string, number[]> }>) : null)),
         ]);
         setPolities(pol?.regions ?? {});
         setSpans(spn?.spans ?? []);
+        // 델타로 실려 온다(gzip 1.3KB). 여기서 한 번 되돌려 두면 그 뒤로는 이분 탐색만 한다
+        setYearIndex(Object.fromEntries(Object.entries(yrs?.years ?? {}).map(([r, d]) => [r, decodeYears(d)])));
       })
-      .catch(() => { setManifest(null); setPolities({}); setSpans([]); });
+      .catch(() => { setManifest(null); setPolities({}); setSpans([]); setYearIndex({}); });
   }, []);
 
   const ensureChunk = useCallback((region: RegionId, key: string) => {
@@ -1133,6 +1144,55 @@ export function TimelineGrid() {
                 칩 그 자체다 — 칩이 이름을 대고 프레임이 범위를 댄다. 그래서 별도 라벨도, 셀에서 빼는
                 처리도, 클릭 통과 문제도 생기지 않는다.
                 60px보다 짧으면 프레임을 포기하고 칩 라벨의 "1592–1598"로 넘긴다(rank.SPAN_MIN_PX) */}
+            {/*
+              **빈 구간 힌트**(PRD §5-4 · §4-1, M2 완료 조건). 보이는 구간에 그 열의 사건이
+              **하나도 없을 때만** 뜬다 — 볼 것이 있는데 "다음은 저기"라고 말하면 잔소리다.
+
+              축을 접지 않는다(§5-4): 접으면 줌 앵커와 시대 레일 위치가 예측 불가능해진다.
+              빈 자리는 빈 채로 두고, 그 위에 **어디로 갈 수 있는지만** 얹는다.
+
+              실측(2026-09-20)으로 이것이 필요한 이유: 십년 버킷 253칸 중 덮인 칸이
+              AI 39(15%) · 미국 43(17%)이다. 다섯 열 중 둘은 대부분의 화면이 비어 있었다.
+            */}
+            {level === "year" && (
+              <div className="pointer-events-none absolute inset-0 flex">
+                <div className="shrink-0" style={{ width: axisLabelW }} />
+                {shown.map((c) => {
+                  const ys = yearIndex[c.id];
+                  const view = visibleYears(scrollTop, axis);
+                  if (!ys?.length || !isEmptyRange(ys, view.from, view.to)) {
+                    return <div key={c.id} className="min-w-0 flex-1" style={{ marginLeft: CARD_GAP }} />;
+                  }
+                  const { prev, next } = nearestYears(ys, Math.round((view.from + view.to) / 2));
+                  /*
+                    **뷰포트 한가운데에 놓는다 — 좌표로.** 이 층의 기준 상자는 뷰포트가 아니라
+                    **스크롤되는 내용 전체**(연도 레벨에서 10만 px 가까운 스페이서)다. 그래서
+                    처음에 `inset-0` + flex 가운데 정렬로 두었더니 힌트가 뷰포트 위
+                    **27,000px 지점**에 놓여 아무 데서도 보이지 않았다(실측 y = −27,038).
+                    tsc도 테스트도 통과한 채였다 — 브라우저에서만 보이는 종류다.
+                  */
+                  return (
+                    <div key={c.id} className="relative min-w-0 flex-1" style={{ marginLeft: CARD_GAP }}>
+                      <div
+                        className="pointer-events-auto absolute left-1/2 flex -translate-x-1/2 flex-col items-center gap-1 text-item-meta text-fg-subtle"
+                        style={{ top: scrollTop + axis.viewportH / 2 - HIT_MIN }}
+                      >
+                        {prev !== null && (
+                          <button type="button" onClick={() => goTo(prev)} className="hover:text-fg" style={{ minHeight: HIT_MIN }}>
+                            {t.prevEvent(formatYearL(prev, locale))} ↑
+                          </button>
+                        )}
+                        {next !== null && (
+                          <button type="button" onClick={() => goTo(next)} className="hover:text-fg" style={{ minHeight: HIT_MIN }}>
+                            {t.nextEvent(formatYearL(next, locale))} ↓
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             <div className="pointer-events-none absolute inset-0 flex" aria-hidden>
               <div className="shrink-0" style={{ width: axisLabelW }} />
               {shown.map((c) => {

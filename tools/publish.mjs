@@ -462,6 +462,25 @@ spans.sort((a, b) => a.y0 - b.y0 || a.r.localeCompare(b.r));
 write("spans.json", { spans });
 
 /*
+  **열별로 사건이 있는 해.** 빈 구간 힌트(「다음 사건 1392년 ↓」, PRD §5-4 · M2 완료 조건)가
+  쓴다. 청크로는 계산할 수 없다 — 청크는 보이는 구간만 게을리 받으므로 **빈 구간에서는 받을
+  청크가 없고**, 그러면 다음 사건이 어디인지 아무것도 모른다.
+
+  크기가 문제되지 않는다: 다섯 열 합쳐 3,711개 해이고 **델타(앞 값과의 차이)로 싣으면
+  gzip 1.3KB**다(그대로는 5.3KB). 첫 로드에 얹어도 부담이 없고, 그래야 힌트가 첫 화면부터
+  정확하다.
+*/
+const yearsByRegion = {};
+for (const { id } of REGIONS) {
+  const ys = [...new Set(all.filter((r) => r.region === id).map((r) => r.date.year))].sort((a, b) => a - b);
+  const delta = [];
+  let prev = 0;
+  for (const y of ys) { delta.push(y - prev); prev = y; }
+  yearsByRegion[id] = delta;
+}
+write("years.json", { years: yearsByRegion });
+
+/*
   **검색 색인.** 11,393건을 쌓아 두고 이름으로 찾을 길이 없었다 — 앱 안 검색은 PRD §5-10 상단바
   도해(🔍)에 있는데 구현이 없었다.
 
@@ -512,6 +531,7 @@ console.log(`발행 — stage=${stage} → ${OUT}
   겹침 합침   ${mergedRows}행 (같은 열·같은 해·같은 제목 — 원문은 대표의 alt로) · 중요도 승계 ${liftedRows}건
   나라의 시작 ${foundingRows}건 (정치체마다 한 줄, 그 해의 맨 앞)
   검색 색인   ${searchItems.length}건 (이름이 있는 것만 · 첫 화면에서는 받지 않는다)
+  연도 색인   ${Object.values(yearsByRegion).reduce((a, d) => a + d.length, 0)}개 해 (빈 구간 힌트용)
   청크 수록   century ${byLevel.century} · decade ${byLevel.decade} · year ${byLevel.year}
   기간        막대 ${spanKept}건 (중복 제거 ${spanDupes})
   공식 출처   매칭 사건 ${officialMatched} · 연도 파일 ${officialYears} (항목 ${officialEntries})
