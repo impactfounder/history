@@ -24,6 +24,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { bestMatches, parseWikiDate, stripYear } from "../src/lib/curation/nikh-match.mjs";
+import { textEndYear } from "./text-range.mjs";
 import { isEventNameAny } from "../src/lib/event-name.mjs";
 
 const REGIONS = process.argv.slice(2).filter((a) => /^[a-z]{2}$/.test(a));
@@ -193,7 +194,6 @@ const facts = qidCache.facts ?? {};
 const sitelinkTitles = qidCache.titles ?? {};
 
 /** 원문의 명시적 연도 범위 "1592–1598" / "1950-1953" / "1592년부터 1598년" — 있으면 그 줄이 말하는 기간이다. */
-const RANGE_RE = /(?<![\d])(\d{3,4})\s*(?:[–—~-]|년부터\s*)(\d{3,4})(?![\d])/;
 /** 사건 이름 꼴(한국어 표제어) — 기간을 붙일 때 왕조·시대(수백 년)를 거른다. TimelineGrid의 EVENT_LIKE와 같은 뜻, 더 짧은 목록 */
 const EVENT_WORD = /(전쟁|전투|대첩|사건|조약|협정|협약|혁명|운동|반란|봉기|난|군란|민란|내란|사변|양요|왜란|호란|정변|쿠데타|개혁|유신|원정|정벌|침공|침략|점령|포위|공방전|해전|학살|폭동|시위|파업|기근|역병|홍수|지진|화재|박람회|올림픽|대회|회담|회의|재판|탐험|항해|운항|건설|공사)$/;
 
@@ -203,11 +203,8 @@ const EVENT_WORD = /(전쟁|전투|대첩|사건|조약|협정|협약|혁명|운
  * 왕조 276년이 붙는 것을 막는다.
  */
 function endYearOf(raw, year, qidValid) {
-  const m = RANGE_RE.exec(raw.text);
-  if (m) {
-    const a = Number(m[1]), b = Number(m[2]);
-    if (b > a && b - a <= 100 && Math.abs(a - year) <= 1) return { y1: b, src: "text" };
-  }
+  const fromText = textEndYear(raw.text, year);
+  if (fromText !== null) return { y1: fromText, src: "text" };
   const f = qidValid ? facts[raw.qid] : null;
   if (!f || f.human || !f.start || !f.end) return null;
   const ko = raw.names_native?.ko?.replace(/\s*\([^)]*\)$/, "") ?? "";
