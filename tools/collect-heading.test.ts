@@ -30,7 +30,7 @@ describe("절 제목 모드", () => {
    * 기존 다섯 열의 수집 결과가 통째로 달라진다.
    */
   it("옵트인이다 — 진입점이 src.mode를 받는다", () => {
-    expect(src).toContain("extract(html, src.mode)");
+    expect(src).toContain("extract(html, src.mode, src)");
   });
 
   it("h2·h3만 본다 — 문서 제목(h1)은 절이 아니다", () => {

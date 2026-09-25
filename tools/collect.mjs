@@ -14,6 +14,7 @@
  *       MVMT_CONTACT=you@example.com node tools/collect.mjs kr
  */
 
+import { existsSync, readFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { setTimeout as sleep } from "node:timers/promises";
 import { createHash } from "node:crypto";
@@ -62,7 +63,12 @@ const SOURCES = {
       기계학습 연표(2026-09-26 추가). 위 문서가 로젠블랫의 퍼셉트론(1958)처럼 학습 쪽 이정표를 빠뜨려서
       — 그 문서의 위키텍스트에 Rosenblatt이 한 번도 없다 — 같은 표 형식의 이 문서를 더해 본다.
     */
-    { wiki: "en", title: "Timeline of machine learning", slug: "en-ml-timeline" },
+    /*
+      표가 [연도 | 분류 | 소제목 | 본문] 네 칸이다. 기본 규칙(연도 뒤 칸을 전부 「 — 」로 잇기)으로 읽으면
+      「Discovery — Perceptron — Frank Rosenblatt invents…」가 되어 34줄 전부에 분류·소제목이 붙었다
+      (2026-09-26 — 이름이 없는 줄은 칩에 「선구자 — 선구적 비전 — 에이다 러브레이스…」로 떴다). 본문 칸만 쓴다.
+    */
+    { wiki: "en", title: "Timeline of machine learning", slug: "en-ml-timeline", body: "last" },
   ],
   us: [
     { wiki: "en", title: "Timeline of pre–United States history", slug: "en-us-pre" },
@@ -283,7 +289,8 @@ function extractHeadingList(html) {
  * ②를 "셀 2개 미만"으로 건너뛰고 표 안 목록을 본문 목록 분기에서도 제외하면
  * 근현대가 통째로 사라진다(1945년 이후 360 → 205건으로 줄었던 원인).
  */
-function extract(html, mode) {
+/** `opts.body === "last"`: 표 행의 **마지막 칸만** 본문으로 쓴다(열이 [연도 | 분류 | … | 본문]인 표). */
+function extract(html, mode, opts = {}) {
   // 연도가 절 제목에 있는 문서는 다른 길로 간다(위)
   if (mode === "headingList") return extractHeadingList(html);
   const items = [];
@@ -307,7 +314,7 @@ function extract(html, mode) {
           continue;
         }
         // 목록도 없으면 셀 전체를 본문으로 보고 연도 표기로 쪼갠다
-        const body = cells.map(strip).filter(Boolean).join(" — ");
+        const body = opts.body === "last" ? strip(cells.at(-1) ?? "") : cells.map(strip).filter(Boolean).join(" — ");
         for (const seg of splitByYear(body)) {
           // 셀에 연도가 없으면 rowspan으로 합쳐진 직전 머리 연도를 쓴다
           const date = (isDayMonth(seg) ? null : parseYear(seg)) ?? firstYearIn(seg) ?? carriedHead;
@@ -320,7 +327,7 @@ function extract(html, mode) {
       carriedHead = headDate; // 다음 행이 rowspan 이어짐이면 이 연도를 물려받는다
       // ① 머리 연도 + 본문. 행 머리 연도는 마지막 대안이다 — 시대 행은 머리가 "250"인데
       // 본문은 BC 4세기·BC 238이었다(파일럿 #8). 본문에 연도가 있으면 그것을 믿는다.
-      const body = cells.slice(1).map(strip).filter(Boolean).join(" — ");
+      const body = opts.body === "last" ? strip(cells.at(-1) ?? "") : cells.slice(1).map(strip).filter(Boolean).join(" — ");
       const links = bodyLinks(tr);
       for (const seg of splitByYear(body)) {
         const date = (isDayMonth(seg) ? null : parseYear(seg)) ?? firstYearIn(seg) ?? headDate;
@@ -391,24 +398,38 @@ async function main() {
   }
 
   const accessedAt = new Date().toISOString();
+  /*
+    --pin: 지난 수집의 **같은 판(revid)**을 다시 받는다(2026-09-26). 파싱 규칙만 고쳤을 때 쓴다 — 최신 판을
+    받으면 그사이 위키 편집이 섞여, 고친 줄 말고도 날짜·본문이 흔들린다(중국 열 56줄이 그렇게 흔들렸다).
+    행 id에 revid가 들어가므로(rowId) 판이 같아야 고치지 않은 줄의 id도 그대로다.
+  */
+  const pinned = new Map();
+  if (process.argv.includes("--pin") && existsSync(`curation/raw/${region}/candidates.jsonl`)) {
+    for (const l of readFileSync(`curation/raw/${region}/candidates.jsonl`, "utf8").split("\n").filter(Boolean)) {
+      const d = JSON.parse(l);
+      if (d.source?.url && d.source?.revid) pinned.set(d.source.url, d.source.revid);
+    }
+  }
   const funnel = { candidates: 0, withLink: 0, withQid: 0, byShape: { table: 0, list: 0 }, periodish: 0 };
   const all = [];
 
   for (const src of sources) {
     process.stderr.write(`${src.wiki}:${src.title} … `);
     const host = `${src.wiki}.wikipedia.org`;
-    const j = await api(host, {
+    const pin = [...pinned].find(([u]) => decodeURIComponent(u).endsWith(`/wiki/${src.title}`))?.[1];
+    const j = await api(host, pin ? { action: "parse", oldid: String(pin), prop: "text|revid" } : {
       action: "parse",
       page: src.title,
       prop: "text|revid",
       redirects: "1",
     });
+    if (pin) process.stderr.write(`(판 고정 ${pin}) `);
     if (j.error) {
       process.stderr.write(`실패 ${j.error.code}\n`);
       continue;
     }
     const { text: html, revid, title: resolved } = j.parse;
-    const items = extract(html, src.mode);
+    const items = extract(html, src.mode, src);
 
     const titles = [...new Set(items.flatMap((it) => it.links))];
     const qidMap = await attachQids(src.wiki, titles);
