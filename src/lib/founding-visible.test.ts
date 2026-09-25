@@ -23,7 +23,14 @@ const published = existsSync(path.join(DATA, "polities.json"));
 
 /** 발행 산출물은 git에 없다(prebuild가 만든다). 없으면 이 테스트는 할 말이 없다. */
 describe.skipIf(!published)("나라의 시작은 그 해의 맨 앞에 선다", () => {
+  /*
+    열마다 **한 번만** 읽는다. 검사 셋이 다섯 열을 각자 다시 읽어 파일 3,000여 개를 되풀이했고, prebuild 안
+    (발행과 다른 테스트가 함께 도는 부하)에서 5초 제한을 넘겼다(2026-09-26).
+  */
+  const loaded = new Map<string, Record<string, unknown>[]>();
   const load = (region: string) => {
+    const hit = loaded.get(region);
+    if (hit) return hit;
     const seen = new Map<string, Record<string, unknown>>();
     const walk = (dir: string) => {
       for (const name of readdirSync(dir)) {
@@ -34,8 +41,11 @@ describe.skipIf(!published)("나라의 시작은 그 해의 맨 앞에 선다", 
         }
       }
     };
-    walk(path.join(DATA, "events", region));
-    return [...seen.values()];
+    // 연도 청크만 — 발행된 사건은 연도 레벨에 전부 있다(세기·십년까지 읽으면 같은 사건을 세 번 읽는다)
+    walk(path.join(DATA, "events", region, "year"));
+    const out = [...seen.values()];
+    loaded.set(region, out);
+    return out;
   };
 
   const century = (region: string) =>
@@ -46,7 +56,7 @@ describe.skipIf(!published)("나라의 시작은 그 해의 맨 앞에 선다", 
   it("표시된 사건이 있다 — 0이면 아래 검사가 전부 무의미하다", () => {
     const n = ["kr", "cn", "jp", "us", "ai"].reduce((a, r) => a + load(r).filter((e) => e.f).length, 0);
     expect(n).toBeGreaterThan(10);
-  });
+  }, 30_000);
 
   /** 대표가 직접 짚은 사건들. 하나라도 빠지면 같은 지적이 다시 나온다. */
   it.each([
@@ -98,7 +108,7 @@ describe.skipIf(!published)("나라의 시작은 그 해의 맨 앞에 선다", 
         expect(imp, `${r} ${e.y0} ${labelOf(e)}`).toBe(5);
       }
     }
-  });
+  }, 30_000);
 
   /**
    * **정치체마다 한 줄.** 두 줄이 표시되면 같은 셀에 나라 시작이 두 번 서고, 그중 하나는
@@ -113,5 +123,5 @@ describe.skipIf(!published)("나라의 시작은 그 해의 맨 앞에 선다", 
         expect(near.length, `${region} ${p.y0}년 부근에 표시가 ${near.length}개다`).toBeLessThanOrEqual(1);
       }
     }
-  });
+  }, 30_000);
 });

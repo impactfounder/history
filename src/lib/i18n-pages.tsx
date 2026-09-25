@@ -132,6 +132,7 @@ export interface SourcesCopy {
 /** 원천 문서 제목은 각 언어판의 표기 그대로 — 옮기지 않는다(§3 고유명사). */
 const WIKI_TITLE = {
   ai: <>&ldquo;Timeline of artificial intelligence&rdquo;</>,
+  aiMl: <>&ldquo;Timeline of machine learning&rdquo;</>,
   kr: <>「한국사 연표」</>,
   krEn: <>&ldquo;Timeline of Korean history&rdquo;</>,
   krKwangmu: <>&ldquo;Timeline of the Kwangmu Reform&rdquo;</>,
@@ -174,7 +175,7 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
     wiki: {
       h: "위키백과 연표 — 다섯 열 모두",
       items: [
-        <>AI: 영어판 {WIKI_TITLE.ai}. 이 열만 자국어판이 없어 <b>전부 영어 원문</b>이다.</>,
+        <>AI: 영어판 {WIKI_TITLE.ai} · {WIKI_TITLE.aiMl}. 이 열만 자국어판이 없어 <b>전부 영어 원문</b>이다.</>,
         <>한국: 한국어판 {WIKI_TITLE.kr}, 영어판 {WIKI_TITLE.krEn} · {WIKI_TITLE.krKwangmu}</>,
         <>중국: 중국어판 {WIKI_TITLE.cnZh} · {WIKI_TITLE.cnPrc}, 영어판 {WIKI_TITLE.cn} 및 왕조별 {WIKI_TITLE.cnDyn}</>,
         <>일본: 일본어판 {WIKI_TITLE.jpJa}, 영어판 {WIKI_TITLE.jp}</>,
@@ -225,7 +226,7 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
     wiki: {
       h: "Wikipedia chronologies — all five columns",
       items: [
-        <>AI: English {WIKI_TITLE.ai}. This column alone has no native-language edition, so every line is the English original.</>,
+        <>AI: English {WIKI_TITLE.ai} · {WIKI_TITLE.aiMl}. This column alone has no native-language edition, so every line is the English original.</>,
         <>Korea: Korean Wikipedia {WIKI_TITLE.kr}; English {WIKI_TITLE.krEn} · {WIKI_TITLE.krKwangmu}</>,
         <>China: Chinese {WIKI_TITLE.cnZh} · {WIKI_TITLE.cnPrc}; English {WIKI_TITLE.cn} and the dynasty timelines {WIKI_TITLE.cnDyn}</>,
         <>Japan: Japanese {WIKI_TITLE.jpJa}; English {WIKI_TITLE.jp}</>,
@@ -276,7 +277,7 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
     wiki: {
       h: "Wikipedia年表 — 五つの列すべて",
       items: [
-        <>AI: 英語版 {WIKI_TITLE.ai}。この列だけ自国語版がなく、すべて英語原文である。</>,
+        <>AI: 英語版 {WIKI_TITLE.ai} · {WIKI_TITLE.aiMl}。この列だけ自国語版がなく、すべて英語原文である。</>,
         <>韓国: 韓国語版 {WIKI_TITLE.kr}、英語版 {WIKI_TITLE.krEn} · {WIKI_TITLE.krKwangmu}</>,
         <>中国: 中国語版 {WIKI_TITLE.cnZh} · {WIKI_TITLE.cnPrc}、英語版 {WIKI_TITLE.cn} および王朝別の {WIKI_TITLE.cnDyn}</>,
         <>日本: 日本語版 {WIKI_TITLE.jpJa}、英語版 {WIKI_TITLE.jp}</>,
@@ -327,7 +328,7 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
     wiki: {
       h: "维基百科年表 — 五列均适用",
       items: [
-        <>AI：英语版 {WIKI_TITLE.ai}。只有这一列没有本国语言版本，全部为英文原文。</>,
+        <>AI：英语版 {WIKI_TITLE.ai} · {WIKI_TITLE.aiMl}。只有这一列没有本国语言版本，全部为英文原文。</>,
         <>韩国：韩语版 {WIKI_TITLE.kr}、英语版 {WIKI_TITLE.krEn} · {WIKI_TITLE.krKwangmu}</>,
         <>中国：中文版 {WIKI_TITLE.cnZh} · {WIKI_TITLE.cnPrc}，英语版 {WIKI_TITLE.cn} 及各朝代的 {WIKI_TITLE.cnDyn}</>,
         <>日本：日语版 {WIKI_TITLE.jpJa}、英语版 {WIKI_TITLE.jp}</>,

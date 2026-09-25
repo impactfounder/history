@@ -78,13 +78,15 @@ describe.skipIf(!published)("묶음과 사건이 서로를 가리킨다", () => 
           else if (n.endsWith(".json")) for (const ev of JSON.parse(readFileSync(p, "utf8")).events ?? []) seen.set(ev.id, ev);
         }
       };
-      walk(dir);
+      // 연도 청크만 읽는다 — 발행된 사건은 연도 레벨에 **전부** 있다. 세기·십년(·뒷부분)까지 읽으면 같은
+      // 사건을 세 번 읽어 전체 실행에서 5초 제한을 넘겼다(2026-09-26, AI 열 보강 뒤)
+      walk(path.join(dir, "year"));
     }
     const marked = [...seen.values()].filter((e) => e.x);
     expect(marked.length, "x가 붙은 사건이 하나도 없다").toBeGreaterThan(50);
     const missing = marked.filter((e) => !groups[e.x as string]).map((e) => e.id as string);
     expect(missing.slice(0, 5)).toEqual([]);
-  });
+  }, 30_000);
 });
 
 /**

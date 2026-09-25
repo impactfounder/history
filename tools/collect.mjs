@@ -58,6 +58,11 @@ const SOURCES = {
   */
   ai: [
     { wiki: "en", title: "Timeline of artificial intelligence", slug: "en-ai-timeline" },
+    /*
+      기계학습 연표(2026-09-26 추가). 위 문서가 로젠블랫의 퍼셉트론(1958)처럼 학습 쪽 이정표를 빠뜨려서
+      — 그 문서의 위키텍스트에 Rosenblatt이 한 번도 없다 — 같은 표 형식의 이 문서를 더해 본다.
+    */
+    { wiki: "en", title: "Timeline of machine learning", slug: "en-ml-timeline" },
   ],
   us: [
     { wiki: "en", title: "Timeline of pre–United States history", slug: "en-us-pre" },

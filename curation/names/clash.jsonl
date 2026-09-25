@@ -330,3 +330,30 @@
 {"g":"us|2019|엡스타인 파일 투명성법","same":false,"rename":{"a9bbb8964a04":"투명성법 서명","71940ed47d41":"법무부 문서 공개"},"model":"claude-sonnet-5","at":"2026-09-12T15:03:42.209Z"}
 {"g":"cn|1519|녕왕의 난","same":false,"rename":{"b6bddb507c1e":"찬탈자 선언과 원정","ee46962eafc7":"장시 반란 봉기","c2c3f75412f8":"주장시 점령","0bf2af4e2ad0":"안칭시 포위","ef3433db8efc":"안칭 포위 해제","f5f2f83efe03":"난창 탈환","c663a6bc8169":"주신호군 패배","722b56db4888":"주신호 생포"},"model":"claude-sonnet-5","at":"2026-09-12T15:05:51.482Z"}
 {"g":"cn|1900|의화단 운동","same":null,"why":"rename-collide","model":"claude-sonnet-5","at":"2026-09-12T15:06:31.911Z"}
+{"g":"ai|2022|챗GPT 출시","same":true,"primary":"27aed150d467","drop":["0ca2bc974257"],"model":"claude-sonnet-5","at":"2026-09-25T15:32:37.156Z"}
+{"g":"ai|2023|GPT-4 출시","same":true,"primary":"0f6929058e99","drop":["c8a52760f987"],"model":"claude-sonnet-5","at":"2026-09-25T15:32:39.089Z"}
+{"g":"us|1607|제임스타운 건설","same":true,"primary":"0f042c8c8381","drop":["5f228221311a"],"model":"claude-sonnet-5","at":"2026-09-25T15:32:42.014Z"}
+{"g":"us|1608|퀘벡 건설","same":true,"primary":"f444d15fed92","drop":["45fb9307c402"],"model":"claude-sonnet-5","at":"2026-09-25T15:32:43.261Z"}
+{"g":"us|1620|메이플라워 서약","same":true,"primary":"4a6b739d8d2a","drop":["31dc8d0cd411"],"model":"claude-sonnet-5","at":"2026-09-25T15:32:44.434Z"}
+{"g":"us|1636|코네티컷 식민지 건설","same":true,"primary":"e389a2dec7ab","drop":["d79f6d5d2f74"],"model":"claude-sonnet-5","at":"2026-09-25T15:32:45.571Z"}
+{"g":"us|1642|잉글랜드 내전 발발","same":true,"primary":"f13d6d248d4d","drop":["571e34e1ae65"],"model":"claude-sonnet-5","at":"2026-09-25T15:32:47.566Z"}
+{"g":"us|1670|찰스턴 건설","same":true,"primary":"d1679de485b6","drop":["955fb94b956d"],"model":"claude-sonnet-5","at":"2026-09-25T15:32:48.693Z"}
+{"g":"us|1675|필립 왕의 전쟁","same":true,"primary":"29ed39abeaa6","drop":["4363f69ebc3e"],"model":"claude-sonnet-5","at":"2026-09-25T15:32:50.020Z"}
+{"g":"us|1676|베이컨의 반란","same":false,"rename":{"be81fd0f2f52":"버지니아 인민 선언 작성","89c4e3a711bd":"제임스타운 방화"},"model":"claude-sonnet-5","at":"2026-09-25T15:32:54.204Z"}
+{"g":"us|1688|명예 혁명","same":true,"primary":"40b052755394","drop":["797e051adccb"],"model":"claude-sonnet-5","at":"2026-09-25T15:32:55.731Z"}
+{"g":"us|1706|벤저민 프랭클린 출생","same":true,"primary":"4b3c2beb2f59","drop":["85e4f752d340"],"model":"claude-sonnet-5","at":"2026-09-25T15:32:57.822Z"}
+{"g":"us|1714|조지 1세 즉위","same":true,"primary":"bf03db024467","drop":["9ee98aecb3fd"],"model":"claude-sonnet-5","at":"2026-09-25T15:33:01.847Z"}
+{"g":"us|1727|조지 2세 즉위","same":true,"primary":"bc4672fa52c9","drop":["05520b439f56"],"model":"claude-sonnet-5","at":"2026-09-25T15:33:03.097Z"}
+{"g":"us|1740|플랜테이션법 제정","same":true,"primary":"5ffa2d7d7062","drop":["f45c1fba243a"],"model":"claude-sonnet-5","at":"2026-09-25T15:33:08.206Z"}
+{"g":"us|1744|조지 왕의 전쟁","same":true,"primary":"12d573ffccc5","drop":["9bba483ddca4"],"model":"claude-sonnet-5","at":"2026-09-25T15:33:09.483Z"}
+{"g":"us|1754|프렌치 인디언 전쟁","same":true,"primary":"8ce8979726ab","drop":["5f76dbd14547"],"model":"claude-sonnet-5","at":"2026-09-25T15:33:12.435Z"}
+{"g":"us|1759|퀘벡 함락","same":true,"primary":"700881218551","drop":["b37452d57099"],"model":"claude-sonnet-5","at":"2026-09-25T15:33:13.725Z"}
+{"g":"us|1781|펜사콜라 공방전","same":true,"primary":"043052ec6953","drop":["1a3c1ab4c297"],"model":"claude-sonnet-5","at":"2026-09-25T15:33:15.433Z"}
+{"g":"us|1790|로드아일랜드 헌법 비준","same":true,"primary":"db897f4ad5b4","drop":["c61726e149d4"],"model":"claude-sonnet-5","at":"2026-09-25T15:33:16.720Z"}
+{"g":"us|1794|위스키 반란","same":true,"primary":"ef4fddac2e0c","drop":["419f05d81372"],"model":"claude-sonnet-5","at":"2026-09-25T15:33:18.103Z"}
+{"g":"ai|2016|알파고-이세돌 (두 연표)","same":true,"primary":"9e44f302e5e9","drop":["82534e7b10fb"],"model":"manual","why":"2016년 알파고-이세돌 대국 — AI 연표와 기계학습 연표가 같은 대국을 각자 적었다","at":"2026-09-25T15:35:24.007Z"}
+{"g":"ai|2011|왓슨 제퍼디 (두 연표)","same":true,"primary":"b99437e551da","drop":["110f32a18cfb"],"model":"manual","why":"2011년 IBM 왓슨의 제퍼디! 우승 — 같은 사건","at":"2026-09-25T15:35:24.007Z"}
+{"g":"ai|2017|트랜스포머 (두 연표)","same":true,"primary":"143fc16bd945","drop":["2fade1db598f"],"model":"manual","why":"2017년 트랜스포머 구조 발표 — 같은 논문","at":"2026-09-25T15:35:24.007Z"}
+{"g":"ai|1969|퍼셉트론 책 (두 연표)","same":true,"primary":"118fed85b4ee","drop":["12877be0cbfe"],"model":"manual","why":"1969년 민스키·페퍼트 『퍼셉트론』 출판 — 같은 책","at":"2026-09-25T15:35:24.007Z"}
+{"g":"ai|2012|알렉스넷 (두 연표)","same":true,"primary":"68e15dd39017","drop":["da97d6680ce8"],"model":"manual","why":"2012년 알렉스넷 — 같은 모델·같은 논문(같은 해 구글 고양이 인식은 다른 사건이라 두었다)","at":"2026-09-25T15:35:24.007Z"}
+{"g":"ai|1970|리나인마 자동 미분 (두 연표)","same":true,"primary":"b93104b37ad0","drop":["7e090baa8222"],"model":"manual","why":"1970년 리나인마의 역방향 자동 미분(역전파) — 같은 업적","at":"2026-09-25T15:35:24.007Z"}
