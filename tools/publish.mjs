@@ -5,7 +5,7 @@
  * 읽기 경로는 이 정적 파일뿐이다 — 서버도 DB도 없다(PRD §8).
  *
  * 레벨별 청크(§5-3 임계값)
- *   century/all.json          중요도 5
+ *   century/all.json          중요도 5 + 중요도 5가 없는 세기 칸은 그 칸의 상위 3건
  *   decade/{100년}.json        중요도 ≥ 4
  *   year/{10년}.json           전부
  * 파일 단위가 행 단위보다 한 자릿수 큰 이유는 §6-1 — 네이티브 관성 스크롤이
@@ -550,6 +550,8 @@ for (const { id } of REGIONS) {
 }
 
 const byLevel = { century: 0, decade: 0, year: 0 };
+/** 중요도 5가 없어 채운 세기 칸의 사건 수(발행 로그) */
+let centuryFilled = 0;
 let officialMatched = 0;
 let spanDupes = 0;
 /** 기간 프레임 원천(아래 루프가 채운다) → spans.json */
@@ -588,8 +590,28 @@ for (const region of REGIONS.map((x) => x.id)) {
   const sortKey = (a, b) =>
     b.regions[0].imp - a.regions[0].imp || (b.f ?? 0) - (a.f ?? 0) || (b.sl ?? 0) - (a.sl ?? 0) || a.y0 - b.y0 || (a.id < b.id ? -1 : 1);
 
+  /*
+    **세기 칸을 비워 두지 않는다**(2026-09-26, 대표 지적 "가장 줄이면 하나도 안 나오는 게 맞아?").
+    세기 청크가 중요도 5만 실어서, 중요도 5가 없는 세기는 사건이 수십 건 있어도 「N건 더」조차 없는
+    **완전한 빈 칸**이었다 — 한국 200년대(백제 구수왕 즉위 · 고구려-위 전쟁…)가 세기 보기에서 비어 있었다.
+    빈 칸은 "아무 일도 없었다"로 읽힌다. 그 칸에서 가장 중요한 것(같은 sortKey)을 CENTURY_FILL건 채운다 —
+    세기 보기의 뜻(칸마다 가장 중요한 것)은 그대로다. 중요도 5가 있는 칸은 건드리지 않는다.
+  */
+  const CENTURY_FILL = 3;
+  const centuryAll = recs.filter((e) => e.regions[0].imp >= 5);
+  const topCenturies = new Set(centuryAll.map((e) => bucket(e.y0, 100)));
+  const rest = new Map();
+  for (const e of recs) {
+    const b = bucket(e.y0, 100);
+    if (!topCenturies.has(b)) (rest.get(b) ?? rest.set(b, []).get(b)).push(e);
+  }
+  for (const evs of rest.values()) {
+    const fill = evs.sort(sortKey).slice(0, CENTURY_FILL);
+    centuryAll.push(...fill);
+    centuryFilled += fill.length;
+  }
   const groups = {
-    century: { all: recs.filter((e) => e.regions[0].imp >= 5) },
+    century: { all: centuryAll },
     decade: {},
     year: {},
   };
@@ -776,7 +798,7 @@ console.log(`발행 — stage=${stage} → ${OUT}
   교차 사건   ${Object.keys(crossGroups).length}묶음 ${Object.values(crossGroups).reduce((a, g) => a + g.length, 0)}행 (같은 사건을 여러 열이 각자 적은 것) · QID 교정 ${qidFixed}건${qidFixStale.length ? ` — 맞지 않아 건너뜀 ${qidFixStale.join(", ")}` : ""}
   검색 색인   ${searchItems.length}건 (이름이 있는 것만 · 첫 화면에서는 받지 않는다)
   연도 색인   ${Object.values(yearsByRegion).reduce((a, d) => a + d.length, 0)}개 해 (빈 구간 힌트용)
-  청크 수록   century ${byLevel.century} · decade ${byLevel.decade} · year ${byLevel.year}
+  청크 수록   century ${byLevel.century}(빈 세기 칸 채움 ${centuryFilled}) · decade ${byLevel.decade} · year ${byLevel.year}
   기간        막대 ${spanKept}건 (중복 제거 ${spanDupes})
   공식 출처   매칭 사건 ${officialMatched} · 연도 파일 ${officialYears} (항목 ${officialEntries})
   파일        ${Object.keys(chunks).length}`);

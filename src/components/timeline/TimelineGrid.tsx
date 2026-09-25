@@ -33,6 +33,7 @@ import { uncoveredFraction } from "@/lib/timeline/uncovered";
 import { orderRowGroups, rowSheetRegions } from "@/lib/timeline/row-sheet";
 import type { SearchHit } from "@/lib/search";
 import { layoutCell } from "@/lib/timeline/layout-cell";
+import { emptyPolityHint } from "@/lib/timeline/polity-hint";
 import { originalTag } from "@/lib/timeline/item-kind";
 import {
   colsForWidth,
@@ -824,6 +825,9 @@ export function TimelineGrid() {
     const meta = chunkMeta.current.get(`${DATA}/events/${region}/${chunkKeyFor(b, level)}.json`);
     return Math.max(loaded, meta?.counts[String(b)] ?? 0);
   };
+  /** 받은 뒤에 비어 있는 칸. 아직 안 받은 칸은 false — 빈 칸 이름이 로딩 중에 떴다 사라지지 않게(polity-hint.ts). */
+  const cellEmpty = (region: RegionId, b: number): boolean =>
+    chunks.current.has(`${DATA}/events/${region}/${chunkKeyFor(b, rows.level)}.json`) && cellTotal(region, b, cellEvents(region, b).length) === 0;
   // cellTotal 뒤에 둔다 — 앞에 두면 시트가 열리는 순간 초기화 전 참조로 죽는다(2026-09-25 실측)
   /** 행 시트의 열 — 격자에 보이는 열이 먼저, 나머지가 뒤(「격자 밖」 표시). */
   const rowGroups: RowGroup[] = rowSheet
@@ -1413,6 +1417,8 @@ export function TimelineGrid() {
                     // 규칙은 i18n.ts의 dupNames 한 벌 — 여기서 nameIn만 세던 시절에는 지은 제목이 집합에
                     // 안 들어가 「3·1 운동」이 세 번 찍히는 것을 그리드만 못 막았다(연도 페이지는 막았다).
                     const dup = dupNames(placed.map((pl) => pl.ev), locale);
+                    // 빈 칸이면 그때 거기의 정치체 이름 — 빈 칸 줄의 첫 칸에만(polity-hint.ts)
+                    const hint = placed.length === 0 && hidden === 0 ? emptyPolityHint(polities[c.id], b, rows.unit, (bb) => cellEmpty(c.id, bb), AXIS_YEAR_END) : undefined;
                     return (
                       // 세로 구분선은 없다 — 카드 사이 10px 여백이 그 일을 한다
                       <div
@@ -1434,6 +1440,16 @@ export function TimelineGrid() {
                             style={{ height: uncoveredFraction(b, rows.unit, coverage[c.id]) * h }}
                             aria-hidden
                           />
+                        )}
+                        {/* 머리의 정치체 표기와 같은 꼴(세리프·흐림) — 사건 칩과 구별된다. 머리가 읽어 주므로 aria-hidden */}
+                        {hint && (
+                          <div
+                            className="pointer-events-none absolute inset-x-0 flex items-center font-serif text-meta text-fg-subtle"
+                            style={{ top: CELL_PAD, height: Math.min(h - CELL_PAD * 2, itemH.plain), paddingLeft: ITEM_INSET_START, paddingRight: ITEM_INSET_END }}
+                            aria-hidden
+                          >
+                            <span className="truncate">{polityName(hint)}</span>
+                          </div>
                         )}
                         {sub > 0 &&
                           Array.from({ length: sub - 1 }, (_, i) => (

@@ -72,7 +72,15 @@ export function layoutCell<T extends KindSource & { y0: number; m?: number }>(
   const chosen: { ev: T; kind: "lead" | "plain"; h: number }[] = [];
   let used = 0;
   for (const ev of evs) {
-    const kind = itemKind(ev, locale);
+    let kind = itemKind(ev, locale);
+    /*
+      **칸의 첫 항목은 등급을 낮춰서라도 세운다**(2026-09-26, 대표 지적 "가장 줄이면 하나도 안 나오는 게 맞아?").
+      가장 줄인 화면의 세기 행은 34px, 쓸 자리는 30px다. 칸의 맨 앞(가장 중요한 것)은 대개 lead(34px)라
+      여기서 곧장 멈췄고, 28px plain이면 설 자리가 있는데도 **모든 칸이 「N건 더」뿐**이었다.
+      등급은 자리가 허락할 때의 강조다 — 자리가 모자라 강조를 잃는 것이 사건 자체를 잃는 것보다 낫다.
+      첫 항목만: 뒤 항목까지 낮추면 넓은 칸에서도 lead가 plain으로 섞여 위계가 흐려진다.
+    */
+    if (!chosen.length && kind === "lead" && heights.lead > avail && heights.plain <= avail) kind = "plain";
     const ih = heights[kind];
     if (used + ih > avail) break;
     chosen.push({ ev, kind, h: ih });

@@ -43,8 +43,21 @@ describe("높이 예산 — 개수가 아니라 높이로 자른다", () => {
     expect(hidden).toBe(1);
   });
 
-  it("행이 항목 하나도 못 담으면 전부 숨는다", () => {
-    const { placed, hidden } = run([lead("a", 1900)], ITEM_H.lead);
+  it("lead가 안 들어가는 행이면 첫 항목을 plain 높이로 세운다 — 가장 줄인 세기 행(34px)", () => {
+    // 이전에는 여기서 0건이었다: 가장 줄인 화면의 모든 칸이 「N건 더」뿐이었다(2026-09-26)
+    const { placed, hidden } = run([lead("a", 1900), lead("b", 1950)], ITEM_H.lead, 1900, 100);
+    expect(placed.map((p) => [p.ev.id, p.kind, p.h])).toEqual([["a", "plain", ITEM_H.plain]]);
+    expect(hidden).toBe(1);
+  });
+
+  it("낮추는 것은 첫 항목뿐 — 넓은 칸의 뒤 lead는 lead로 남거나 숨는다", () => {
+    // 80px: lead 34 + lead 34 + 간격 = 70 ≤ 76, 셋째 lead는 plain(28)이면 들어가지만 낮추지 않는다
+    const { placed } = run([lead("a", 1900), lead("b", 1903), lead("c", 1906)], 80);
+    expect(placed.map((p) => p.kind)).toEqual(["lead", "lead"]);
+  });
+
+  it("plain조차 못 담는 행이면 전부 숨는다", () => {
+    const { placed, hidden } = run([lead("a", 1900)], ITEM_H.plain);
     expect(placed).toHaveLength(0);
     expect(hidden).toBe(1);
   });
