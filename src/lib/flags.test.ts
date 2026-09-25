@@ -22,8 +22,9 @@ describe("열 아이콘 SVG", () => {
 
   it.each(files)("%s — 주석 안에 하이픈 두 개가 잇대어 있지 않다", (f) => {
     const s = readFileSync(path.join(DIR, f), "utf8");
-    const bad = [...s.matchAll(/<!--([\s\S]*?)-->/g)].filter((m) => m[1].includes("--") || m[1].endsWith("-"));
-    expect(bad.map((m) => m[1].trim().slice(0, 60))).toEqual([]);
+    const comments = [...s.matchAll(/<!--([\s\S]*?)-->/g)].map((m) => m[1] ?? "");
+    const bad = comments.filter((c) => c.includes("--") || c.endsWith("-"));
+    expect(bad.map((c) => c.trim().slice(0, 60))).toEqual([]);
   });
 
   it.each(files)("%s — <svg>로 열고 </svg>로 닫는다", (f) => {
