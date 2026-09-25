@@ -124,6 +124,8 @@ export interface SourcesCopy {
   wiki: { h: string; items: ReactNode[]; body: ReactNode };
   nikh: { h: string; lead: ReactNode; items: ReactNode[]; body: ReactNode };
   names: { h: string; body: ReactNode };
+  /** 원문이 아닌 것 — 기계 번역과 지은 제목(tools/translate.mjs · tools/name.mjs). 한국어 화면에만 있다. */
+  derived: { h: string; body: ReactNode };
   foot: ReactNode;
 }
 
@@ -132,10 +134,16 @@ const WIKI_TITLE = {
   ai: <>&ldquo;Timeline of artificial intelligence&rdquo;</>,
   kr: <>「한국사 연표」</>,
   krEn: <>&ldquo;Timeline of Korean history&rdquo;</>,
+  krKwangmu: <>&ldquo;Timeline of the Kwangmu Reform&rdquo;</>,
+  cnZh: <>「中国历史年表」</>,
+  cnPrc: <>「中华人民共和国历史年表」</>,
   cn: <>&ldquo;Timeline of Chinese history&rdquo;</>,
+  cnDyn: <>&ldquo;Timeline of the &hellip; dynasty&rdquo; (Han · Tang · Song · Ming · Qing)</>,
+  jpJa: <>「日本史の出来事一覧」</>,
   jp: <>&ldquo;Timeline of Japanese history&rdquo;</>,
   usPre: <>&ldquo;Timeline of pre&ndash;United States history&rdquo;</>,
-  us: <>&ldquo;Timeline of United States history&rdquo;</>,
+  usRev: <>&ldquo;Timeline of the American Revolution&rdquo;</>,
+  us: <>&ldquo;Timeline of the history of the United States&rdquo;</>,
 };
 
 const A = ({ href, children }: { href: string; children: ReactNode }) => (
@@ -164,14 +172,14 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
     wiki: {
       h: "위키백과 연표 — 다섯 열 모두",
       items: [
-        <>AI: 영어판 {WIKI_TITLE.ai}. 이 열만 자국어판이 없어 <b>전부 영어 원문</b>이고, 한국어 제목은 기계가 지은 것이다.</>,
-        <>한국: 한국어판 {WIKI_TITLE.kr}, 영어판 {WIKI_TITLE.krEn}</>,
-        <>중국: 영어판 {WIKI_TITLE.cn}</>,
-        <>일본: 영어판 {WIKI_TITLE.jp}</>,
-        <>미국: 영어판 {WIKI_TITLE.usPre} 및 시기별 {WIKI_TITLE.us}</>,
+        <>AI: 영어판 {WIKI_TITLE.ai}. 이 열만 자국어판이 없어 <b>전부 영어 원문</b>이다.</>,
+        <>한국: 한국어판 {WIKI_TITLE.kr}, 영어판 {WIKI_TITLE.krEn} · {WIKI_TITLE.krKwangmu}</>,
+        <>중국: 중국어판 {WIKI_TITLE.cnZh} · {WIKI_TITLE.cnPrc}, 영어판 {WIKI_TITLE.cn} 및 왕조별 {WIKI_TITLE.cnDyn}</>,
+        <>일본: 일본어판 {WIKI_TITLE.jpJa}, 영어판 {WIKI_TITLE.jp}</>,
+        <>미국: 영어판 {WIKI_TITLE.usPre} · {WIKI_TITLE.usRev} 및 시기별 {WIKI_TITLE.us}</>,
       ],
       body: (
-        <>본문 텍스트는 <A href={CC_DEED.ko}>CC BY-SA 4.0</A>이다. 각 사건의 상세 패널에서 원문 문서와 수집 시점의 판(revid)으로 이어진다. 동일 조건 변경 허락 조항에 따라 <b>이 사이트의 사건 본문도 CC BY-SA 4.0으로 다시 쓸 수 있다.</b> 영어 원문은 아직 옮기지 않았다 &mdash; 옮김이 붙으면 그것도 같은 조건이다.</>
+        <>본문 텍스트는 <A href={CC_DEED.ko}>CC BY-SA 4.0</A>이다. 각 사건의 상세 패널에서 원문 문서와 수집 시점의 판(revid)으로 이어진다. 동일 조건 변경 허락 조항에 따라 <b>이 사이트의 사건 본문도 CC BY-SA 4.0으로 다시 쓸 수 있다.</b> 한국어 옮김과 칩 제목도 같은 조건이다 &mdash; 아래 &ldquo;기계가 만든 것&rdquo;&#8288;에&nbsp;적는다.</>
       ),
     },
     nikh: {
@@ -191,7 +199,13 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
     names: {
       h: "관점별 명칭 · 중요도",
       body: (
-        <>사건을 각 나라가 부르는 이름은 <A href={WIKIDATA}>Wikidata</A>(CC0)의 사이트링크 표제어를 그대로 쓴다. 상세 패널에 보이는 &ldquo;중요도&rdquo;는 그 항목이 실린 위키백과 언어판 수를 열 안에서 순위 매긴 것으로, 표시 밀도를 정하는 장치이지 역사적 평가가 아니다.</>
+        <>사건을 각 나라가 부르는 이름은 <A href={WIKIDATA}>Wikidata</A>(CC0)의 사이트링크 표제어를 그대로 쓴다. 상세 패널에 보이는 &ldquo;중요도&rdquo;는 그 항목이 실린 위키백과 언어판 수를 열 안에서 순위 매긴 것으로, 표시 밀도를 정하는 장치이지 역사적 평가가 아니다. 연표 문서가 비는 구간은 위키데이터의 사건 항목(전투·조약·반란 등)으로 채운다. 상세 패널의 &ldquo;관련 문서&rdquo; 설명은 한국어 위키백과 문서의 첫 문단 그대로다(CC BY-SA 4.0).</>
+      ),
+    },
+    derived: {
+      h: "기계가 만든 것 — 한국어 옮김 · 칩 제목",
+      body: (
+        <>이 둘만은 원문이 아니다. 한국어 화면에서 외국어 원문 줄은 <b>기계 번역</b>으로 보이고, 원문이 긴 문장인 줄은 칩에 기계가 지은 <b>짧은 제목</b>을 붙인다. 상세 패널이 각각 &ldquo;한국어 · 기계 번역&rdquo;, &ldquo;지은 제목&rdquo;으로 표시하고, 원문은 그 아래에 그대로 남는다. 둘 다 원문에서 만든 파생물이라 원문과 같은 조건(CC BY-SA 4.0)이다. 영어·일본어·중국어 화면에는 이 둘이 없다 &mdash; 그 언어의 표제어가 없는 줄은 원문 그대로 보인다.</>
       ),
     },
     foot: (
@@ -210,13 +224,13 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
       h: "Wikipedia chronologies — all five columns",
       items: [
         <>AI: English {WIKI_TITLE.ai}. This column alone has no native-language edition, so every line is the English original.</>,
-        <>Korea: Korean Wikipedia {WIKI_TITLE.kr}, English {WIKI_TITLE.krEn}</>,
-        <>China: English {WIKI_TITLE.cn}</>,
-        <>Japan: English {WIKI_TITLE.jp}</>,
-        <>United States: English {WIKI_TITLE.usPre} and the period articles {WIKI_TITLE.us}</>,
+        <>Korea: Korean Wikipedia {WIKI_TITLE.kr}; English {WIKI_TITLE.krEn} · {WIKI_TITLE.krKwangmu}</>,
+        <>China: Chinese {WIKI_TITLE.cnZh} · {WIKI_TITLE.cnPrc}; English {WIKI_TITLE.cn} and the dynasty timelines {WIKI_TITLE.cnDyn}</>,
+        <>Japan: Japanese {WIKI_TITLE.jpJa}; English {WIKI_TITLE.jp}</>,
+        <>United States: English {WIKI_TITLE.usPre} · {WIKI_TITLE.usRev} and the period articles {WIKI_TITLE.us}</>,
       ],
       body: (
-        <>The body text is <A href={CC_DEED.en}>CC BY-SA 4.0</A>. Each event&rsquo;s detail panel links to the source article and to the revision (revid) as collected. Under the share-alike clause, <b>the event text on this site may in turn be reused under CC BY-SA 4.0.</b> The English originals are not translated yet &mdash; once a translation is attached, it carries the same terms.</>
+        <>The body text is <A href={CC_DEED.en}>CC BY-SA 4.0</A>. Each event&rsquo;s detail panel links to the source article and to the revision (revid) as collected. Under the share-alike clause, <b>the event text on this site may in turn be reused under CC BY-SA 4.0.</b> The Korean translations and chip titles carry the same terms &mdash; see &ldquo;What a machine made&rdquo; below.</>
       ),
     },
     nikh: {
@@ -236,7 +250,13 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
     names: {
       h: "Names by perspective · importance",
       body: (
-        <>The name each country uses for an event comes verbatim from the sitelink titles of <A href={WIKIDATA}>Wikidata</A> (CC0). The &ldquo;importance&rdquo; shown in the detail panel ranks, within a column, how many Wikipedia language editions carry that entry; it is a device for deciding display density, not a historical judgement.</>
+        <>The name each country uses for an event comes verbatim from the sitelink titles of <A href={WIKIDATA}>Wikidata</A> (CC0). The &ldquo;importance&rdquo; shown in the detail panel ranks, within a column, how many Wikipedia language editions carry that entry; it is a device for deciding display density, not a historical judgement. Stretches no chronology covers are filled from Wikidata event items (battles, treaties, revolts and the like). The &ldquo;Related article&rdquo; text in the detail panel is the first paragraph of the Korean Wikipedia article, verbatim (CC BY-SA 4.0).</>
+      ),
+    },
+    derived: {
+      h: "What a machine made — Korean translations · chip titles",
+      body: (
+        <>These two alone are not source text. On the Korean interface, lines whose original is in another language appear as a <b>machine translation</b>, and lines whose original is a long sentence get a short <b>machine-written title</b> on the chip. The detail panel marks them &ldquo;Korean · machine translation&rdquo; and &ldquo;generated title&rdquo;, and the original stays beneath, verbatim. Both are derived from the original and carry its terms (CC BY-SA 4.0). The English, Japanese and Chinese interfaces have neither &mdash; where a line has no title in that language, the original is shown as is.</>
       ),
     },
     foot: (
@@ -255,13 +275,13 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
       h: "Wikipedia年表 — 五つの列すべて",
       items: [
         <>AI: 英語版 {WIKI_TITLE.ai}。この列だけ自国語版がなく、すべて英語原文である。</>,
-        <>韓国: 韓国語版 {WIKI_TITLE.kr}、英語版 {WIKI_TITLE.krEn}</>,
-        <>中国: 英語版 {WIKI_TITLE.cn}</>,
-        <>日本: 英語版 {WIKI_TITLE.jp}</>,
-        <>アメリカ: 英語版 {WIKI_TITLE.usPre} および時期別の {WIKI_TITLE.us}</>,
+        <>韓国: 韓国語版 {WIKI_TITLE.kr}、英語版 {WIKI_TITLE.krEn} · {WIKI_TITLE.krKwangmu}</>,
+        <>中国: 中国語版 {WIKI_TITLE.cnZh} · {WIKI_TITLE.cnPrc}、英語版 {WIKI_TITLE.cn} および王朝別の {WIKI_TITLE.cnDyn}</>,
+        <>日本: 日本語版 {WIKI_TITLE.jpJa}、英語版 {WIKI_TITLE.jp}</>,
+        <>アメリカ: 英語版 {WIKI_TITLE.usPre} · {WIKI_TITLE.usRev} および時期別の {WIKI_TITLE.us}</>,
       ],
       body: (
-        <>本文テキストは <A href={CC_DEED.ja}>CC BY-SA 4.0</A> である。各出来事の詳細パネルから原文の記事と収集時点の版（revid）へつながる。継承条項により、<b>このサイトの出来事の本文も CC BY-SA 4.0 で再利用できる。</b>英語の原文はまだ訳していない &mdash; 訳が付けば、それも同じ条件だ。</>
+        <>本文テキストは <A href={CC_DEED.ja}>CC BY-SA 4.0</A> である。各出来事の詳細パネルから原文の記事と収集時点の版（revid）へつながる。継承条項により、<b>このサイトの出来事の本文も CC BY-SA 4.0 で再利用できる。</b>韓国語訳とチップの見出しも同じ条件だ &mdash; 下の「機械が作ったもの」に記す。</>
       ),
     },
     nikh: {
@@ -281,7 +301,13 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
     names: {
       h: "視点ごとの名称 · 重要度",
       body: (
-        <>出来事を各国が何と呼ぶかは <A href={WIKIDATA}>Wikidata</A>（CC0）のサイトリンクの見出し語をそのまま使う。詳細パネルの「重要度」は、その項目を載せている Wikipedia の言語版の数を列の中で順位付けしたもので、表示密度を決める仕掛けであって歴史的評価ではない。</>
+        <>出来事を各国が何と呼ぶかは <A href={WIKIDATA}>Wikidata</A>（CC0）のサイトリンクの見出し語をそのまま使う。詳細パネルの「重要度」は、その項目を載せている Wikipedia の言語版の数を列の中で順位付けしたもので、表示密度を決める仕掛けであって歴史的評価ではない。年表記事がない区間は Wikidata の出来事項目（戦闘・条約・反乱など）で補う。詳細パネルの「関連記事」の説明は韓国語版 Wikipedia 記事の冒頭段落そのままである（CC BY-SA 4.0）。</>
+      ),
+    },
+    derived: {
+      h: "機械が作ったもの — 韓国語訳 · チップの見出し",
+      body: (
+        <>この二つだけは原文ではない。韓国語の画面では、外国語が原文の行は<b>機械翻訳</b>で表示され、原文が長い文の行にはチップに機械が付けた<b>短い見出し</b>を使う。詳細パネルがそれぞれ「韓国語 · 機械翻訳」「生成された見出し」と表示し、原文はその下にそのまま残る。どちらも原文から作った派生物で、原文と同じ条件（CC BY-SA 4.0）である。英語・日本語・中国語の画面にはこの二つはない &mdash; その言語の見出し語がない行は原文のまま表示される。</>
       ),
     },
     foot: (
@@ -300,13 +326,13 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
       h: "维基百科年表 — 五列均适用",
       items: [
         <>AI：英语版 {WIKI_TITLE.ai}。只有这一列没有本国语言版本，全部为英文原文。</>,
-        <>韩国：韩语版 {WIKI_TITLE.kr}、英语版 {WIKI_TITLE.krEn}</>,
-        <>中国：英语版 {WIKI_TITLE.cn}</>,
-        <>日本：英语版 {WIKI_TITLE.jp}</>,
-        <>美国：英语版 {WIKI_TITLE.usPre} 及分期的 {WIKI_TITLE.us}</>,
+        <>韩国：韩语版 {WIKI_TITLE.kr}、英语版 {WIKI_TITLE.krEn} · {WIKI_TITLE.krKwangmu}</>,
+        <>中国：中文版 {WIKI_TITLE.cnZh} · {WIKI_TITLE.cnPrc}，英语版 {WIKI_TITLE.cn} 及各朝代的 {WIKI_TITLE.cnDyn}</>,
+        <>日本：日语版 {WIKI_TITLE.jpJa}、英语版 {WIKI_TITLE.jp}</>,
+        <>美国：英语版 {WIKI_TITLE.usPre} · {WIKI_TITLE.usRev} 及分期的 {WIKI_TITLE.us}</>,
       ],
       body: (
-        <>正文文本采用 <A href={CC_DEED.zh}>CC BY-SA 4.0</A>。可从每条事件的详情面板通往原文条目及采集时的版本（revid）。依据相同方式共享条款，<b>本站的事件正文同样可以按 CC BY-SA 4.0 再利用。</b>英文原文尚未翻译 &mdash; 译文附上后，同样适用该条款。</>
+        <>正文文本采用 <A href={CC_DEED.zh}>CC BY-SA 4.0</A>。可从每条事件的详情面板通往原文条目及采集时的版本（revid）。依据相同方式共享条款，<b>本站的事件正文同样可以按 CC BY-SA 4.0 再利用。</b>韩语译文与标签标题同样适用该条款 &mdash; 见下文“机器生成的内容”。</>
       ),
     },
     nikh: {
@@ -326,7 +352,13 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
     names: {
       h: "各视角名称 · 重要度",
       body: (
-        <>各国对同一事件的称呼，直接取自 <A href={WIKIDATA}>Wikidata</A>（CC0）的站点链接标题。详情面板中显示的“重要度”，是按收录该条目的维基百科语言版本数在列内排名而得，它是决定显示密度的装置，并非历史评价。</>
+        <>各国对同一事件的称呼，直接取自 <A href={WIKIDATA}>Wikidata</A>（CC0）的站点链接标题。详情面板中显示的“重要度”，是按收录该条目的维基百科语言版本数在列内排名而得，它是决定显示密度的装置，并非历史评价。没有年表条目覆盖的区间，以 Wikidata 的事件条目（战役、条约、叛乱等）补足。详情面板中“相关条目”的说明为韩语维基百科条目首段原文（CC BY-SA 4.0）。</>
+      ),
+    },
+    derived: {
+      h: "机器生成的内容 — 韩语译文 · 标签标题",
+      body: (
+        <>只有这两项不是原文。在韩语界面中，原文为外语的条目显示为<b>机器翻译</b>，原文为长句的条目则在标签上使用由机器拟定的<b>简短标题</b>。详情面板分别标注“韩语 · 机器翻译”“生成的标题”，原文原样保留在其下方。两者都是由原文派生的内容，与原文适用相同条款（CC BY-SA 4.0）。英语、日语、中文界面没有这两项 &mdash; 没有该语言标题的条目按原文显示。</>
       ),
     },
     foot: (

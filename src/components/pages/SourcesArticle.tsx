@@ -59,6 +59,11 @@ export function SourcesArticle({ locale }: { locale: Locale }) {
             <h2 className="text-h2 font-semibold">{c.names.h}</h2>
             <p className="mt-3 text-lead text-fg-strong">{c.names.body}</p>
           </section>
+
+          <section className={SECTION}>
+            <h2 className="text-h2 font-semibold">{c.derived.h}</h2>
+            <p className="mt-3 text-lead text-fg-strong">{c.derived.body}</p>
+          </section>
         </div>
 
         {/* 출처 줄 — 우측 정렬하지 않는다. 읽는 페이지의 마지막 줄은 본문과 같은 왼쪽 끝에 선다 */}

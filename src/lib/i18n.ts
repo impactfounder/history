@@ -142,8 +142,8 @@ export interface Strings {
 
 export const T: Record<Locale, Strings> = {
   ko: {
-    badgePreview: (n) => `미리보기 · ${n.toLocaleString("ko-KR")}건 · 원문 그대로 · 2025년까지`,
-    badge: (n) => `${n.toLocaleString("ko-KR")}건 · 2025년까지 수록`,
+    badgePreview: (n) => `미리보기 · ${n.toLocaleString("ko-KR")}건 · 원문 그대로 · 2025년까지(AI는 2026년)`,
+    badge: (n) => `${n.toLocaleString("ko-KR")}건 · 2025년까지 수록(AI는 2026년)`,
     noData: "데이터 없음",
     recommended: "추천 연도",
     sources: "출처",
@@ -210,8 +210,8 @@ export const T: Record<Locale, Strings> = {
     zoomHint: "Ctrl+휠",
   },
   en: {
-    badgePreview: (n) => `Preview · ${n.toLocaleString("en-US")} events · verbatim sources · through 2025`,
-    badge: (n) => `${n.toLocaleString("en-US")} events · through 2025`,
+    badgePreview: (n) => `Preview · ${n.toLocaleString("en-US")} events · verbatim sources · through 2025 (AI through 2026)`,
+    badge: (n) => `${n.toLocaleString("en-US")} events · through 2025 (AI through 2026)`,
     noData: "No data",
     recommended: "Suggested years",
     sources: "Sources",
@@ -278,8 +278,8 @@ export const T: Record<Locale, Strings> = {
     zoomHint: "Ctrl+wheel",
   },
   ja: {
-    badgePreview: (n) => `プレビュー · ${n.toLocaleString("ja-JP")}件 · 原文のまま · 2025年まで`,
-    badge: (n) => `${n.toLocaleString("ja-JP")}件 · 2025年まで`,
+    badgePreview: (n) => `プレビュー · ${n.toLocaleString("ja-JP")}件 · 原文のまま · 2025年まで（AIは2026年まで）`,
+    badge: (n) => `${n.toLocaleString("ja-JP")}件 · 2025年まで（AIは2026年まで）`,
     noData: "データなし",
     recommended: "おすすめの年",
     sources: "出典",
@@ -346,8 +346,8 @@ export const T: Record<Locale, Strings> = {
     zoomHint: "Ctrl+ホイール",
   },
   zh: {
-    badgePreview: (n) => `预览 · ${n.toLocaleString("zh-CN")}条 · 原文照录 · 至2025年`,
-    badge: (n) => `${n.toLocaleString("zh-CN")}条 · 收录至2025年`,
+    badgePreview: (n) => `预览 · ${n.toLocaleString("zh-CN")}条 · 原文照录 · 至2025年（AI至2026年）`,
+    badge: (n) => `${n.toLocaleString("zh-CN")}条 · 收录至2025年（AI至2026年）`,
     noData: "无数据",
     recommended: "推荐年份",
     sources: "来源",
