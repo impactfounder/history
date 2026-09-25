@@ -221,7 +221,11 @@ for (const r of all) {
   const primary = into ? byId.get(into) : null;
   if (!primary || primary === r) continue;
   for (const src of r.sources) {
-    if (src.kind === "wikipedia") primary.sources.push({ ...src, lang: r.lang, text: r.text, alt: true });
+    // 같은 원문이 이미 옮겨져 있으면 건너뛴다 — 같은 위키 줄이 두 번 합쳐 들어와 상세의 「같은 사건」에
+    // 똑같은 문장이 두 번 나오던 것(2026-09-25, 상세 7개 — 임진왜란 · 명나라 건국 · 왕샤 조약 등)
+    if (src.kind === "wikipedia") {
+      if (!primary.sources.some((p) => p.alt && p.lang === r.lang && p.text === r.text)) primary.sources.push({ ...src, lang: r.lang, text: r.text, alt: true });
+    }
     else if (!primary.sources.some((p) => p.kind === src.kind && p.id === src.id)) primary.sources.push(src);
   }
   /*
@@ -635,7 +639,18 @@ for (const region of REGIONS.map((x) => x.id)) {
       if (more.length) write(`events/${region}/decade/${key}.more.json`, { region, level, key, count: more.length, events: more });
     }
   }
-  for (const r of rs) write(`events/detail/${eventId(r)}.json`, toDetail(r, eventId(r)));
+  for (const r of rs) {
+    const d = toDetail(r, eventId(r));
+    /*
+      **같은 원문이 「같은 사건」에 두 번 서면 발행을 멈춘다.** 합치기에서 같은 위키 줄이 두 번 옮겨져
+      임진왜란 · 명나라 건국 등 상세 7개에 똑같은 문장이 나란히 섰다(2026-09-25). 테스트로 지키려면 상세
+      11,839개를 전부 읽어야 해(12.8초, 배포마다) 여기서 쓰는 순간 본다 — 발행이 prebuild의 첫 단계라
+      게이트는 같다.
+    */
+    const altKeys = (d.alt ?? []).map((a) => `${a.lang}|${a.text}`);
+    if (new Set(altKeys).size < altKeys.length) throw new Error(`상세 ${d.id}: 「같은 사건」 원문이 겹친다 — 합치기의 원문 옮기기를 보라`);
+    write(`events/detail/${eventId(r)}.json`, d);
+  }
   officialMatched += recs.filter((e) => e.official).length;
 }
 
