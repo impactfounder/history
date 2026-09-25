@@ -617,6 +617,29 @@ export function dropYearPrefix(s: string, year: number, locale: Locale): string 
   return rest.length >= 2 ? rest : s;
 }
 
+const EN_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const EN_MONTH_PREFIX = new RegExp(`^(${EN_MONTHS.join("|")})\\s*[—–-]\\s*`);
+const EN_MONTH_START = new RegExp(`^(?:${EN_MONTHS.join("|")})\\b`);
+
+/**
+ * **월 눈금이 이미 말하는 달을 떼기** — 연도 행에 월 눈금이 그려질 때만 쓴다(2026-09-26 줌 점검).
+ * 중국·일본 열의 원문 159줄이 「6월 — 마읍 전투: …」처럼 달로 시작한다. 월 눈금이 있으면 칩이 이미 그 달
+ * 자리에 서 있으므로 같은 말을 두 번 한다. 눈금이 없는 보기에서는 달이 칩에만 있는 정보라 두고
+ * (dropYearPrefix와 같은 원칙), 일(日)까지 적힌 것은 눈금보다 정밀하므로 두며, 그 사건의 달(`m`)과
+ * 다른 달이면 오독일 수 있어 두다. 원문은 상세 패널에 그대로 남는다.
+ */
+export function dropMonthPrefix(s: string, month: number | undefined): string {
+  if (!month) return s;
+  const m = /^(\d{1,2})\s*(?:월|月)\s*[—–-]\s*/.exec(s) ?? EN_MONTH_PREFIX.exec(s);
+  if (!m) return s;
+  const n = /^\d/.test(m[1]!) ? Number(m[1]) : EN_MONTHS.indexOf(m[1]!) + 1;
+  if (n !== month) return s;
+  const rest = s.slice(m[0].length);
+  // 「9월 – 10월 31일」은 범위다 — 앞 달만 떼면 끝 날짜가 시작처럼 읽힌다
+  if (/^\d{1,2}\s*(?:월|月)/.test(rest) || EN_MONTH_START.test(rest)) return s;
+  return rest.length >= 2 ? rest : s;
+}
+
 export function eventLabel(ev: LabelSource, locale: Locale, dupNames?: ReadonlySet<string>): { name?: string; text?: string } {
   const raw = eventLabelRaw(ev, locale, dupNames);
   return raw.name !== undefined ? { name: trimLabelEnd(raw.name) } : { text: trimLabelEnd(raw.text ?? "") };

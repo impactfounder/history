@@ -9,6 +9,7 @@ import {
   bucketStart,
   centerYear,
   chunkKeyFor,
+  chunkRange,
   clampScale,
   contentHeight,
   formatRowLabel,
@@ -48,6 +49,7 @@ import {
   HIT_MIN,
   itemHeights,
   ITEM_GAP,
+  ITEM_H,
   ITEM_INSET_END,
   ITEM_INSET_START,
   LUG_W,
@@ -58,7 +60,7 @@ import {
   TOPBAR_H,
   ZOOM_FLOAT_INSET,
 } from "@/lib/design/metrics";
-import { LOCALES, LOCALE_LABEL, LOCALE_REGION, REGION_LABEL, T, dropYearPrefix, dupNames, eventLabel, formatRowLabelL, formatYearL, isEventName, isLocale, localePath, nameIn, type Locale } from "@/lib/i18n";
+import { LOCALES, LOCALE_LABEL, LOCALE_REGION, REGION_LABEL, T, dropMonthPrefix, dropYearPrefix, dupNames, eventLabel, formatRowLabelL, formatYearL, isEventName, isLocale, localePath, nameIn, type Locale } from "@/lib/i18n";
 import { CellSheet } from "./CellSheet";
 import { RowSheet, type RowGroup } from "./RowSheet";
 import { clipForReport, reportMailto } from "@/lib/report";
@@ -452,24 +454,33 @@ export function TimelineGrid() {
       spans는 청크와 달리 **전부 한 파일**이다 — 기간은 어느 지점에서 보든 같아야 하는데,
       청크에서 파생하면 시작 연도가 안 실린 구간에서 사라졌다(Span 타입 주석).
     */
+    /*
+      연도 색인은 manifest와 **동시에** 받는다(2026-09-26 줌 점검). 청크 로더가 이것으로 빈 청크를 거르는데
+      (ensureChunk), manifest 뒤에 받으면 첫 화면의 청크 요청이 색인보다 먼저 나가 빈 청크마다 404가 났다.
+      manifest처럼 no-cache로 받는다 — 버전(?v=)을 아직 모르는 때라 재검증으로 낡은 사본을 막는다.
+    */
+    const yearsP = fetch(`${DATA}/years.json`, { cache: "no-cache" })
+      .then((r) => (r.ok ? (r.json() as Promise<{ years: Record<string, number[]> }>) : null))
+      .catch(() => null);
     fetch(`${DATA}/manifest.json`, { cache: "no-cache" })
       .then((r) => (r.ok ? (r.json() as Promise<Manifest & { publishedAt?: string }>) : null))
       .then(async (m) => {
         setManifest(m);
         const v = encodeURIComponent(m?.publishedAt ?? String(Date.now()));
+        const yrs = await yearsP;
+        // 델타로 실려 온다(gzip 1.3KB). 여기서 한 번 되돌려 두면 그 뒤로는 이분 탐색만 한다
+        setYearIndex(Object.fromEntries(Object.entries(yrs?.years ?? {}).map(([r, d]) => [r, decodeYears(d)])));
+        // 버전은 색인과 같은 배치에서 — 청크 요청(버전이 서야 나간다)이 색인을 본 뒤에 나가게
         setDataVersion(m?.publishedAt ?? String(Date.now()));
-        const [pol, spn, yrs, crs, reg] = await Promise.all([
+        const [pol, spn, crs, reg] = await Promise.all([
           fetch(`${DATA}/polities.json?v=${v}`).then((r) => (r.ok ? (r.json() as Promise<{ regions: Polities }>) : null)),
           fetch(`${DATA}/spans.json?v=${v}`).then((r) => (r.ok ? (r.json() as Promise<{ spans: Span[] }>) : null)),
-          fetch(`${DATA}/years.json?v=${v}`).then((r) => (r.ok ? (r.json() as Promise<{ years: Record<string, number[]> }>) : null)),
           fetch(`${DATA}/cross.json?v=${v}`).then((r) => (r.ok ? (r.json() as Promise<{ groups: typeof cross }>) : null)),
           // 1KB. 쓰는 것은 coverage_from 하나다 — 연도 페이지(year-data.ts)가 서버에서 읽는 그 값
           fetch(`${DATA}/regions.json?v=${v}`).then((r) => (r.ok ? (r.json() as Promise<{ regions: { id: RegionId; coverage_from?: number }[] }>) : null)),
         ]);
         setPolities(pol?.regions ?? {});
         setSpans(spn?.spans ?? []);
-        // 델타로 실려 온다(gzip 1.3KB). 여기서 한 번 되돌려 두면 그 뒤로는 이분 탐색만 한다
-        setYearIndex(Object.fromEntries(Object.entries(yrs?.years ?? {}).map(([r, d]) => [r, decodeYears(d)])));
         setCross(crs?.groups ?? {});
         setCoverage(Object.fromEntries((reg?.regions ?? []).filter((x) => x.coverage_from != null).map((x) => [x.id, x.coverage_from!])));
       })
@@ -480,6 +491,16 @@ export function TimelineGrid() {
     if (!dataVersion) return; // manifest가 오기 전엔 받지 않는다 — 버전 없는 URL은 이전 발행분 캐시를 부른다
     const path = `${DATA}/events/${region}/${key}.json`;
     if (chunks.current.has(path) || inflight.current.has(path)) return;
+    // 연도 색인상 그 청크 구간에 사건이 없으면 받지 않고 빈 구간으로 기록한다 — 발행이 쓰지 않은 파일이라 404다
+    const ys = yearIndex[region];
+    if (ys) {
+      const { from, to } = chunkRange(key);
+      if (isEmptyRange(ys, from, to)) {
+        chunks.current.set(path, null);
+        bump((n) => n + 1);
+        return;
+      }
+    }
     inflight.current.add(path);
     fetch(withV(path))
       .then((r) => (r.ok ? (r.json() as Promise<Chunk>) : null))
@@ -493,7 +514,7 @@ export function TimelineGrid() {
         inflight.current.delete(path);
         bump((n) => n + 1);
       });
-  }, [dataVersion, withV]);
+  }, [dataVersion, withV, yearIndex]);
 
   /**
    * 십년 청크의 **뒷부분**(`.more.json`). 앞부분이 이미 행마다 필요한 만큼을 다 가졌으면 받지 않는다 —
@@ -798,7 +819,11 @@ export function TimelineGrid() {
   const from = rows.from - rows.unit * OVERSCAN_ROWS;
   const to = rows.to + rows.unit * OVERSCAN_ROWS;
   const buckets: number[] = [];
-  for (let b = from; b <= to; b += rows.unit) buckets.push(b);
+  /*
+    축 범위 밖의 행은 그리지 않는다. 상하 여백(뷰포트 절반씩, padTop)이 있어서 가장 축소하면 그 여백까지 행이
+    그려졌다 — 「기원전 801–702」와 「2100·2200·2300년대」가 수록 범위 밖인데 축 눈금을 달고 있었다(2026-09-26 줌 점검).
+  */
+  for (let b = from; b <= to; b += rows.unit) if (b + rows.unit > AXIS_YEAR_START && b <= AXIS_YEAR_END) buckets.push(b);
 
   const win = railWindow(scrollTop, axis, railH);
   const bounds = scaleBounds(axis.viewportH);
@@ -936,6 +961,27 @@ export function TimelineGrid() {
     }
   }, [rows.level, chunkKeys.join("|"), cols.join(","), cellCapacity, loadedChunks, ensureMore]); // eslint-disable-line react-hooks/exhaustive-deps
   const laneW = narrow ? MORE_LANE_W_COMPACT : MORE_LANE_W;
+  /*
+    그 칸에 **실제로 서는** 사건 id. 기간 프레임이 쓴다 — 프레임의 머리는 같은 사건의 칩이라는 것이 설계인데
+    (아래 ②a), 칩이 칸에 못 들고 「N건 더」로 간 사건도 프레임을 그리고 있었다. 그러면 **남의 칩이 머리처럼**
+    보인다: 십년 보기 한국 1980년대에 「프룬제 아카데미아 … 모의 사건」(1980–1994)의 프레임이 「남극 첫 탐험」을
+    머리로 달고 「남북한 유엔 동시가입」을 가로질렀다(2026-09-26 줌 점검).
+    행 렌더와 같은 입력으로 layoutCell을 다시 돌린다 — 머리 행이 가상화로 빠져도(긴 기간을 아래에서 볼 때)
+    판정이 되도록 렌더된 칸을 보지 않는다. 한 렌더 안에서만 캐시한다.
+  */
+  const placedCache = new Map<string, Set<string>>();
+  const placedIn = (region: RegionId, b: number): Set<string> => {
+    const key = `${region}|${b}`;
+    let set = placedCache.get(key);
+    if (!set) {
+      const evs = cellEvents(region, b);
+      const h = rows.unit * axis.s;
+      const { placed } = layoutCell(evs, h, b, rows.unit, locale, itemH, laneW, subdivisions(rows.level, h), cellTotal(region, b, evs.length));
+      set = new Set(placed.map((pl) => pl.ev.id));
+      placedCache.set(key, set);
+    }
+    return set;
+  };
   /**
    * 좁은 화면의 헤더는 **두 줄**이라 더 높다. 한 줄에 다 넣으면 왕조 이름에 남는 폭이 0px이라
    * 「조선 1392–1897」이 통째로 사라진다(실측 2026-09-13). metrics.COLUMN_HEADER_H_COMPACT 주석.
@@ -1339,8 +1385,10 @@ export function TimelineGrid() {
                   .filter((sp) => sp.r === c.id)
                   // 티어 3은 프레임을 갖지 못한다. 프레임은 "이 안의 일들이 그 기간에 일어났다"는 강한 주장인데,
                   // 셀을 이끌 만하지 않은 항목이 그 주장을 하면 사실관계를 왜곡한다. 실제로 오파싱된
-                  // "프룬제 아카데미아 …(1980–1994, 실제 1992년)"이 5·18 광주 민주화 운동을 감싸고 있었다
+                  // "프룬제 아카데미아 …(1980–1994)"가 5·18 광주 민주화 운동을 감싸고 있었다(기간은 위키데이터 값)
                   .filter((sp) => sp.y1 > sp.y0 && baseTier(sp.imp) <= 2)
+                  // 머리 칩이 칸에 선 사건만 — 숨은 사건의 프레임은 남의 칩을 머리로 단다(placedIn)
+                  .filter((sp) => placedIn(c.id, bucketStart(sp.y0, rows.unit)).has(sp.id))
                   .map((sp) => {
                     const top = yearToY(sp.y0 + ((sp.m ?? 1) - 1) / 12, axis) + CELL_PAD;
                     return { ev: sp, top, bottom: yearToY(sp.y1 + 1, axis) };
@@ -1386,12 +1434,34 @@ export function TimelineGrid() {
                   {/* 연도 라벨 76px — 오른쪽 정렬 + 명조체(README 7-2). 시대·연도는 서체로 사건과 갈린다.
                       라벨이 행 높이를 넘으면 잘라 다음 행과 겹치지 않게(2026-09-05) */}
                   <div
-                    className="relative shrink-0 overflow-hidden pr-2 text-right font-serif text-axis text-fg-muted tabular-nums"
+                    className={`relative shrink-0 overflow-hidden ${narrow ? "pr-0.5" : "pr-2"} text-right font-serif text-axis text-fg-muted tabular-nums`}
                     style={{ width: axisLabelW }}
                     role="rowheader"
                     aria-colindex={1}
                   >
-                    <span className="whitespace-nowrap">{formatRowLabelL(b, rows.level, locale)}</span>
+                    {(() => {
+                      /*
+                        기원전 라벨은 두 줄로 — 시대 낱말을 윗줄에 작게(2026-09-26 줌 점검). 한 줄이면 76px 거터에서
+                        「기원전 801–702」「기원전 265년」의 뒤가 잘려 「기원전 201-1」처럼 **다른 수로** 읽혔다.
+                        잘린 라벨은 틀린 라벨이다. 영어(「801–702 BC」)는 한 줄에 들어간다.
+                        두 줄이 안 들어가는 행(폰의 가장 줄인 세기 행 24px)은 범위만 한 줄로 — 내려가는 수(501–402,
+                        401–302…)가 기원전임을 말하고, 온전한 라벨은 title로 남긴다.
+                      */
+                      const lab = formatRowLabelL(b, rows.level, locale);
+                      const era = /^(기원전|紀元前|公元前)\s*(.+)$/.exec(lab);
+                      // 경계 행(「1–서기 99」)은 서기 표기까지 빼야 폰 거터(56px)에 든다
+                      if (era && h < 30) return <span className="whitespace-nowrap" title={lab}>{era[2]!.replace(/(서기|西暦|公元)\s*/, "")}</span>;
+                      // 경계 행은 「기원전 1–」 / 「서기 99」로 가른다 — 「1–서기 99」 한 줄은 폰 거터를 넘는다
+                      const bound = era ? /^(.+?–)((?:서기|西暦|公元).+)$/.exec(era[2]!) : null;
+                      return era ? (
+                        <>
+                          <span className="block text-item-meta leading-tight">{bound ? `${era[1]} ${bound[1]}` : era[1]}</span>
+                          <span className="block whitespace-nowrap leading-tight">{bound ? bound[2] : era[2]}</span>
+                        </>
+                      ) : (
+                        <span className="whitespace-nowrap">{lab}</span>
+                      );
+                    })()}
                     {/* 폰: 행 머리를 탭하면 그 행의 모든 열(행 시트). 라벨 위를 덮는 투명 버튼 — 글자는 그대로 보인다 */}
                     {narrow && (
                       <button
@@ -1417,8 +1487,11 @@ export function TimelineGrid() {
                     // 규칙은 i18n.ts의 dupNames 한 벌 — 여기서 nameIn만 세던 시절에는 지은 제목이 집합에
                     // 안 들어가 「3·1 운동」이 세 번 찍히는 것을 그리드만 못 막았다(연도 페이지는 막았다).
                     const dup = dupNames(placed.map((pl) => pl.ev), locale);
-                    // 빈 칸이면 그때 거기의 정치체 이름 — 빈 칸 줄의 첫 칸에만(polity-hint.ts)
-                    const hint = placed.length === 0 && hidden === 0 ? emptyPolityHint(polities[c.id], b, rows.unit, (bb) => cellEmpty(c.id, bb), AXIS_YEAR_END) : undefined;
+                    // 빈 칸이면 그때 거기의 정치체 이름 — 정치체마다 첫 빈 칸에 한 번(polity-hint.ts).
+                    // 열 머리가 이미 대는 정치체(화면 맨 위 연도의 것)는 되풀이하지 않는다 — 머리 행이 아직 안 받은
+                    // 청크에 있으면 polity-hint가 「첫 빈 칸」을 화면 한가운데로 잘못 잡는다(1592년 연도 보기 아즈치모모야마)
+                    const hint0 = placed.length === 0 && hidden === 0 ? emptyPolityHint(polities[c.id], b, rows.unit, (bb) => cellEmpty(c.id, bb), AXIS_YEAR_END) : undefined;
+                    const hint = hint0 && hint0 !== polityAt(polities[c.id], yToYear(scrollTop + colHeaderH, axis)) ? hint0 : undefined;
                     return (
                       // 세로 구분선은 없다 — 카드 사이 10px 여백이 그 일을 한다
                       <div
@@ -1542,11 +1615,15 @@ export function TimelineGrid() {
                                   className={`min-w-0 truncate ${kind === "lead" ? "text-item-lead font-semibold text-fg" : "text-item text-fg-muted"}${ev.hist === "traditional" ? " italic" : ""}`}
                                 >
                                   {/* 연도 레벨에서만 행이 이미 말하는 연도를 뗀다 — 십년·세기에서 그 연도는 정보다 */}
-                                  {rows.level === "year" ? dropYearPrefix(label.name ?? label.text ?? "", ev.y0, locale) : (label.name ?? label.text)}
+                                  {rows.level === "year"
+                                    ? // 월 눈금이 있으면(sub 12) 칩의 자리가 곧 달이다 — 「6월 — 」도 뗀다(dropMonthPrefix)
+                                      ((l: string) => (sub === 12 ? dropMonthPrefix(l, ev.m) : l))(dropYearPrefix(label.name ?? label.text ?? "", ev.y0, locale))
+                                    : (label.name ?? label.text)}
                                 </span>
-                                {xn > 0 && (narrow || !meta) && crossMark}
+                                {xn > 0 && (narrow || !meta || ih < ITEM_H.plain) && crossMark}
                               </span>
-                              {meta && !narrow && (
+                              {/* 첫 항목을 바닥 높이(20px)로 낮춘 칩은 한 줄뿐이다(layout-cell.ts) — 메타를 실으면 넘친다 */}
+                              {meta && !narrow && ih >= ITEM_H.plain && (
                                 <span className="flex min-w-0 items-baseline gap-1 text-item-meta text-fg-subtle tabular-nums">
                                   <span className="min-w-0 truncate">{meta}</span>
                                   {xn > 0 && crossMark}
@@ -1604,8 +1681,13 @@ export function TimelineGrid() {
                 </button>
               ))}
             </div>
-            <span className="h-4 w-px bg-line" aria-hidden />
-            <span className="text-item-meta text-fg-subtle">{t.zoomHint}</span>
+            {/* 「Ctrl+휠」은 마우스 안내다 — 터치에서는 핀치가 줌이라 이 문구가 틀린 말이 된다 */}
+            {!coarse && (
+              <>
+                <span className="h-4 w-px bg-line" aria-hidden />
+                <span className="text-item-meta text-fg-subtle">{t.zoomHint}</span>
+              </>
+            )}
             {process.env.NODE_ENV === "development" && (
               <details className="font-mono text-item-meta text-fg-subtle">
                 <summary className="cursor-pointer select-none">계측</summary>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { CELL_PAD, ITEM_GAP, ITEM_H, MORE_BADGE_BAND, MORE_LANE_W } from "@/lib/design/metrics";
+import { CELL_PAD, ITEM_GAP, ITEM_H, ITEM_H_COMPACT, MORE_BADGE_BAND, MORE_LANE_W } from "@/lib/design/metrics";
 import { layoutCell } from "./layout-cell";
 
 /**
@@ -56,8 +56,16 @@ describe("높이 예산 — 개수가 아니라 높이로 자른다", () => {
     expect(placed.map((p) => p.kind)).toEqual(["lead", "lead"]);
   });
 
+  it("터치 높이(24px)도 안 들어가면 첫 항목을 한 줄 칩 바닥(20px)으로 — 폰의 가장 줄인 세기 행(24px)", () => {
+    // 폰은 plain도 HIT_MIN 24px라 쓸 자리 20px인 행에서 0건이었다(2026-09-26 줌 점검)
+    const touch = { lead: 24, plain: 24 };
+    const { placed, hidden } = layoutCell([lead("a", 1900), lead("b", 1950)], 24, 1900, 100, "ko", touch);
+    expect(placed.map((p) => [p.ev.id, p.kind, p.h])).toEqual([["a", "plain", ITEM_H_COMPACT.plain]]);
+    expect(hidden).toBe(1);
+  });
+
   it("plain조차 못 담는 행이면 전부 숨는다", () => {
-    const { placed, hidden } = run([lead("a", 1900)], ITEM_H.plain);
+    const { placed, hidden } = run([lead("a", 1900)], ITEM_H_COMPACT.plain);
     expect(placed).toHaveLength(0);
     expect(hidden).toBe(1);
   });

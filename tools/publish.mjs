@@ -6,7 +6,7 @@
  *
  * 레벨별 청크(§5-3 임계값)
  *   century/all.json          중요도 5 + 중요도 5가 없는 세기 칸은 그 칸의 상위 3건
- *   decade/{100년}.json        중요도 ≥ 4
+ *   decade/{100년}.json        중요도 ≥ 4 + 중요도 4가 없는 십년 칸은 그 칸의 상위 3건
  *   year/{10년}.json           전부
  * 파일 단위가 행 단위보다 한 자릿수 큰 이유는 §6-1 — 네이티브 관성 스크롤이
  * 축을 빠르게 훑기 때문이다. 키는 axis.ts의 chunkKeyFor와 같아야 한다.
@@ -552,6 +552,8 @@ for (const { id } of REGIONS) {
 const byLevel = { century: 0, decade: 0, year: 0 };
 /** 중요도 5가 없어 채운 세기 칸의 사건 수(발행 로그) */
 let centuryFilled = 0;
+/** 중요도 4가 없어 채운 십년 칸의 사건 수(발행 로그) */
+let decadeFilled = 0;
 let officialMatched = 0;
 let spanDupes = 0;
 /** 기간 프레임 원천(아래 루프가 채운다) → spans.json */
@@ -615,9 +617,24 @@ for (const region of REGIONS.map((x) => x.id)) {
     decade: {},
     year: {},
   };
+  /*
+    십년 칸도 같다 — 십년 청크가 중요도 4 이상만 실어, 중요도 4가 없는 십년은 사건이 있어도 빈 칸이었다.
+    실측(2026-09-26 줌 점검): 한국 열은 사건이 있는 십년 202칸 중 **115칸**(1,207건)이 십년 보기에서 비어
+    있었다. 그 칸의 상위 DECADE_FILL건을 채운다. 부수 효과로 이런 칸만 있던 백년 구간의 청크 파일이
+    생겨 격자가 그 주소에서 404를 받지 않는다(연도 색인은 전 사건 기준이라 요청은 나갔다).
+  */
+  const DECADE_FILL = 3;
+  const topDecades = new Set(recs.filter((e) => e.regions[0].imp >= 4).map((e) => bucket(e.y0, 10)));
+  const decadeRest = new Map();
   for (const e of recs) {
     if (e.regions[0].imp >= 4) (groups.decade[bucket(e.y0, 100)] ??= []).push(e);
+    else if (!topDecades.has(bucket(e.y0, 10))) (decadeRest.get(bucket(e.y0, 10)) ?? decadeRest.set(bucket(e.y0, 10), []).get(bucket(e.y0, 10))).push(e);
     (groups.year[bucket(e.y0, 10)] ??= []).push(e);
+  }
+  for (const [b, evs] of decadeRest) {
+    const fill = evs.sort(sortKey).slice(0, DECADE_FILL);
+    (groups.decade[bucket(b, 100)] ??= []).push(...fill);
+    decadeFilled += fill.length;
   }
   for (const [level, byKey] of Object.entries(groups)) {
     for (const [key, events] of Object.entries(byKey)) {
@@ -798,7 +815,7 @@ console.log(`발행 — stage=${stage} → ${OUT}
   교차 사건   ${Object.keys(crossGroups).length}묶음 ${Object.values(crossGroups).reduce((a, g) => a + g.length, 0)}행 (같은 사건을 여러 열이 각자 적은 것) · QID 교정 ${qidFixed}건${qidFixStale.length ? ` — 맞지 않아 건너뜀 ${qidFixStale.join(", ")}` : ""}
   검색 색인   ${searchItems.length}건 (이름이 있는 것만 · 첫 화면에서는 받지 않는다)
   연도 색인   ${Object.values(yearsByRegion).reduce((a, d) => a + d.length, 0)}개 해 (빈 구간 힌트용)
-  청크 수록   century ${byLevel.century}(빈 세기 칸 채움 ${centuryFilled}) · decade ${byLevel.decade} · year ${byLevel.year}
+  청크 수록   century ${byLevel.century}(빈 세기 칸 채움 ${centuryFilled}) · decade ${byLevel.decade}(빈 십년 칸 채움 ${decadeFilled}) · year ${byLevel.year}
   기간        막대 ${spanKept}건 (중복 제거 ${spanDupes})
   공식 출처   매칭 사건 ${officialMatched} · 연도 파일 ${officialYears} (항목 ${officialEntries})
   파일        ${Object.keys(chunks).length}`);

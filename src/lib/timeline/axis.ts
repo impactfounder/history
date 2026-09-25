@@ -306,6 +306,19 @@ export function railWindow(
  * 기원전 버킷의 키는 음수 그대로다(`decade/-500`). 천문학적 연수를 그대로
  * 쓰는 편이 변환 실수를 막는다. 사람이 읽는 문자열은 formatRowLabel이 만든다.
  */
+/**
+ * 청크 키가 덮는 연도 `[from, to]`(양끝 포함). 세기 청크(`century/all`)는 축 전체다.
+ * 격자가 연도 색인과 대조해 **사건이 없는 청크는 요청하지 않는 데** 쓴다 — 발행은 빈 청크를 쓰지 않으므로
+ * 요청하면 404다. 404도 "빈 구간"으로 기록되긴 했지만, AI·미국 열의 빈 시대마다 콘솔 오류가 쌓였다
+ * (2026-09-26 줌 점검: 연도 보기 한 화면에 404 여섯 건).
+ */
+export function chunkRange(key: string): { from: number; to: number } {
+  const [level, start] = key.split("/");
+  if (level === "decade") return { from: Number(start), to: Number(start) + 99 };
+  if (level === "year") return { from: Number(start), to: Number(start) + 9 };
+  return { from: AXIS_YEAR_START, to: AXIS_YEAR_END };
+}
+
 export function chunkKeyFor(bucket: number, level: Level): string {
   switch (level) {
     case "century":

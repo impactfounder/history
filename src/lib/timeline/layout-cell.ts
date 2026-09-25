@@ -14,7 +14,7 @@
  * 순수 함수 — 같은 입력에 같은 출력. DOM 접근 0.
  */
 
-import { CELL_PAD, ITEM_GAP, ITEM_H, MORE_BADGE_BAND, MORE_LANE_W } from "@/lib/design/metrics";
+import { CELL_PAD, ITEM_GAP, ITEM_H, ITEM_H_COMPACT, MORE_BADGE_BAND, MORE_LANE_W } from "@/lib/design/metrics";
 import { itemKind, type KindSource } from "@/lib/timeline/item-kind";
 import type { Locale } from "@/lib/i18n";
 
@@ -81,7 +81,17 @@ export function layoutCell<T extends KindSource & { y0: number; m?: number }>(
       첫 항목만: 뒤 항목까지 낮추면 넓은 칸에서도 lead가 plain으로 섞여 위계가 흐려진다.
     */
     if (!chosen.length && kind === "lead" && heights.lead > avail && heights.plain <= avail) kind = "plain";
-    const ih = heights[kind];
+    let ih = heights[kind];
+    /*
+      그래도 안 들어가면 **첫 항목만** 한 줄 칩의 바닥 높이(ITEM_H_COMPACT.plain 20px)까지 낮춘다(2026-09-26 줌 점검).
+      폰은 터치라 plain이 24px(HIT_MIN)인데 가장 줄인 세기 행이 약 24px(쓸 자리 20px)라, 폰 화면만 칸마다
+      숫자 배지뿐이었다. 20px 칩은 SC 2.5.8의 크기(24px)엔 못 미치지만 행 간격이 24px 이상이라 **간격 예외**
+      (대상 중심 간 24px)에 든다. 이 높이의 칩은 메타 줄을 싣지 않는다(TimelineGrid가 ih로 가른다).
+    */
+    if (!chosen.length && ih > avail && ITEM_H_COMPACT.plain <= avail) {
+      kind = "plain";
+      ih = ITEM_H_COMPACT.plain;
+    }
     if (used + ih > avail) break;
     chosen.push({ ev, kind, h: ih });
     used += ih + ITEM_GAP;

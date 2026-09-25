@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LOCALES, PREFIXED_LOCALES, REGION_LABEL, dropYearPrefix, eventLabel, formatRowLabelL, formatYearL, isEventName, localePath, trimLabelEnd, type LabelSource } from "./i18n";
+import { LOCALES, PREFIXED_LOCALES, REGION_LABEL, dropMonthPrefix, dropYearPrefix, eventLabel, formatRowLabelL, formatYearL, isEventName, localePath, trimLabelEnd, type LabelSource } from "./i18n";
 import { YEAR } from "./i18n-pages";
 
 describe("formatYearL / formatRowLabelL", () => {
@@ -160,5 +160,21 @@ describe("묶인 줄 나누기", () => {
   it("괄호 안의 쉼표에서는 나누지 않는다", () => {
     expect(ko("이완(李完, 李琓) 출생")).toBe("이완(李完, 李琓) 출생");
     expect(ko("김옥균(金玉均, 1851~1894) 암살, 갑오개혁 시작")).toBe("김옥균(金玉均, 1851~1894) 암살 외 1");
+  });
+});
+
+describe("dropMonthPrefix — 월 눈금이 이미 말하는 달", () => {
+  it("그 사건의 달과 같은 「N월 — 」를 뗀다 — 중국·일본 열 159줄", () => {
+    expect(dropMonthPrefix("6월 — 마읍 전투: 한나라의 계략", 6)).toBe("마읍 전투: 한나라의 계략");
+    expect(dropMonthPrefix("12月 — 日本軍撤退", 12)).toBe("日本軍撤退");
+    expect(dropMonthPrefix("June – Battle of Mayi", 6)).toBe("Battle of Mayi");
+  });
+  it("달이 다르거나 모르면 두다 — 오독일 수 있다", () => {
+    expect(dropMonthPrefix("6월 — 마읍 전투", 7)).toBe("6월 — 마읍 전투");
+    expect(dropMonthPrefix("6월 — 마읍 전투", undefined)).toBe("6월 — 마읍 전투");
+  });
+  it("일까지 적힌 것과 범위는 두다 — 눈금보다 정밀하다", () => {
+    expect(dropMonthPrefix("5월 10일 남한 총선거", 5)).toBe("5월 10일 남한 총선거");
+    expect(dropMonthPrefix("9월 – 10월 31일. 조선박람회", 9)).toBe("9월 – 10월 31일. 조선박람회");
   });
 });
