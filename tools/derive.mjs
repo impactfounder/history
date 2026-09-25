@@ -174,6 +174,12 @@ function rejectReason(raw, title) {
   if (raw.date.year > endYearFor(raw.region)) return `수록 범위 밖(${endYearFor(raw.region)}년 이후, C-2)`;
   const t = title.replace(/[–—-]/g, "-").trim();
   if (/^-?\s*(present|현재)\.?$/i.test(t) || /^\d{3,4}\s*-\s*(present|\d{3,4})\.?$/i.test(t)) return "연도 범위 머리글";
+  /*
+    **괄호만 있는 줄** — 원천 연표 표의 구간 머리글이다. 「(昭和38年)」 「(해방 이전)」 「(해방 이후)」
+    「(大正元年)」처럼 연호나 구간 이름을 괄호로 적은 한 줄이 사건 칸에 들어와 있었다(2026-09-25 실측 9줄,
+    칩에 「(쇼와 38년)」이 섰다). 그 연호는 정치체 밴드가 이미 말한다.
+  */
+  if (/^[(（][^()（）]*[)）]\.?$/.test(t)) return "구간 머리글(괄호만)";
   const letters = t.replace(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/gi, "").replace(/[^\p{L}]/gu, "");
   if (letters.length < 3) return "본문 없음(날짜·숫자뿐)";
   return null;

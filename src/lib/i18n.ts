@@ -506,9 +506,41 @@ const SAME_LANG: Record<Locale, string> = { ko: "ko", en: "en", ja: "ja", zh: "z
  * 다른 언어 원문에는 쓰지 않는다(영어 쉼표는 절 구분).
  */
 const shortKo = (title: string): string => {
-  const segs = title.split(/,\s+/).filter((s) => s.trim());
-  return segs.length > 1 ? `${segs[0]} 외 ${segs.length - 1}` : title;
+  const segs = splitOutsideBrackets(title).filter((s) => s.trim());
+  if (segs.length < 2) return title;
+  /*
+    **첫 조각이 한 낱말이면 묶음이 아니라 주어다**(2026-09-25). 「1월 5일 정부, 제2차 경제개발 5개년계획안
+    수립.」은 한 사건인데 「1월 5일 정부 외 1」이 됐다. 진짜 묶음(「조미수호조규 체결, 임오군란 일어남」)은
+    조각마다 두 낱말 이상이다. 앞의 날짜(「1월 5일」)는 세지 않는다.
+  */
+  const first = segs[0] ?? "";
+  if (!first.replace(/^\d{1,2}월(\s*\d{1,2}일)?\s+/, "").trim().includes(" ")) return title;
+  return `${first} 외 ${segs.length - 1}`;
 };
+
+/**
+ * 쉼표로 나누되 **괄호 안에서는 나누지 않는다.** 「이완(李完, 李琓) 출생」이 「이완(李完 외 1」로 괄호째
+ * 깨지던 것(2026-09-25).
+ */
+function splitOutsideBrackets(s: string): string[] {
+  const out: string[] = [];
+  let depth = 0;
+  let cur = "";
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i]!;
+    if (c === "(" || c === "（") depth++;
+    else if ((c === ")" || c === "）") && depth > 0) depth--;
+    if (c === "," && depth === 0 && /\s/.test(s[i + 1] ?? "")) {
+      out.push(cur);
+      cur = "";
+      while (/\s/.test(s[i + 1] ?? "")) i++;
+      continue;
+    }
+    cur += c;
+  }
+  out.push(cur);
+  return out;
+}
 
 /**
  * 칩 라벨(짧게 — 대표 지시 2026-09-05). 형식은 둘뿐이다:
