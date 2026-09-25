@@ -531,13 +531,44 @@ const shortKo = (title: string): string => {
 export function dupNames(evs: readonly LabelSource[], locale: Locale): Set<string> {
   const seen = new Map<string, number>();
   for (const ev of evs) {
-    const n = eventLabel(ev, locale).name;
+    // 다듬기 전 이름으로 센다 — eventLabelRaw 안의 중복 검사가 그 값과 비교한다(끝 마침표 하나로 어긋나지 않게)
+    const n = eventLabelRaw(ev, locale).name;
     if (n) seen.set(n, (seen.get(n) ?? 0) + 1);
   }
   return new Set([...seen].filter(([, n]) => n > 1).map(([k]) => k));
 }
 
+/** 끝을 떼면 안 되는 꼴 — 줄임표와 약어. "U.S."에서 점을 떼면 "U.S"가 된다. */
+const KEEP_END = /(?:\.\.\.|…|\b(?:[A-Za-z]\.){2,}|\b(?:Jr|Sr|St|Inc|Co|Ltd|Corp|No|Mt|Dr|Mr|Mrs|vs|etc)\.)$/;
+
+/**
+ * **칩 라벨의 끝 마침표를 뗀다.** 칩은 문장이 아니라 이름 자리다 — 한 셀에 「보타종승묘가
+ * 완공되었다.」와 「임진왜란」이 나란히 서면 마침표가 둘의 꼴 차이를 더 벌린다. 실측(2026-09-25,
+ * 연도 레벨 11,845건): 한국어 화면 817건(6.9%) · 영어 화면 4,890건(41%)이 마침표로 끝났다.
+ * 원문은 상세 패널에 그대로 남는다 — 이것은 표시만 다듬는다.
+ */
+export const trimLabelEnd = (s: string): string => (KEEP_END.test(s) ? s : s.replace(/[.。]$/, ""));
+
+/**
+ * **행이 이미 말하는 연도를 떼기** — 연도 레벨 전용. 한 행이 한 해인데 칩이 「1952년 대한민국 지방
+ * 선거」라 하면 같은 말을 두 번 한다. **십년·세기 레벨에서는 쓰지 않는다** — 거기서 「1964년」은
+ * 행이 알려 주지 않는 정확한 해이고, 떼면 정보가 준다. 기원전 해는 표기가 달라 건드리지 않는다.
+ * 실측: 연도 레벨에서 한국어 153건 · 영어 337건.
+ */
+export function dropYearPrefix(s: string, year: number, locale: Locale): string {
+  if (year <= 0) return s;
+  const prefix = locale === "ko" ? `${year}년 ` : locale === "en" ? `${year} ` : `${year}年`;
+  if (!s.startsWith(prefix)) return s;
+  const rest = s.slice(prefix.length).trimStart();
+  return rest.length >= 2 ? rest : s;
+}
+
 export function eventLabel(ev: LabelSource, locale: Locale, dupNames?: ReadonlySet<string>): { name?: string; text?: string } {
+  const raw = eventLabelRaw(ev, locale, dupNames);
+  return raw.name !== undefined ? { name: trimLabelEnd(raw.name) } : { text: trimLabelEnd(raw.text ?? "") };
+}
+
+function eventLabelRaw(ev: LabelSource, locale: Locale, dupNames?: ReadonlySet<string>): { name?: string; text?: string } {
   const name = nameIn(ev, locale);
   // 재위 시작: 인물 이름 + 언어별 "즉위". 이름만으로는 무슨 일인지 알 수 없다
   if (ev.role === "accession") {

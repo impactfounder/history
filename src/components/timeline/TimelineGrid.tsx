@@ -55,7 +55,7 @@ import {
   TOPBAR_H,
   ZOOM_FLOAT_INSET,
 } from "@/lib/design/metrics";
-import { LOCALES, LOCALE_LABEL, LOCALE_REGION, REGION_LABEL, T, dupNames, eventLabel, formatRowLabelL, formatYearL, isEventName, isLocale, localePath, nameIn, type Locale } from "@/lib/i18n";
+import { LOCALES, LOCALE_LABEL, LOCALE_REGION, REGION_LABEL, T, dropYearPrefix, dupNames, eventLabel, formatRowLabelL, formatYearL, isEventName, isLocale, localePath, nameIn, type Locale } from "@/lib/i18n";
 import { CellSheet } from "./CellSheet";
 import { SearchOverlay } from "./SearchOverlay";
 import { ThemeToggle } from "./ThemeToggle";
@@ -1412,7 +1412,8 @@ export function TimelineGrid() {
                                 <span
                                   className={`min-w-0 truncate ${kind === "lead" ? "text-item-lead font-semibold text-fg" : "text-item text-fg-muted"}${ev.hist === "traditional" ? " italic" : ""}`}
                                 >
-                                  {label.name ?? label.text}
+                                  {/* 연도 레벨에서만 행이 이미 말하는 연도를 뗀다 — 십년·세기에서 그 연도는 정보다 */}
+                                  {rows.level === "year" ? dropYearPrefix(label.name ?? label.text ?? "", ev.y0, locale) : (label.name ?? label.text)}
                                 </span>
                                 {xn > 0 && (narrow || !meta) && crossMark}
                               </span>

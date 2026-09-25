@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LOCALES, PREFIXED_LOCALES, REGION_LABEL, eventLabel, formatRowLabelL, formatYearL, isEventName, localePath, type LabelSource } from "./i18n";
+import { LOCALES, PREFIXED_LOCALES, REGION_LABEL, dropYearPrefix, eventLabel, formatRowLabelL, formatYearL, isEventName, localePath, trimLabelEnd, type LabelSource } from "./i18n";
 import { YEAR } from "./i18n-pages";
 
 describe("formatYearL / formatRowLabelL", () => {
@@ -55,12 +55,13 @@ describe("eventLabel", () => {
   });
   it("인물·지명 표제어는 붙이지 않는다 — 원문만", () => {
     const person: LabelSource = { title: "Li Shizhen published the Compendium of Materia Medica.", lang: "en", names: { kr: { nat: "이시진", lang: "ko" }, us: { nat: "Li Shizhen", lang: "en" } } };
-    expect(eventLabel(person, "ko")).toEqual({ text: person.title });
+    // 원문으로 떨어진다 — 끝 마침표만 다듬는다(trimLabelEnd)
+    expect(eventLabel(person, "ko")).toEqual({ text: trimLabelEnd(person.title) });
     const place: LabelSource = { title: "March — According to the Japan Forestry Research…", lang: "en", names: { kr: { nat: "기이반도", lang: "ko" } } };
     expect(eventLabel(place, "ko")).toEqual({ text: place.title });
   });
   it("같은 셀에 같은 이름이 둘이면 원문으로", () => {
-    expect(eventLabel(ev, "ko", new Set(["임진왜란"]))).toEqual({ text: ev.title });
+    expect(eventLabel(ev, "ko", new Set(["임진왜란"]))).toEqual({ text: trimLabelEnd(ev.title) });
   });
   it("한국어 원문의 묶인 줄은 '첫 사건 외 N'", () => {
     const bundled: LabelSource = { title: "조미수호조규 체결, 임오군란 일어남, 일본과 제물포조약 체결", lang: "ko", names: {} };
@@ -98,5 +99,46 @@ describe("연도 페이지 카피가 모든 열을 나열한다", () => {
   it.each(LOCALES)("%s 대체 요약에 모든 열 이름이 있다", (locale) => {
     const summary = YEAR[locale].summaryFallback("1592");
     for (const c of cols) expect(summary, `${locale} · ${c}`).toContain(REGION_LABEL[locale][c]);
+  });
+});
+
+/**
+ * 칩 라벨 다듬기(2026-09-25, 진단 보고서 개선 7). 원문은 상세에 그대로 남고 표시만 다듬는다.
+ * 끝 마침표는 어느 레벨에서나, 연도 접두는 **연도 레벨에서만** — 십년·세기에서 「1964년」은
+ * 행이 알려 주지 않는 정확한 해다.
+ */
+describe("칩 라벨 다듬기", () => {
+  it("끝 마침표 하나를 뗀다 — 한국어·영어·한자권", () => {
+    expect(trimLabelEnd("보타종승묘가 완공되었다.")).toBe("보타종승묘가 완공되었다");
+    expect(trimLabelEnd("Toyotomi Hideyoshi invaded Korea.")).toBe("Toyotomi Hideyoshi invaded Korea");
+    expect(trimLabelEnd("萬曆朝鮮之役始。")).toBe("萬曆朝鮮之役始");
+  });
+
+  it("줄임표와 약어는 그대로 둔다 — 점을 떼면 뜻이 바뀐다", () => {
+    expect(trimLabelEnd("Troops land in the U.S.")).toBe("Troops land in the U.S.");
+    expect(trimLabelEnd("Martin Luther King Jr.")).toBe("Martin Luther King Jr.");
+    expect(trimLabelEnd("그리고…")).toBe("그리고…");
+    expect(trimLabelEnd("and so on...")).toBe("and so on...");
+  });
+
+  it("마침표가 없으면 그대로", () => {
+    expect(trimLabelEnd("임진왜란")).toBe("임진왜란");
+  });
+
+  it("eventLabel이 다듬은 값을 낸다 — 격자·연도 페이지가 같은 라벨을 쓴다", () => {
+    const ev = { title: "Treaty signed.", lang: "en", names: {} } as unknown as LabelSource;
+    expect(eventLabel(ev, "en").text).toBe("Treaty signed");
+  });
+
+  it("연도 접두는 그 해일 때만 뗀다", () => {
+    expect(dropYearPrefix("1952년 대한민국 지방 선거", 1952, "ko")).toBe("대한민국 지방 선거");
+    expect(dropYearPrefix("1964 Summer Olympics", 1964, "en")).toBe("Summer Olympics");
+    expect(dropYearPrefix("1964年東京オリンピック", 1964, "ja")).toBe("東京オリンピック");
+    expect(dropYearPrefix("1952년 대한민국 지방 선거", 1956, "ko")).toBe("1952년 대한민국 지방 선거");
+  });
+
+  it("떼고 남는 것이 없거나 기원전이면 그대로", () => {
+    expect(dropYearPrefix("1950년 전", 1950, "ko")).toBe("1950년 전");
+    expect(dropYearPrefix("-56년 건국", -56, "ko")).toBe("-56년 건국");
   });
 });
