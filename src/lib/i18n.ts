@@ -111,6 +111,8 @@ export interface Strings {
   crossTitle: string;
   /** 칩에 붙는 글리프의 이름. `다른 2개 열에도 있다` */
   crossGlyph: (n: number) => string;
+  /** 열의 수록 시작(PRD §11 C-3). 격자 헤더와 연도 페이지가 같은 말을 쓴다. */
+  coverageFrom: (year: number) => string;
   /** 그중 꺼져 있는 열이 있을 때(PRD §5-6 「+1 지역」). `1개 열은 꺼져 있다 — 상세에서 켤 수 있다` */
   crossHidden: (n: number) => string;
   zoomGroup: string;
@@ -191,6 +193,7 @@ export const T: Record<Locale, Strings> = {
     prevEvent: (y) => `이전 사건 ${y}`,
     crossTitle: "다른 열에서는",
     crossGlyph: (n) => `다른 ${n}개 열에도 있다`,
+    coverageFrom: (y) => `${y}년~ 수록`,
     crossHidden: (n) => `그중 ${n}개 열은 꺼져 있다 — 상세에서 켤 수 있다`,
     zoomGroup: "확대·축소",
     zoomOut: "축소",
@@ -259,6 +262,7 @@ export const T: Record<Locale, Strings> = {
     prevEvent: (y) => `Previous: ${y}`,
     crossTitle: "In other columns",
     crossGlyph: (n) => `Also in ${n} other column${n > 1 ? "s" : ""}`,
+    coverageFrom: (y) => `covered from ${y}`,
     crossHidden: (n) => `${n} of them hidden — turn on from the detail`,
     zoomGroup: "Zoom",
     zoomOut: "Zoom out",
@@ -327,6 +331,7 @@ export const T: Record<Locale, Strings> = {
     prevEvent: (y) => `前の出来事 ${y}`,
     crossTitle: "他の列では",
     crossGlyph: (n) => `他の${n}列にもある`,
+    coverageFrom: (y) => `${y}年〜収録`,
     crossHidden: (n) => `うち${n}列は非表示 — 詳細から表示できる`,
     zoomGroup: "拡大・縮小",
     zoomOut: "縮小",
@@ -395,6 +400,7 @@ export const T: Record<Locale, Strings> = {
     prevEvent: (y) => `上一事件 ${y}`,
     crossTitle: "其他列中",
     crossGlyph: (n) => `另有${n}列`,
+    coverageFrom: (y) => `${y}年起收录`,
     crossHidden: (n) => `其中${n}列未显示 — 可从详情打开`,
     zoomGroup: "缩放",
     zoomOut: "缩小",

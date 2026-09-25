@@ -13,7 +13,7 @@
 import type { ReactNode } from "react";
 import { SITE_DESCRIPTION } from "@/lib/site";
 // localePath는 그리드(클라이언트)도 쓰므로 i18n.ts에 있다 — 이 파일은 서버 전용 문구라 거기 실리면 안 된다
-import { localePath, type Locale } from "@/lib/i18n";
+import { localePath, T, type Locale } from "@/lib/i18n";
 
 /**
  * 그 경로의 언어별 대체 URL — `<link rel="alternate" hreflang>`로 나간다(metadata alternates.languages).
@@ -76,7 +76,7 @@ export const YEAR: Record<Locale, YearCopy> = {
     note: (total, link, ctx) => (
       <>사건 {total}건. 본문은 원천 연표 원문 그대로이며 출처는 {link}에 있다. 아래위 회색 줄은 앞뒤 {ctx}년 문맥이다.</>
     ),
-    coverageFrom: (y) => `${y}년~ 수록`,
+    coverageFrom: T.ko.coverageFrom,
     noEvents: "이 해 수록 사건 없음",
   },
   en: {
@@ -87,7 +87,7 @@ export const YEAR: Record<Locale, YearCopy> = {
     note: (total, link, ctx) => (
       <>{total} events. The text is the source chronology verbatim; the terms are in {link}. The grey lines above and below are the surrounding {ctx} years.</>
     ),
-    coverageFrom: (y) => `covered from ${y}`,
+    coverageFrom: T.en.coverageFrom,
     noEvents: "No events recorded for this year",
   },
   ja: {
@@ -98,7 +98,7 @@ export const YEAR: Record<Locale, YearCopy> = {
     note: (total, link, ctx) => (
       <>出来事{total}件。本文は原典の年表の原文のままで、出典は{link}にある。上下の灰色の行は前後{ctx}年の文脈だ。</>
     ),
-    coverageFrom: (y) => `${y}年〜収録`,
+    coverageFrom: T.ja.coverageFrom,
     noEvents: "この年の収録なし",
   },
   zh: {
@@ -109,7 +109,7 @@ export const YEAR: Record<Locale, YearCopy> = {
     note: (total, link, ctx) => (
       <>事件{total}条。正文照录原始年表原文，来源见{link}。上下灰色行是前后{ctx}年的脉络。</>
     ),
-    coverageFrom: (y) => `${y}年起收录`,
+    coverageFrom: T.zh.coverageFrom,
     noEvents: "本年无收录事件",
   },
 };

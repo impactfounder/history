@@ -380,6 +380,14 @@ h3 {
 }
 
 /* 긴 URL·영문 연속 문자열만 예외 */
+/*
+  미수록 구간(PRD §11 C-3) — 「일이 없었다」가 아니라 「아직 수록하지 않았다」. 빈 칸과 달라 보여야 한다.
+  색은 역할 토큰(line)이라 다크는 [3]의 재대입이 알아서 한다. 글자가 아니라 무늬라 대비 규칙 밖이다.
+*/
+.hatch-uncovered {
+  background-image: repeating-linear-gradient(135deg, var(--color-line) 0 1px, transparent 1px 7px);
+}
+
 .break-url {
   overflow-wrap: break-word;
 }

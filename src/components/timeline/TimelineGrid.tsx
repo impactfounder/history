@@ -29,6 +29,7 @@ import {
 } from "@/lib/timeline/axis";
 import { assignLanes, baseTier, SPAN_MIN_PX } from "@/lib/timeline/rank";
 import { decodeYears, isEmptyRange, nearestYears } from "@/lib/timeline/gap";
+import { uncoveredFraction } from "@/lib/timeline/uncovered";
 import type { SearchHit } from "@/lib/search";
 import { layoutCell } from "@/lib/timeline/layout-cell";
 import { originalTag } from "@/lib/timeline/item-kind";
@@ -379,6 +380,8 @@ export function TimelineGrid() {
   /** 첫 방문 1회 힌트(§5-7 착지). 본 적 있으면 안 띄운다 — 브라우저에만 남기는 값이다. */
 
   const [polities, setPolities] = useState<Polities>({});
+  /** 열의 수록 시작(regions.json `coverage_from`, PRD §11 C-3). 없는 열은 축 전체를 수록한다. */
+  const [coverage, setCoverage] = useState<Partial<Record<RegionId, number>>>({});
   /** UI 언어(대표 지시 2026-09-05). 한국어 기본, URL ?lang=로 왕복. 사건 라벨·열 이름·연도 표기·문구가 바뀐다. */
   const [locale, setLocale] = useState<Locale>("ko");
   const t = T[locale];
@@ -435,19 +438,22 @@ export function TimelineGrid() {
         setManifest(m);
         const v = encodeURIComponent(m?.publishedAt ?? String(Date.now()));
         setDataVersion(m?.publishedAt ?? String(Date.now()));
-        const [pol, spn, yrs, crs] = await Promise.all([
+        const [pol, spn, yrs, crs, reg] = await Promise.all([
           fetch(`${DATA}/polities.json?v=${v}`).then((r) => (r.ok ? (r.json() as Promise<{ regions: Polities }>) : null)),
           fetch(`${DATA}/spans.json?v=${v}`).then((r) => (r.ok ? (r.json() as Promise<{ spans: Span[] }>) : null)),
           fetch(`${DATA}/years.json?v=${v}`).then((r) => (r.ok ? (r.json() as Promise<{ years: Record<string, number[]> }>) : null)),
           fetch(`${DATA}/cross.json?v=${v}`).then((r) => (r.ok ? (r.json() as Promise<{ groups: typeof cross }>) : null)),
+          // 1KB. 쓰는 것은 coverage_from 하나다 — 연도 페이지(year-data.ts)가 서버에서 읽는 그 값
+          fetch(`${DATA}/regions.json?v=${v}`).then((r) => (r.ok ? (r.json() as Promise<{ regions: { id: RegionId; coverage_from?: number }[] }>) : null)),
         ]);
         setPolities(pol?.regions ?? {});
         setSpans(spn?.spans ?? []);
         // 델타로 실려 온다(gzip 1.3KB). 여기서 한 번 되돌려 두면 그 뒤로는 이분 탐색만 한다
         setYearIndex(Object.fromEntries(Object.entries(yrs?.years ?? {}).map(([r, d]) => [r, decodeYears(d)])));
         setCross(crs?.groups ?? {});
+        setCoverage(Object.fromEntries((reg?.regions ?? []).filter((x) => x.coverage_from != null).map((x) => [x.id, x.coverage_from!])));
       })
-      .catch(() => { setManifest(null); setPolities({}); setSpans([]); setYearIndex({}); setCross({}); });
+      .catch(() => { setManifest(null); setPolities({}); setSpans([]); setYearIndex({}); setCross({}); setCoverage({}); });
   }, []);
 
   const ensureChunk = useCallback((region: RegionId, key: string) => {
@@ -1062,7 +1068,16 @@ export function TimelineGrid() {
           <div className="sticky top-0 z-20 flex" style={{ height: colHeaderH }} role="row" aria-rowindex={1}>
             <div className="shrink-0" style={{ width: axisLabelW }} role="columnheader" aria-colindex={1} />
             {shown.map((c, i) => {
-              const p = polityAt(polities[c.id], yToYear(scrollTop + colHeaderH, axis));
+              const topYear = yToYear(scrollTop + colHeaderH, axis);
+              const p = polityAt(polities[c.id], topYear);
+              /*
+                **미수록 구간(PRD §11 C-3).** 미국 열의 1500년은 비어 있다 — 버그가 아니라 답이다. 다만
+                「일이 없었다」와 「아직 수록하지 않았다」가 구별돼야 한다. 설명은 여기서 **한 번만** 한다.
+                칸마다 문구를 찍으면 2,100년 동안 수백 번 반복된다 — 칸은 빗금만 깐다(아래 셀).
+                정치체 이름이 서는 자리를 쓴다: 수록 전에는 그 자리가 늘 비어 있었다.
+              */
+              const cov = coverage[c.id];
+              const uncoveredNote = !p && cov != null && topYear < cov ? t.coverageFrom(cov) : null;
               /*
                 WCAG 2.2 SC 2.5.8(AA)은 24×24다. 전에는 18.4×13에 이웃과 중심 간격 19px이라
                 크기도, 크기 예외인 "간격"도 함께 미달이었다(실측). 24px 정사각으로 만들면
@@ -1096,6 +1111,7 @@ export function TimelineGrid() {
                     <span className="shrink-0 text-col font-bold tracking-tight" style={{ color: regionVar(c.id) }}>{label}</span>
                     {/* 시대는 색이 아니라 서체로(README 규칙 2). 넓은 화면은 이 자리, 좁은 화면은 아랫줄 */}
                     {p && !narrow && <span className="min-w-0 truncate font-serif text-meta text-fg-muted">{polityLabel(p)}</span>}
+                    {uncoveredNote && !narrow && <span className="min-w-0 truncate text-meta text-fg-subtle">{uncoveredNote}</span>}
                     {/* 열 조작(§4-1): 순서 ◂ ▸, 빼기 ×. 마지막 한 열은 뺄 수 없다 */}
                     <span className="ml-auto flex shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100">
                       <button type="button" style={hit} className={btn} disabled={i === 0} onClick={() => moveCol(c.id, -1)} aria-label={t.colLeft(label)}>◂</button>
@@ -1104,6 +1120,7 @@ export function TimelineGrid() {
                     </span>
                   </div>
                   {p && narrow && <span className="w-full truncate font-serif text-meta text-fg-muted">{polityLabel(p)}</span>}
+                  {uncoveredNote && narrow && <span className="w-full truncate text-meta text-fg-subtle">{uncoveredNote}</span>}
                   {/* 나라색이 남는 두 곳 중 하나 — 이름과 이 3px 밑선 */}
                   <span className="absolute inset-x-0 bottom-0 h-[3px]" style={{ background: regionVar(c.id) }} aria-hidden />
                 </div>
@@ -1294,6 +1311,17 @@ export function TimelineGrid() {
                     return (
                       // 세로 구분선은 없다 — 카드 사이 10px 여백이 그 일을 한다
                       <div key={c.id} className="relative min-w-0 flex-1 overflow-hidden" style={{ marginLeft: CARD_GAP }} role="gridcell" aria-colindex={ci + 2}>
+                        {/*
+                          미수록 빗금(C-3). 경계가 걸친 칸은 **걸친 만큼만** 칠한다 — 1600년대 칸의 위 7%(1600–1607).
+                          무늬라 글자 대비 규칙 밖이고, 설명은 열 헤더가 한다(aria-hidden).
+                        */}
+                        {uncoveredFraction(b, rows.unit, coverage[c.id]) > 0 && (
+                          <div
+                            className="hatch-uncovered pointer-events-none absolute inset-x-0 top-0"
+                            style={{ height: uncoveredFraction(b, rows.unit, coverage[c.id]) * h }}
+                            aria-hidden
+                          />
+                        )}
                         {sub > 0 &&
                           Array.from({ length: sub - 1 }, (_, i) => (
                             <div key={i} className="pointer-events-none absolute inset-x-0 border-t border-line-hairline" style={{ top: ((i + 1) / sub) * h }} aria-hidden />
