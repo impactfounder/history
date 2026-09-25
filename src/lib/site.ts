@@ -13,3 +13,10 @@ export const SITE_URL = (() => {
 
 export const SITE_NAME = "AI & Human History";
 export const SITE_DESCRIPTION = "AI의 역사와 한국·중국·일본·미국의 역사를 같은 연도 축 위에 나란히 놓는다. 그 해, 그 열에 무슨 일이 있었나.";
+
+/**
+ * 오류 신고를 받는 주소(대표 지정 2026-09-25). 이전에는 신고가 GitHub 이슈뿐이었는데, 1차 타깃(학생·교사·
+ * 역사 콘텐츠 소비자, PRD §2) 대부분은 GitHub 계정이 없다 — 틀린 것을 봐도 알려 줄 길이 없었다.
+ * 상세 패널의 「오류 신고」와 출처 페이지가 이 한 곳을 쓴다. 공개 페이지에 그대로 나가는 주소다.
+ */
+export const REPORT_EMAIL = "nyspirit@mensakorea.org";

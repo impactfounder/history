@@ -11,7 +11,7 @@
  */
 
 import type { ReactNode } from "react";
-import { SITE_DESCRIPTION } from "@/lib/site";
+import { REPORT_EMAIL, SITE_DESCRIPTION } from "@/lib/site";
 // localePath는 그리드(클라이언트)도 쓰므로 i18n.ts에 있다 — 이 파일은 서버 전용 문구라 거기 실리면 안 된다
 import { localePath, T, type Locale } from "@/lib/i18n";
 
@@ -158,6 +158,8 @@ const CC_DEED: Record<Locale, string> = {
 };
 const DATA_GO_KR = "https://www.data.go.kr/data/15051036/fileData.do";
 const WIKIDATA = "https://www.wikidata.org";
+/** 오류 신고 주소 — 상세 패널의 「오류 신고」와 같은 곳(lib/site REPORT_EMAIL). */
+const MAIL = <a href={`mailto:${REPORT_EMAIL}`} className="underline">{REPORT_EMAIL}</a>;
 /** 데이터셋 이름은 공공데이터포털 등록 표기 그대로 — 어느 언어에서도 옮기지 않는다. */
 const NIKH_DATASET = "「한국역사자료 메타데이터 정보_연표」";
 
@@ -209,7 +211,7 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
       ),
     },
     foot: (
-      <>오류를 발견하면 알려 달라. 원문을 그대로 싣기 때문에 우리가 고치는 것은 <em>어느 줄을 어느 해에 어느 열로</em> 놓았는가와 국사편찬위 항목과의 대응이다.</>
+      <>오류를 발견하면 {MAIL}로 알려 달라(상세 패널의 &ldquo;오류 신고&rdquo;를 누르면 그 사건의 정보가 채워진 메일이 열린다). 원문을 그대로 싣기 때문에 우리가 고치는 것은 <em>어느 줄을 어느 해에 어느 열로</em> 놓았는가와 국사편찬위 항목과의 대응이다.</>
     ),
   },
 
@@ -260,7 +262,7 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
       ),
     },
     foot: (
-      <>If you find an error, tell us. Because we carry the text verbatim, what we can correct is <em>which line we placed in which year and in which column</em>, and how it is matched to the NIKH entry.</>
+      <>If you find an error, write to {MAIL} (the &ldquo;Report an error&rdquo; link in the detail panel opens a mail with that event&rsquo;s details filled in). Because we carry the text verbatim, what we can correct is <em>which line we placed in which year and in which column</em>, and how it is matched to the NIKH entry.</>
     ),
   },
 
@@ -311,7 +313,7 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
       ),
     },
     foot: (
-      <>誤りを見つけたら知らせてほしい。原文をそのまま載せているので、私たちが直せるのは<em>どの行をどの年のどの列に</em>置いたか、そして国史編纂委員会の項目との対応である。</>
+      <>誤りを見つけたら {MAIL} に知らせてほしい（詳細パネルの「誤りを報告」を押すと、その出来事の情報が入ったメールが開く）。原文をそのまま載せているので、私たちが直せるのは<em>どの行をどの年のどの列に</em>置いたか、そして国史編纂委員会の項目との対応である。</>
     ),
   },
 
@@ -362,7 +364,7 @@ export const SOURCES: Record<Locale, SourcesCopy> = {
       ),
     },
     foot: (
-      <>如发现错误，请告知我们。由于正文照录原文，我们能改的是<em>把哪一行放在哪一年的哪一列</em>，以及与国史编纂委员会条目的对应关系。</>
+      <>如发现错误，请发邮件至 {MAIL}（点击详情面板中的“报告错误”，会打开已填好该事件信息的邮件）。由于正文照录原文，我们能改的是<em>把哪一行放在哪一年的哪一列</em>，以及与国史编纂委员会条目的对应关系。</>
     ),
   },
 };

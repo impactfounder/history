@@ -58,6 +58,7 @@ import {
 } from "@/lib/design/metrics";
 import { LOCALES, LOCALE_LABEL, LOCALE_REGION, REGION_LABEL, T, dropYearPrefix, dupNames, eventLabel, formatRowLabelL, formatYearL, isEventName, isLocale, localePath, nameIn, type Locale } from "@/lib/i18n";
 import { CellSheet } from "./CellSheet";
+import { clipForReport, reportMailto } from "@/lib/report";
 import { SearchOverlay } from "./SearchOverlay";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -1769,24 +1770,42 @@ export function TimelineGrid() {
                 )}
                 <p className="text-item-meta leading-[1.6] text-fg-subtle">
                   {t.sourceLine} {selected.detail.official.length > 0 && <span>{t.nikhLicense}{selected.detail.src.length > 0 ? " · " : ""}</span>}
-                  {selected.detail.src.map((s) => (
-                    <a key={s.url} href={s.url} target="_blank" rel="noreferrer" className="underline">{new URL(s.url).hostname}</a>
+                  {/* 출처가 둘이면 구분자가 있어야 한다 — 없어서 「ko.wikipedia.orgen.wikipedia.org」로 붙어 보였다(2026-09-25) */}
+                  {selected.detail.src.map((s, i) => (
+                    <span key={s.url}>
+                      {i > 0 && " · "}
+                      <a href={s.url} target="_blank" rel="noreferrer" className="underline">{new URL(s.url).hostname}</a>
+                    </span>
                   ))}
-                  {" · "}<a href={localePath(locale, "/sources")} className="underline">{t.licensePage}</a>
-                  {" · "}<a href={localePath(locale, `/y/${selected.detail.year}`)} className="underline">{t.yearPage(formatYearL(selected.ev.y0, locale))}</a>
+                  {/* 링크 안에서 줄을 바꾸지 않는다 — 「출처와」 / 「라이선스」로 갈리던 것 */}
+                  {" · "}<a href={localePath(locale, "/sources")} className="whitespace-nowrap underline">{t.licensePage}</a>
+                  {" · "}<a href={localePath(locale, `/y/${selected.detail.year}`)} className="whitespace-nowrap underline">{t.yearPage(formatYearL(selected.ev.y0, locale))}</a>
                   {" · "}
-                  {/* 오류 신고(§11 C-8): 원문을 그대로 싣는 구조라 고칠 것은 "어느 줄을 어느 해·어느 열에"와 국사편찬위 대응뿐 */}
-                  <a
-                    href={`https://github.com/impactfounder/history/issues/new?${new URLSearchParams({
-                      title: `[사건 오류] ${selected.ev.date_ko} · ${selected.ev.title.slice(0, 40)}`,
-                      body: `사건 id: ${selected.ev.id}\n연도·열: ${selected.ev.date_ko} · ${selected.ev.regions[0]?.r}\n원문: ${selected.detail.text ?? selected.detail.official[0]?.text ?? ""}\n출처: ${[...selected.detail.src.map((s) => s.url), ...selected.detail.official.map((o) => o.url ?? o.id)].join(", ")}\n\n무엇이 틀렸나요? (연도 / 열 귀속 / 국사편찬위 대응 / 그 밖에)\n`,
-                    })}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="underline"
-                  >
-                    {t.report}
-                  </a>
+                  {/*
+                    오류 신고(§11 C-8): 원문을 그대로 싣는 구조라 고칠 것은 "어느 줄을 어느 해·어느 열에"와 국사편찬위 대응뿐.
+                    **메일이 먼저다**(2026-09-25) — GitHub 이슈만 있을 때는 계정 없는 사람이 알려 줄 길이 없었다.
+                    GitHub는 계정 있는 사람을 위해 옆에 작게 남긴다. 두 길이 같은 제목·본문을 쓴다.
+                  */}
+                  {(() => {
+                    // 제목은 화면에 뜨는 이름(「임진왜란」)부터 — 원문 앞 40자로는 받는 쪽이 무슨 사건인지 한눈에 모른다
+                    const subject = `[사건 오류] ${selected.ev.date_ko} · ${(selected.ev.name_ko ?? selected.ev.title_ko ?? selected.ev.title).slice(0, 40)}`;
+                    const body = `사건 id: ${selected.ev.id}\n연도·열: ${selected.ev.date_ko} · ${selected.ev.regions[0]?.r}\n원문: ${clipForReport(selected.detail.text ?? selected.detail.official[0]?.text ?? "")}\n출처: ${[...selected.detail.src.map((s) => s.url), ...selected.detail.official.map((o) => o.url ?? o.id)].join(", ")}\n\n무엇이 틀렸나요? (연도 / 열 귀속 / 국사편찬위 대응 / 그 밖에)\n`;
+                    return (
+                      <>
+                        {/* 링크 안에서 줄을 바꾸지 않는다 — 「오류」 / 「신고」로 갈리던 것(고아 줄바꿈 금지 규칙) */}
+                        <a href={reportMailto(subject, body)} className="whitespace-nowrap underline">{t.report}</a>
+                        {" · "}
+                        <a
+                          href={`https://github.com/impactfounder/history/issues/new?${new URLSearchParams({ title: subject, body })}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline"
+                        >
+                          GitHub
+                        </a>
+                      </>
+                    );
+                  })()}
                 </p>
               </div>
             )}
