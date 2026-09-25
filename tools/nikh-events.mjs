@@ -15,6 +15,7 @@
 
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { titleOf } from "./nikh-title.mjs";
 
 const SRC = "curation/raw/nikh/timeline.jsonl";
 const OUT = "curation/events/kr-nikh.jsonl";
@@ -29,13 +30,6 @@ if (!existsSync(SRC)) {
   process.exit(1);
 }
 
-/** 본문 앞머리의 "(태조 26년 4월)" 같은 왕대 표기를 제목에서 뗀다 — 날짜는 date에 이미 있다. */
-const stripReign = (s) => s.replace(/^\s*\((?:[^()]|\([^()]*\))*\)\s*/, "").trim();
-/** 출전 표시(≪고려사≫ 오행지, 쪽수)를 제목에서만 뗀다. 본문(text)은 원문 그대로 남긴다. */
-const titleOf = (s) => {
-  const t = stripReign(s).split(/≪|《|〈/)[0].trim();
-  return (t.length >= 6 ? t : stripReign(s)).replace(/\s+/g, " ").slice(0, 120);
-};
 
 const rows = readFileSync(SRC, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l))
   .filter((n) => SERIES.has(n.db) && n.date.y >= FROM && n.date.y <= TO && (n.text ?? "").trim().length >= 12);

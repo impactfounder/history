@@ -8755,3 +8755,24 @@
 {"h":"9e59732691257ed8","lang":"ja","src":"大伴駿河麻呂が蝦夷征討を命じられる（三十八年戦争）。","name":"38년 전쟁","why":"revalidated","got":"38년 전쟁","model":"rule","at":"2026-09-25T15:49:45.861Z"}
 {"h":"fc3e747b8213f869","lang":"en","src":"The Thirty-Eight Years War for the subjugation of Tōhoku begins.","name":"38년 전쟁 발발","why":"revalidated","got":"38년 전쟁 발발","model":"rule","at":"2026-09-25T15:49:45.861Z"}
 {"h":"ca7b0ba5aa46e566","lang":"en","src":"Gramm Rudman Hollings Balanced Budget Act","name":"그램-러드먼-홀링스 균형예산법","why":"revalidated","got":"그램-러드먼-홀링스 균형예산법","model":"rule","at":"2026-09-25T15:49:45.861Z"}
+{"h":"9911f3d235d82379","lang":"ko","src":"몽고군이 귀주성(龜州城)을 공격하였으나 함락에 실패함. 이듬해 1월까지 수 차례 공격하였으나 실패함.","name":"귀주성 전투","why":"carried","from":"fc24e0fea4946314","model":"rule","at":"2026-09-25T16:21:38.470Z"}
+{"h":"c39aacf1c0a3fc6e","lang":"ko","src":"몽고 원수 탕꾸(唐古)가 지휘하는 몽고군이 고려를 침입함.","name":"몽고 2차 침입","why":"carried","from":"df80355cd6165050","model":"rule","at":"2026-09-25T16:21:38.470Z"}
+{"h":"0c55e83e4dd2f012","lang":"ko","src":"병조에서 ≪진도법(陣圖法)≫을 지어서 올림.","name":"진도법 편찬","why":"carried","from":"781b2b5ff548473d","model":"rule","at":"2026-09-25T16:21:38.470Z"}
+{"h":"6bcd18ecf2ecf874","lang":"ko","src":"각 도에 ≪진도(陣圖)≫와 ≪진설(陣說)≫을 배포하여 이를 익히게 함.","name":"진도·진설 배포","why":"carried","from":"49ff6da48bbe6c69","model":"rule","at":"2026-09-25T16:21:38.470Z"}
+{"h":"d64e1ec756ce8315","lang":"ko","src":"≪동국병감(東國兵鑑)≫의 편찬을 명함.","name":"동국병감 편찬","why":"carried","from":"467bcceae9315ed4","model":"rule","at":"2026-09-25T16:21:38.470Z"}
+{"h":"4628dd31bb4f3343","lang":"ko","src":"세조가 ≪병장설(兵將說)≫을 저술하고 신숙주(申叔舟)가 주석을 붙임.","name":"병장설 저술","why":"carried","from":"5ca839c0832aa4b8","model":"rule","at":"2026-09-25T16:21:38.470Z"}
+{"h":"dea2761dce7398fd","lang":"ko","src":"≪삼갑전법(三甲戰法)≫을 간행하여 여러 장수에게 나누어 줌.","name":"삼갑전법 간행","why":"carried","from":"6ec39d38596919ac","model":"rule","at":"2026-09-25T16:21:38.470Z"}
+{"h":"aa41c52f23b0fabf","lang":"ko","src":"고니시 유키나가(小西行長)의 일본군 제1군이 절영도(絶影島)에 상륙. 임진왜란 시작.","name":"임진왜란","why":"carried","from":"a41ddba17ec13fb1","model":"rule","at":"2026-09-25T16:21:38.470Z"}
+{"h":"dc5aee1359d623cb","lang":"ko","src":"훈련도감(訓鍊都監)을 설치하고 유성룡(柳成龍)을 도제조로 임명함.","name":"훈련도감 설치","why":"carried","from":"a12e44b3674fa670","model":"rule","at":"2026-09-25T16:21:38.470Z"}
+{"h":"930868ff8c28c2b9","lang":"ko","src":"거듭된 명나라의 후금 토벌 원병 요청으로 13,000명의 출병을 결정. 도원수에 강홍립(姜弘立), 부원서에 김경서(金景瑞)를 임명함.","name":"강홍립 파병 결정","why":"carried","from":"f6c7931039a7b003","model":"rule","at":"2026-09-25T16:21:38.470Z"}
+{"h":"efac0a31c233330f","lang":"ko","src":"강홍립(姜弘立)이 거느린 조선군이 후금군에 투항하여 누르하치에게 조선의 입장을 알림.","name":"강홍립군 후금 투항","why":"carried","from":"d6a66dcd1ca4fd03","model":"rule","at":"2026-09-25T16:21:38.470Z"}
+{"h":"452f92519c4a660c","lang":"ko","src":"강홍립(姜弘立) 등 10여 명을 제외하고 후금에 억류된 요동(遼東) 출병 조선군 귀국.","name":"요동 출병군 귀국","why":"carried","from":"1664876753570c0f","model":"rule","at":"2026-09-25T16:21:38.470Z"}
+{"h":"6f998c3bccecb818","lang":"ko","src":"명나라 장수 요동(遼東)유격 모문룡(毛文龍)이 철산(鐵山)의 가도(椵島)에 동강진(東江鎭)을 설치함.","name":"동강진 설치","why":"carried","from":"2850ac5ceb4a7c94","model":"rule","at":"2026-09-25T16:21:38.470Z"}
+{"h":"d79bb8568c57cedd","lang":"ko","src":"경기 지방의 속오군을 중심으로 정초군(精抄軍)을 설치하고 번상하게 함.","name":"정초군 설치","why":"carried","from":"1d0cd8ef119a7d0c","model":"rule","at":"2026-09-25T16:21:38.470Z"}
+{"h":"dba0faecdca05ee4","lang":"ko","src":"어영청(御營廳)에 대포 전문 부대인 별파진(別破陣) 511명을 두고 15번으로 번을 나누어 입번하게 함.","name":"별파진 설치","why":"carried","from":"1927368a436c478f","model":"rule","at":"2026-09-25T16:21:38.470Z"}
+{"h":"ff6e9792dc82766f","lang":"ko","src":"경상북도 병마우후 신유가 지휘하는 조선군이 청군과 흑룡강 어귀에서 러시아군 격파.","name":"나선정벌","why":"carried","from":"85eba694320b7a33","model":"rule","at":"2026-09-25T16:21:38.470Z"}
+{"h":"ec1494579dcf2df2","lang":"ko","src":"각도에서 ≪병장도설(兵將圖說)≫을 중간(重刊)하게 함.","name":"병장도설 중간","why":"carried","from":"411323f1f900309b","model":"rule","at":"2026-09-25T16:21:38.470Z"}
+{"h":"9cbbd38ca396490a","lang":"ko","src":"≪속병장도설(續兵將圖說) ≫을 각도의 감사와 병사에게 나누어줌.","name":"속병장도설 반포","why":"carried","from":"3bc3998cc4e67ee6","model":"rule","at":"2026-09-25T16:21:38.470Z"}
+{"h":"6866bcfdc7b8cf8e","lang":"ko","src":"≪균역사목(均役事目)≫을 완성함.","name":"균역사목 완성","why":"carried","from":"cff30dd2ca1be1dd","model":"rule","at":"2026-09-25T16:21:38.470Z"}
+{"h":"748634b098b46001","lang":"ko","src":"영조가 ≪위장필람(爲將必覽)≫을 지어 군문에서 간행하게 함.","name":"위장필람 간행","why":"carried","from":"106855a9cd4e17b2","model":"rule","at":"2026-09-25T16:21:38.470Z"}
+{"h":"9f6d566e4b68ab90","lang":"ko","src":"≪화성성역의궤(華城城役儀軌)≫가 완성됨.","name":"화성성역의궤 완성","why":"carried","from":"8a3d5fa353ea7d79","model":"rule","at":"2026-09-25T16:21:38.470Z"}
