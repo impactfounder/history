@@ -2,7 +2,9 @@
   <!--
     국기가 아니라 마크다. AI 열은 나라가 아니므로 국기가 없는데, 열 헤더는 20×14 자리를
     비워 두면 다른 네 열과 정렬이 어긋난다. 색은 열 색(#a1490b)과 같은 값을 쓴다 —
-    <img>라 CSS 변수를 못 받으므로 globals.css의 --region-ai와 **손으로 맞춘 사본**이다.
+    <img>라 CSS 변수를 못 받으므로 globals.css의 region-ai 토큰과 **손으로 맞춘 사본**이다.
+    XML 주석 안에는 하이픈 두 개를 잇대어 쓸 수 없다 — 그 한 군데 때문에 이 파일 전체가 무효가 되어
+    브라우저가 아이콘을 그리지 못했다(2026-09-25까지, naturalWidth 0).
   -->
   <rect width="20" height="14" rx="2" fill="#a1490b"/>
   <g fill="none" stroke="#fff" stroke-width="1" stroke-linecap="round">
