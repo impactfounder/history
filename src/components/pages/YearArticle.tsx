@@ -16,6 +16,11 @@ import { LocaleNav } from "@/components/pages/LocaleNav";
  *  - 앞뒤 문맥 연도는 같은 목록에 섞지 않고 실낱 선 아래로 내린다
  *  - 수록 범위 밖 열은 머리의 꼬리표가 아니라 본문 한 줄로("미국 열은 1776년부터 수록한다")
  * 개수를 줄이지는 않는다 — 색인되는 페이지라 접힌 항목은 없느니만 못하다.
+ *
+ * **폰에서는 표가 아니라 열별 카드 스택이다**(PRD §5-7, P0 — 2026-09-25). 390px 폰에서 다섯 열 표는
+ * 좌우 여백을 빼면 열 하나가 약 59px이라 읽히지 않았다. 목록을 두 벌 만들지 않고 **같은 마크업을 CSS로만**
+ * 바꾼다(640px 미만에서 표·행·칸을 블록으로) — HTML이 부풀지 않고, 서버 렌더 그대로라 JS도 CLS도 없다.
+ * 표 머리는 폰에서 숨으므로 카드마다 나라 이름·정치체를 머리로 단다.
  */
 export async function YearArticle({ year, locale }: { year: number; locale: Locale }) {
   const data = await loadYear(year);
@@ -31,7 +36,7 @@ export async function YearArticle({ year, locale }: { year: number; locale: Loca
 
   return (
     <main className="h-full overflow-y-auto">
-      <article className="mx-auto max-w-5xl px-12 py-11 text-body [text-wrap:pretty] [word-break:keep-all]">
+      <article className="mx-auto max-w-5xl px-4 py-6 text-body [text-wrap:pretty] [word-break:keep-all] sm:px-12 sm:py-11">
         <div className="mb-7 flex items-start justify-between gap-4">
           <p className="flex flex-wrap gap-x-3 text-item-meta text-fg-subtle">
             <Link href={gridHref} className="underline">{c.toGrid(yl(year))}</Link>
@@ -50,8 +55,8 @@ export async function YearArticle({ year, locale }: { year: number; locale: Loca
         </p>
 
         <div className="mt-8 overflow-x-auto">
-          <table className="w-full table-fixed border-collapse">
-            <thead>
+          <table className="w-full table-fixed border-collapse max-sm:block">
+            <thead className="max-sm:hidden">
               <tr className="border-b border-line-strong text-left align-bottom">
                 {regions.map((r) => {
                   const p = polityAt(r.id);
@@ -67,8 +72,8 @@ export async function YearArticle({ year, locale }: { year: number; locale: Loca
                 })}
               </tr>
             </thead>
-            <tbody>
-              <tr className="align-top">
+            <tbody className="max-sm:block">
+              <tr className="align-top max-sm:flex max-sm:flex-col max-sm:gap-3">
                 {regions.map((r) => {
                   const evs = byRegion[r.id] ?? [];
                   const dup = dupNamesIn(evs, locale);
@@ -76,7 +81,14 @@ export async function YearArticle({ year, locale }: { year: number; locale: Loca
                   const around = evs.filter((e) => e.y0 !== year);
                   const outside = r.coverage_from != null && year < r.coverage_from;
                   return (
-                    <td key={r.id} className="border-r border-line-hairline px-3 pt-3 align-top last:border-r-0">
+                    // 폰: 그 해 사건이 없는 카드는 뒤로(order) — 첫 화면을 「이 해 수록 사건 없음」이 차지하지 않게.
+                    // 넓은 화면의 표는 열 순서 그대로다
+                    <td key={r.id} className={`border-r border-line-hairline px-3 pt-3 align-top last:border-r-0 max-sm:block max-sm:rounded-card max-sm:border-r-0 max-sm:bg-surface-sunken max-sm:px-4 max-sm:py-3${outside || here.length === 0 ? " max-sm:order-last" : ""}`}>
+                      {/* 폰 카드의 머리 — 표 머리(thead)가 폰에서 숨으므로 여기 한 번 더. 넓은 화면에서는 숨는다 */}
+                      <div className="mb-2 sm:hidden">
+                        <span className="text-body font-bold" style={{ color: `var(--color-region-${r.id})` }}>{REGION_LABEL[locale][r.id]}</span>
+                        {polityAt(r.id) && <span className="ml-2 font-serif text-item-meta text-fg-muted">{polityLabel(polityAt(r.id)!, locale)}</span>}
+                      </div>
                       {outside ? (
                         <p className="text-meta text-fg-subtle">{c.coverageFrom(r.coverage_from!)}</p>
                       ) : (
