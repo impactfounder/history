@@ -80,13 +80,20 @@ const names_ko = new Map(
  * 겹친 제목의 판정(tools/dedupe.mjs). 같은 열·같은 해에 같은 제목이 둘 이상일 때,
  * 합칠 것인지(같은 사건) 각자 다른 제목을 줄 것인지(한 캠페인의 다른 국면) 판단한 결과다.
  * 보류(same:null)는 아무 키도 만들지 않는다 — 손대지 않으면 오늘 동작(원문 문장)이 남는다.
+ *
+ * **키는 `열|source_id`다**(2026-09-26). source_id만으로 걸면 판정이 열을 넘는다 — 위키데이터 줄 id(`wd_q…`)는
+ * 같은 사건이 두 열에 들어가면 두 열에서 같다. 중국 열 안의 판정 「왕샤 조약 두 줄은 같다, wd_q1326406을 버린다」가
+ * 미국 열의 같은 id 줄까지 중국 열 대표에 흡수시켜, 미국 열 1844년에서 왕샤 조약이 사라져 있었다.
+ * 판정의 열은 그룹 키 `g`(「열|해|제목」)의 앞머리다. 검사: tools/clash-ids.test.ts.
  */
+const clashKey = (region, id) => `${region}|${id}`;
 const clash = { drop: new Map(), rename: new Map() };
 if (existsSync("curation/names/clash.jsonl")) {
   for (const l of readFileSync("curation/names/clash.jsonl", "utf8").split("\n").filter(Boolean)) {
     let d; try { d = JSON.parse(l); } catch { continue; }
-    if (d.same === true) for (const id of d.drop ?? []) clash.drop.set(id, d.primary);
-    else if (d.same === false) for (const [id, n] of Object.entries(d.rename ?? {})) clash.rename.set(id, n);
+    const reg = String(d.g ?? "").split("|")[0];
+    if (d.same === true) for (const id of d.drop ?? []) clash.drop.set(clashKey(reg, id), d.primary);
+    else if (d.same === false) for (const [id, n] of Object.entries(d.rename ?? {})) clash.rename.set(clashKey(reg, id), n);
   }
 }
 
@@ -101,7 +108,7 @@ const formatNikhDate = (d) =>
  * 이 줄의 지은 제목. dedupe가 「다른 국면」이라 판정해 새 제목을 준 줄은 그것이 이긴다 —
  * 같은 열·같은 해에 같은 이름이 겹치던 것을 푼 결과이므로 원래 이름보다 구체적이다.
  */
-const nameOf = (r) => clash.rename.get(r.source_id) ?? names_ko.get(nameHash(r.lang, r.title))?.name ?? null;
+const nameOf = (r) => clash.rename.get(clashKey(r.region, r.source_id)) ?? names_ko.get(nameHash(r.lang, r.title))?.name ?? null;
 
 function toRecord(r) {
   // 열마다 그 열의 언어판 표제어. 영어 원천의 한국 사건이라도 한국 열 이름은 ko 표제어다
@@ -210,15 +217,15 @@ const judgedQids = (() => {
   "같은 사건을 중국·일본·미국 연표가 어떻게 쓰는가"가 한 패널에 모이는 것이 이 제품의 주장이므로,
   합치기는 **행을 지우는 일이 아니라 관점을 모으는 일**이다. 국사편찬위 항목도 함께 옮긴다.
 */
-const byId = new Map(all.map((r) => [r.source_id, r]));
+const byId = new Map(all.map((r) => [clashKey(r.region, r.source_id), r]));
 let mergedRows = 0;
 let liftedRows = 0;
 let qidInherited = 0;
 let qidConflicts = 0;
 let qidSwitched = 0;
 for (const r of all) {
-  const into = clash.drop.get(r.source_id);
-  const primary = into ? byId.get(into) : null;
+  const into = clash.drop.get(clashKey(r.region, r.source_id));
+  const primary = into ? byId.get(clashKey(r.region, into)) : null;
   if (!primary || primary === r) continue;
   for (const src of r.sources) {
     // 같은 원문이 이미 옮겨져 있으면 건너뛴다 — 같은 위키 줄이 두 번 합쳐 들어와 상세의 「같은 사건」에
