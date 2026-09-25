@@ -26,6 +26,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { FOUND_VERB_STRONG, foundStrength, foundsNear, politiyCore } from "./founding.mjs";
 import { eventId } from "./event-id.mjs";
+import { pickMergedQid } from "./merge-qid.mjs";
 import { isEventLike } from "./event-kind.mjs";
 import path from "node:path";
 
@@ -214,6 +215,7 @@ let mergedRows = 0;
 let liftedRows = 0;
 let qidInherited = 0;
 let qidConflicts = 0;
+let qidSwitched = 0;
 for (const r of all) {
   const into = clash.drop.get(r.source_id);
   const primary = into ? byId.get(into) : null;
@@ -260,9 +262,24 @@ for (const r of all) {
     primary.qid = r.qid;
     primary.names_native = r.names_native;
     if (r.sitelinks != null) primary.sitelinks = r.sitelinks;
+    if (!primary.about && r.about) primary.about = r.about;
     qidInherited++;
   } else if (primary.qid && r.qid && primary.qid !== r.qid) {
-    qidConflicts++;
+    /*
+      서로 다른 QID — **표제어가 줄 이름과 같은 쪽**을 쓴다(tools/merge-qid.mjs, 대표 승인 2026-09-25).
+      「황건적의 난」의 대표 QID가 장각(인물)이라 관점별 명칭이 사람 이름이었다. 바꿀 때는
+      「관련 문서」(about — 그 QID의 한국어 위키백과 첫 문단)도 함께 옮긴다. 안 그러면 장각 전기가 남는다.
+      둘 다 같거나 둘 다 다르면 그대로 둔다 — 사람 판정 목록(tools/probe-cross.mjs)으로 간다.
+    */
+    if (pickMergedQid(primary, r, nameOf(primary) ?? primary.title_ko ?? primary.title) === "take") {
+      primary.qid = r.qid;
+      primary.names_native = r.names_native;
+      if (r.sitelinks != null) primary.sitelinks = r.sitelinks;
+      primary.about = r.about;
+      qidSwitched++;
+    } else {
+      qidConflicts++;
+    }
   }
   r.merged_into = into;
   mergedRows++;
@@ -739,7 +756,7 @@ write("manifest.json", { version: "v1", stage, publishedAt: new Date().toISOStri
 console.log(`발행 — stage=${stage} → ${OUT}
   사건        ${all.length}  (${Object.entries(counts.byRegion).map(([k, v]) => `${k} ${v}`).join(" · ")})
   제외        rejected ${skipped.rejected} · period ${skipped.period}
-  겹침 합침   ${mergedRows}행 (같은 열·같은 해·같은 제목 — 원문은 대표의 alt로) · 중요도 승계 ${liftedRows}건 · QID 승계 ${qidInherited}건 (서로 다른 QID ${qidConflicts}건은 그대로)
+  겹침 합침   ${mergedRows}행 (같은 열·같은 해·같은 제목 — 원문은 대표의 alt로) · 중요도 승계 ${liftedRows}건 · QID 승계 ${qidInherited}건 · 이름이 맞는 쪽으로 교체 ${qidSwitched}건 (그 밖에 서로 다른 QID ${qidConflicts}건은 그대로)
   나라의 시작 ${foundingRows}건 (정치체마다 한 줄, 그 해의 맨 앞)
   교차 사건   ${Object.keys(crossGroups).length}묶음 ${Object.values(crossGroups).reduce((a, g) => a + g.length, 0)}행 (같은 사건을 여러 열이 각자 적은 것) · QID 교정 ${qidFixed}건${qidFixStale.length ? ` — 맞지 않아 건너뜀 ${qidFixStale.join(", ")}` : ""}
   검색 색인   ${searchItems.length}건 (이름이 있는 것만 · 첫 화면에서는 받지 않는다)

@@ -20,6 +20,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import path from "node:path";
 import { eventId } from "./event-id.mjs";
 import { EVENT_TYPES, NON_EVENT_TYPES, isEventLike } from "./event-kind.mjs";
+import { pickMergedQid } from "./merge-qid.mjs";
 
 const REGION_KO = { ai: "AI", kr: "한국", cn: "중국", jp: "일본", us: "미국" };
 
@@ -68,13 +69,18 @@ const cell = (s) => String(s ?? "").replace(/\|/g, "／").replace(/\s+/g, " ").s
 // ── ① 합칠 때의 QID 충돌 — publish.mjs 합치기와 같은 순서 ─────────────────────
 const byId = new Map(all.map((r) => [r.source_id, r]));
 const conflicts = [];
+let switched = 0;
 for (const r of all) {
   const into = clash.drop.get(r.source_id);
   const primary = into ? byId.get(into) : null;
   if (!primary || primary === r) continue;
-  if (!primary.qid && r.qid) primary.qid = r.qid; // 발행의 QID 승계와 같다
-  // 한 대표 줄에 같은 QID의 줄이 둘 합쳐지기도 한다(황건적의 난) — 한 번만 올린다
-  else if (primary.qid && r.qid && primary.qid !== r.qid && !conflicts.some((c) => c.primary === primary && c.dropped.qid === r.qid)) conflicts.push({ primary, dropped: r });
+  if (!primary.qid && r.qid) { primary.qid = r.qid; primary.names_native = r.names_native; } // 발행의 QID 승계와 같다
+  else if (primary.qid && r.qid && primary.qid !== r.qid) {
+    // 발행과 같은 규칙(tools/merge-qid.mjs) — 표제어가 줄 이름과 같은 쪽을 쓴다. 규칙이 푼 것은 목록에 올리지 않는다
+    if (pickMergedQid(primary, r, labelOf(primary)) === "take") { primary.qid = r.qid; primary.names_native = r.names_native; switched++; }
+    // 한 대표 줄에 같은 QID의 줄이 둘 합쳐지기도 한다 — 한 번만 올린다
+    else if (!conflicts.some((c) => c.primary === primary && c.dropped.qid === r.qid)) conflicts.push({ primary, dropped: r });
+  }
   r.merged_into = into;
 }
 const kept = all.filter((r) => !r.merged_into);
@@ -145,6 +151,7 @@ out.push(`## ① 합칠 때 QID가 서로 달랐던 줄 — ${conflicts.length}�
 out.push("");
 out.push("같은 열·같은 해에 같은 사건으로 판정돼 한 줄로 합쳐졌는데, 두 줄이 서로 다른 위키데이터 항목을 가리켰다.");
 out.push("발행은 **대표 줄의 QID를 그대로** 둔다. 사라진 쪽이 그 사건이면 교차 묶기와 관점별 명칭이 틀린 항목을 쓰고 있다.");
+out.push(`표제어가 줄 이름과 같은 쪽이 한쪽뿐인 ${switched}건은 발행이 이미 그쪽으로 바꿨다(tools/merge-qid.mjs, 대표 승인 2026-09-25) — 여기 없다.`);
 out.push("");
 out.push("| # | 열 · 해 | 대표 줄(발행에 남음) | 대표 QID | 사라진 줄의 QID | 기계 제안 | 판정 |");
 out.push("|---|---|---|---|---|---|---|");

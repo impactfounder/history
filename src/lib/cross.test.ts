@@ -109,3 +109,33 @@ describe.skipIf(!published)("S3 — 하나의 사건, 여러 이름", () => {
     for (const x of g!) expect(Math.abs(x.y - 1592), `${x.r} ${x.y}`).toBeLessThanOrEqual(1);
   });
 });
+
+/**
+ * **합친 줄의 관점별 명칭이 그 사건의 것이다.** 합칠 때 두 QID가 다르면 표제어가 줄 이름과 같은 쪽을
+ * 쓴다(tools/merge-qid.mjs, 2026-09-25). 전에는 「황건적의 난」의 명칭이 장각 · Zhang Jue · 張角였다 —
+ * 대표 줄의 QID가 사람이었다. 그 규칙으로 12줄이 바뀌었고 톈진 조약이 중국·미국 두 열로 묶였다.
+ */
+describe.skipIf(!published)("합친 줄의 QID", () => {
+  const find = (region: string, y: number, needle: RegExp) => {
+    const dir = path.join(DATA, "events", region, "year");
+    for (const n of readdirSync(dir)) {
+      for (const e of JSON.parse(readFileSync(path.join(dir, n), "utf8")).events ?? []) {
+        if (e.y0 === y && needle.test(String(e.name_ko ?? e.title_ko ?? e.title ?? ""))) return e as { names: Record<string, { nat: string }> };
+      }
+    }
+    return undefined;
+  };
+
+  it("「황건적의 난」의 이름이 사람(장각)이 아니라 그 난이다", () => {
+    const e = find("cn", 184, /황건적의 난/);
+    expect(e, "184년 중국 열에 황건적의 난이 없다").toBeDefined();
+    expect(e!.names.kr?.nat).toBe("황건적의 난");
+    expect(e!.names.cn?.nat).toBe("黃巾之亂");
+  });
+
+  it("톈진 조약(1858)이 중국·미국 두 열의 한 묶음이다", () => {
+    const groups = Object.values(JSON.parse(readFileSync(path.join(DATA, "cross.json"), "utf8")).groups as Record<string, { r: string; y: number }[]>);
+    const g = groups.find((rs) => rs.some((x) => x.r === "cn" && x.y === 1858) && rs.some((x) => x.r === "us" && x.y === 1858));
+    expect(g, "1858년 중·미 묶음이 없다").toBeDefined();
+  });
+});
