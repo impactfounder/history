@@ -537,8 +537,42 @@ for (const region of REGIONS.map((x) => x.id)) {
     for (const [key, events] of Object.entries(byKey)) {
       if (!events.length) continue;
       events.sort(sortKey); // §6-2: imp desc, y0 asc, id asc — 클라이언트는 재정렬하지 않는다
-      write(`events/${region}/${level}/${key}.json`, { region, level, key, count: events.length, events });
       byLevel[level] += events.length;
+      if (level !== "decade") {
+        write(`events/${region}/${level}/${key}.json`, { region, level, key, count: events.length, events });
+        continue;
+      }
+      /*
+        **십년 청크는 앞부분과 뒷부분으로 나눈다**(2026-09-25, 진단 보고서 개선 8).
+
+        첫 화면(1980년 · s=8)이 받는 데이터가 gzip 230KB였고 그중 219KB가 십년 청크 10개였다.
+        그런데 s=8의 십년 칸(80px)에는 칩이 **3개**만 선다. 청크는 이 레벨의 최대 확대(420px,
+        칸당 19개)를 대비해 전부를 싣고 있었다 — 중국 1900년대 한 파일이 364건이었다.
+
+        칸은 청크 앞에서부터 높이 예산만큼 고르므로(layout-cell.ts), 행마다 **앞의 HEAD건**이면
+        그 확대까지는 화면이 같다. 나머지는 `.more.json`에 같은 순서로 두고, 격자가 더 확대하거나
+        「N건 더」 시트를 열 때만 받는다. 앞부분 + 뒷부분을 행마다 이어 붙이면 원래 순서가 된다.
+
+        `head`와 `counts`(행별 총수)는 앞부분 파일이 스스로 싣는다 — 격자가 이 상수를 따로 들고
+        있지 않아도 「N건 더」의 수와 뒷부분이 필요한지를 안다. 실측: 앞부분 6건이면 첫 화면의
+        십년 청크가 219KB → 75KB(gzip), 칸당 6개는 s≈14까지 덮는다.
+
+        연도 청크는 나누지 않는다 — 연도 페이지(year-data.ts)가 그 파일을 통째로 읽는다.
+      */
+      const HEAD = 6;
+      const seen = new Map();
+      const head = [];
+      const more = [];
+      const counts = {};
+      for (const e of events) {
+        const b = bucket(e.y0, 10);
+        const n = seen.get(b) ?? 0;
+        seen.set(b, n + 1);
+        counts[b] = n + 1;
+        (n < HEAD ? head : more).push(e);
+      }
+      write(`events/${region}/decade/${key}.json`, { region, level, key, count: events.length, head: HEAD, counts, events: head });
+      if (more.length) write(`events/${region}/decade/${key}.more.json`, { region, level, key, count: more.length, events: more });
     }
   }
   for (const r of rs) write(`events/detail/${eventId(r)}.json`, toDetail(r, eventId(r)));

@@ -40,6 +40,8 @@ export interface CellLayout<T> {
  * @param heights 항목 높이표. 좁은 화면은 메타 줄을 접으므로 ITEM_H_COMPACT를 넘긴다.
  * @param laneW   배지 레인 폭. 좁은 화면은 배지가 숫자뿐이라 MORE_LANE_W_COMPACT.
  * @param ticks   이 행에 그려지는 눈금 수(연도 행의 월 12 · 십년 행의 해 10). 0이면 눈금이 없다.
+ * @param total   칸의 **총** 사건 수. 기본은 `evs.length`다. 십년 청크는 앞부분만 먼저 오므로(publish.mjs)
+ *                받은 것이 다 서도 뒤에 더 있을 수 있다 — 그러면 「N건 더」와 배지 자리가 있어야 한다.
  *
  * **눈금이 있으면 위치가 약속이 된다.** 축이 「6월」이라 적어 둔 자리에 칩이 있으면 사용자는
  * 그 사건이 6월의 일이라고 읽는다 — 그것이 이 제품의 전제다.
@@ -62,6 +64,7 @@ export function layoutCell<T extends KindSource & { y0: number; m?: number }>(
   heights: Record<"lead" | "plain", number> = ITEM_H,
   laneW: number = MORE_LANE_W,
   ticks = 0,
+  total: number = evs.length,
 ): CellLayout<T> {
   const avail = h - CELL_PAD * 2;
 
@@ -96,7 +99,8 @@ export function layoutCell<T extends KindSource & { y0: number; m?: number }>(
     cursor = top + it.h + ITEM_GAP;
   }
 
-  const hidden = evs.length - placed.length;
+  // 받은 것보다 칸이 더 가졌을 수 있다 — 십년 청크의 뒷부분을 아직 안 받은 때(publish.mjs)
+  const hidden = Math.max(total, evs.length) - placed.length;
 
   // 3) 배지 레인 — 숨은 것이 있을 때만, 아래쪽 띠와 겹치는 항목에만
   if (hidden > 0) {

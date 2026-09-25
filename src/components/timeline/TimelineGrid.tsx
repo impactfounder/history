@@ -45,6 +45,7 @@ import {
   HIT_COMFORT,
   HIT_MIN,
   itemHeights,
+  ITEM_GAP,
   ITEM_INSET_END,
   ITEM_INSET_START,
   LUG_W,
@@ -132,7 +133,11 @@ interface PublishedEvent {
   /** 국사편찬위 연표에 맞춰진 공식 항목 수(한국 열). */
   official?: number;
 }
-interface Chunk { events: PublishedEvent[] }
+/**
+ * 청크 파일. 십년 청크는 **앞부분**(행마다 앞의 `head`건)과 `.more.json`(나머지, 같은 순서)으로
+ * 나뉜다(tools/publish.mjs). `counts`는 행별 총수 — 뒷부분을 받기 전에도 「N건 더」가 맞다.
+ */
+interface Chunk { events: PublishedEvent[]; head?: number; counts?: Record<string, number> }
 /** 국사편찬위원회 연표 한 항목 — 원문 그대로. */
 interface OfficialEntry { id: string; db: string; series: string | null; date_ko: string; text: string; url: string | null }
 interface Detail {
@@ -335,6 +340,8 @@ export function TimelineGrid() {
   // 보이는 행에서 청크 키가 나오고(§5-5A), 키마다 한 번만 받는다. 캐시는 ref에 두고
   // 도착할 때만 카운터로 다시 그린다 — 스크롤마다 state를 만지지 않기 위해서다.
   const chunks = useRef(new Map<string, PublishedEvent[] | null>());
+  /** 앞부분 파일의 머리 정보(head · counts) — 경로별. 없으면 나뉘지 않은 청크다. */
+  const chunkMeta = useRef(new Map<string, { head: number; counts: Record<string, number> }>());
   const inflight = useRef(new Set<string>());
   const [, bump] = useState(0);
   const [manifest, setManifest] = useState<Manifest | null>(null);
@@ -360,7 +367,11 @@ export function TimelineGrid() {
    * `+N` 배지를 눌러 연 셀 목록. 그 셀의 사건을 **통째로** 담는다(보이던 것 + 가려진 것) —
    * 셀 사건은 렌더 안에서 계산되므로 밖에서 다시 구하는 것보다 열 때 담는 쪽이 정직하다.
    */
-  const [cellSheet, setCellSheet] = useState<{ region: RegionId; b: number; unit: number; evs: PublishedEvent[] } | null>(null);
+  /*
+    시트는 **자리만** 기억한다(열 · 행 · 레벨). 목록은 그릴 때마다 청크에서 읽는다 — 십년 칸은
+    시트를 연 뒤에 뒷부분(`.more.json`)이 도착하므로, 연 순간의 목록을 붙들면 가려진 것이 빠진다.
+  */
+  const [cellSheet, setCellSheet] = useState<{ region: RegionId; b: number; unit: number; level: Level } | null>(null);
   /** 패널이 격자를 덮는가 — 덮으면 모달이고, 격자는 inert가 된다. */
   const modalPanel = selected !== null && !pushMode;
   /** 상세 제목 — 모달로 열릴 때 포커스가 여기로 간다. */
@@ -465,6 +476,7 @@ export function TimelineGrid() {
       .then((r) => (r.ok ? (r.json() as Promise<Chunk>) : null))
       .then((c) => {
         const evs = c?.events ?? null;
+        if (c?.head != null && c.counts) chunkMeta.current.set(path, { head: c.head, counts: c.counts });
         chunks.current.set(path, evs); // 404도 기록 — 빈 구간은 다시 묻지 않는다
       })
       .catch(() => chunks.current.set(path, null))
@@ -473,6 +485,17 @@ export function TimelineGrid() {
         bump((n) => n + 1);
       });
   }, [dataVersion, withV]);
+
+  /**
+   * 십년 청크의 **뒷부분**(`.more.json`). 앞부분이 이미 행마다 필요한 만큼을 다 가졌으면 받지 않는다 —
+   * 머리 정보(counts)로 뒷부분이 있는 행이 하나도 없으면 파일 자체가 없다(발행이 쓰지 않는다).
+   */
+  const ensureMore = useCallback((region: RegionId, key: string) => {
+    const headPath = `${DATA}/events/${region}/${key}.json`;
+    const meta = chunkMeta.current.get(headPath);
+    if (!meta || !Object.values(meta.counts).some((n) => n > meta.head)) return;
+    ensureChunk(region, `${key}.more`);
+  }, [ensureChunk]);
 
   /**
    * 열어야 할 사건이 청크에 들어왔으면 연다. `ensureChunk`가 `bump`를 올릴 때마다 본다.
@@ -778,10 +801,20 @@ export function TimelineGrid() {
   }, [chunkKeys.join("|"), cols.join(","), ensureChunk]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** (열, 행 버킷) → 그 칸의 사건. 발행 시 정렬돼 있으므로 다시 정렬하지 않는다(§6-2). */
-  const cellEvents = (region: RegionId, b: number): PublishedEvent[] => {
-    const evs = chunks.current.get(`${DATA}/events/${region}/${chunkKeyFor(b, rows.level)}.json`);
+  const cellEvents = (region: RegionId, b: number, level: Level = rows.level, unit: number = rows.unit): PublishedEvent[] => {
+    const key = chunkKeyFor(b, level);
+    const evs = chunks.current.get(`${DATA}/events/${region}/${key}.json`);
     if (!evs) return [];
-    return evs.filter((e) => bucketStart(e.y0, rows.unit) === b);
+    const inRow = (e: PublishedEvent) => bucketStart(e.y0, unit) === b;
+    // 뒷부분은 앞부분 **뒤에** 붙인다 — 행마다 앞의 head건이 앞부분이라 이어 붙이면 원래 순서다
+    const more = chunks.current.get(`${DATA}/events/${region}/${key}.more.json`) ?? [];
+    return [...evs.filter(inRow), ...more.filter(inRow)];
+  };
+  const sheetEvents = cellSheet ? cellEvents(cellSheet.region, cellSheet.b, cellSheet.level, cellSheet.unit) : [];
+  /** 칸의 총수 — 뒷부분을 아직 안 받았어도 맞다(앞부분 파일의 counts). */
+  const cellTotal = (region: RegionId, b: number, loaded: number, level: Level = rows.level): number => {
+    const meta = chunkMeta.current.get(`${DATA}/events/${region}/${chunkKeyFor(b, level)}.json`);
+    return Math.max(loaded, meta?.counts[String(b)] ?? 0);
   };
   const loadedChunks = Array.from(chunks.current.values()).filter(Boolean).length;
 
@@ -852,6 +885,18 @@ export function TimelineGrid() {
   const axisLabelW = narrow ? AXIS_LABEL_W_COMPACT : AXIS_LABEL_W;
   const minimapW = narrow ? MINIMAP_W_COMPACT : MINIMAP_W;
   const itemH = itemHeights(narrow, coarse);
+  /*
+    십년 칸이 앞부분(`head`)보다 많이 담을 만큼 커지면 뒷부분을 받는다. 칸당 최대 개수는 layoutCell의
+    높이 예산과 같은 식이다 — 가장 낮은 칩 높이로 세므로 실제보다 적게 잡는 일은 없다.
+  */
+  const cellCapacity = Math.floor((rows.unit * axis.s - CELL_PAD * 2 + ITEM_GAP) / (Math.min(itemH.lead, itemH.plain) + ITEM_GAP));
+  useEffect(() => {
+    if (rows.level !== "decade") return;
+    for (const id of cols) for (const key of chunkKeys) {
+      const meta = chunkMeta.current.get(`${DATA}/events/${id}/${key}.json`);
+      if (meta && cellCapacity > meta.head) ensureMore(id, key);
+    }
+  }, [rows.level, chunkKeys.join("|"), cols.join(","), cellCapacity, loadedChunks, ensureMore]); // eslint-disable-line react-hooks/exhaustive-deps
   const laneW = narrow ? MORE_LANE_W_COMPACT : MORE_LANE_W;
   /**
    * 좁은 화면의 헤더는 **두 줄**이라 더 높다. 한 줄에 다 넣으면 왕조 이름에 남는 폭이 0px이라
@@ -988,10 +1033,10 @@ export function TimelineGrid() {
           region={cellSheet.region}
           bucket={cellSheet.b}
           unit={cellSheet.unit}
-          events={cellSheet.evs}
+          events={sheetEvents}
           onClose={() => setCellSheet(null)}
           onPick={(id) => {
-            const ev = cellSheet.evs.find((x) => x.id === id);
+            const ev = sheetEvents.find((x) => x.id === id);
             setCellSheet(null);
             if (ev) openDetail(ev);
           }}
@@ -1303,7 +1348,8 @@ export function TimelineGrid() {
                   {shown.map((c, ci) => {
                     const evs = cellEvents(c.id, b);
                     // sub(월·해 눈금)을 넘긴다 — 눈금이 있으면 위치가 약속이라 밀어내기에 한계가 생긴다
-                    const { placed, hidden } = layoutCell(evs, h, b, rows.unit, locale, itemH, laneW, sub);
+                    // 총수를 넘긴다 — 앞부분 안에서는 다 섰어도 뒤에 더 있으면 「N건 더」와 그 자리가 있어야 한다
+                    const { placed, hidden } = layoutCell(evs, h, b, rows.unit, locale, itemH, laneW, sub, cellTotal(c.id, b, evs.length));
     // 같은 셀에 같은 라벨이 둘 이상이면(도요토미 히데요시 ×3) 그 이름은 쓰지 않고 원문으로 되돌린다.
                     // 규칙은 i18n.ts의 dupNames 한 벌 — 여기서 nameIn만 세던 시절에는 지은 제목이 집합에
                     // 안 들어가 「3·1 운동」이 세 번 찍히는 것을 그리드만 못 막았다(연도 페이지는 막았다).
@@ -1436,7 +1482,10 @@ export function TimelineGrid() {
                         {hidden > 0 && (
                           <button
                             type="button"
-                            onClick={() => setCellSheet({ region: c.id, b, unit: rows.unit, evs })}
+                            onClick={() => {
+                              setCellSheet({ region: c.id, b, unit: rows.unit, level: rows.level });
+                              if (rows.level === "decade") ensureMore(c.id, chunkKeyFor(b, rows.level));
+                            }}
                             aria-label={t.moreCount(hidden)}
                             className="absolute bottom-[3px] flex items-center whitespace-nowrap bg-surface px-[3px] text-item-meta tabular-nums text-fg-subtle hover:text-fg"
                             style={{ right: ITEM_INSET_END, minHeight: HIT_MIN }}
