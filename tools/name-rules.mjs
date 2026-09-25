@@ -29,7 +29,13 @@ export function validName(name, source, year) {
   */
   if (year !== undefined) s = s.replace(new RegExp(`^${year}년\\s*`), "");
   if (s.length < 2 || s.length > NAME_MAX) return null;
-  if (/\d+\s*(년|월|일)/.test(s)) return null; // 남은 날짜는 축과 중복이거나 오독이다
+  /*
+    남은 날짜는 축과 중복이거나 오독이다 — 그런데 **날짜 꼴만** 버린다(2026-09-26). 처음 판은 이름 안의
+    「숫자+년/월/일」을 무조건 버려서 「10월 혁명」 「1월 폭풍」 「38년 전쟁」 「주5일 근무제 시행」
+    「진사 시험 3년제 시행」 같은 고유명·제도명까지 버렸다(캐시의 버림 12건 중 10건).
+    버리는 것: 세·네 자리 연도(「1923년작」 「1980년대」)와 「N월 N일」.
+  */
+  if (/\d{3,4}\s*년/.test(s) || /\d{1,2}\s*월\s*\d{1,2}\s*일/.test(s)) return null;
   if (/(했다|하다|되었다|된다|당했다|였다|이다|졌다|난다|간다)$/.test(s)) return null; // 서술어 = 문장
   if (source && s === String(source).trim()) return null; // 문장을 되받아쓴 것
   return s;
