@@ -10,6 +10,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { cache } from "react";
 import { AXIS_YEAR_END, AXIS_YEAR_START } from "@/lib/timeline/axis";
+import { decodeYears } from "@/lib/timeline/gap";
 import { REGION_LABEL, dupNames,
   eventLabel, formatYearL, type LabelSource, type Locale, type RegionId } from "@/lib/i18n";
 import { YEAR } from "@/lib/i18n-pages";
@@ -67,6 +68,22 @@ const byImp = (a: Ev, b: Ev) => (b.regions[0]?.imp ?? 0) - (a.regions[0]?.imp ??
 /**
  * 그 해 ± 문맥 연도의 사건. `cache()`로 감싸 generateMetadata와 페이지 렌더가 한 번만 읽는다.
  */
+/**
+ * **어느 열이든 사건이 한 건이라도 있는 해.** 격자의 빈 구간 힌트가 쓰는 `years.json`(열별 사건 있는 해,
+ * 델타 부호화)을 합친다 — 해마다 청크를 읽지 않아도 된다.
+ *
+ * 쓰는 곳: 사이트맵과 연도 페이지의 `robots`. 2026-09-24 진단에서 연도 페이지 2,526개 중 **609개(24%)가 그 해
+ * 사건 0건**이었다 — 앞뒤 2년 문맥만 있는 빈 페이지가 네 언어로 2,436개 URL이 되어 사이트맵에 올라가 있었다.
+ * 검색으로 들어온 사람이 빈 페이지에 떨어지지 않게, 그 해들은 사이트맵에서 빼고 `noindex`로 둔다.
+ * 페이지 자체는 남긴다 — 「다음 해」 링크와 상세의 「그 해 페이지」가 404가 되면 안 된다.
+ */
+export const yearsWithEvents = cache(async (): Promise<Set<number>> => {
+  const idx = (await readJson<{ years: Record<string, number[]> }>("years.json"))?.years ?? {};
+  const out = new Set<number>();
+  for (const delta of Object.values(idx)) for (const y of decodeYears(delta)) out.add(y);
+  return out;
+});
+
 export const loadYear = cache(async (year: number): Promise<YearData> => {
   const regions = (await readJson<{ regions: Region[] }>("regions.json"))?.regions ?? [];
   const polities = (await readJson<{ regions: Record<string, Polity[]> }>("polities.json"))?.regions ?? {};

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { formatYearL, localePath, type Locale } from "@/lib/i18n";
 import { SITE_COPY, SOURCES, YEAR, languageAlternates } from "@/lib/i18n-pages";
-import { loadYear, summarize } from "@/lib/year-data";
+import { loadYear, summarize, yearsWithEvents } from "@/lib/year-data";
 
 /**
  * 언어별 메타데이터 — 라우트 파일은 이 함수만 부른다. 한 페이지의 canonical과 hreflang이 한 군데서 나와야
@@ -48,9 +48,12 @@ export async function yearMetadata(year: number, locale: Locale): Promise<Metada
   const title = YEAR[locale].metaTitle(label);
   const description = summarize(year, await loadYear(year), locale);
   const path = `/y/${year}`;
+  // 그 해 사건이 0건이면 색인하지 않는다 — 문맥 두 해만 있는 빈 페이지(year-data yearsWithEvents)
+  const empty = !(await yearsWithEvents()).has(year);
   return {
     title,
     description,
+    ...(empty ? { robots: { index: false, follow: true } } : {}),
     alternates: { canonical: localePath(locale, path), languages: languageAlternates(path) },
     openGraph: { title, description, type: "article", locale: SITE_COPY[locale].ogLocale, images: [OG_IMAGE] },
     twitter: { card: "summary_large_image", title, description, images: [OG_IMAGE.url] },
