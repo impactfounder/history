@@ -187,6 +187,22 @@ for (const f of files) {
   }
 }
 
+/**
+ * 사건 판정에 **쓰일 수 있는** QID — 합치기·교정 **전** 원본에서 센다(아래 FACTS_COPY). 두 열 이상의 줄에
+ * 나오는 QID와 교정표가 가리키는 QID. 합친 뒤의 집합보다 넓지만 그래서 안전하다 — qid-facts.test.ts가
+ * 같은 규칙으로 git 안의 원본만 보고 다시 셀 수 있다.
+ */
+const judgedQids = (() => {
+  const regions = new Map();
+  const add = (q, region) => q && (regions.get(q) ?? regions.set(q, new Set()).get(q)).add(region);
+  for (const r of all) add(r.qid, r.region);
+  const out = new Set([...regions].filter(([, s]) => s.size >= 2).map(([q]) => q));
+  if (existsSync("curation/qid-fix.json")) {
+    for (const f of JSON.parse(readFileSync("curation/qid-fix.json", "utf8")).fixes ?? []) out.add(f.qid);
+  }
+  return out;
+})();
+
 /*
   겹친 제목 합치기(tools/dedupe.mjs 판정). 사라지는 줄의 원문은 대표의 sources에 `alt: true`로
   옮긴다 — derive.mjs mergeDuplicates가 쓰는 모양 그대로라 toDetail의 `alt`가 그대로 집어 간다.
@@ -358,9 +374,36 @@ if (existsSync("curation/qid-fix.json")) {
   }
 }
 
+/*
+  **사건 판정 재료 — 로컬과 CI가 같은 것을 보게.**
+
+  `isEventLike`는 이름 꼴과 위키데이터 유형(P31)을 본다. 유형은 수집 산출물 `curation/raw/_qid-sitelinks.json`에
+  있는데 **그 폴더는 git 밖이다.** 그래서 Vercel 빌드는 유형 없이 이름만으로 판정했고, 배포본의 교차 묶음이
+  로컬보다 적었다(2026-09-25 실측 52 대 55 — 코로나19 범유행 3열 · 2018 한일 레이더 사건 · 14개조 평화 원칙이
+  배포본에만 없었다). 로컬에서 확인한 것이 배포되지 않는, 가장 알아채기 어려운 꼴이다.
+
+  국사편찬위 원본이 없는 CI를 위해 `curation/nikh/official-years.json`을 추적하는 것과 같은 방식으로 푼다 —
+  원본이 있으면 판정에 **쓰일 수 있는** QID의 사실만 추적되는 사본(`curation/qid-facts.json`)으로 쓰고,
+  원본이 없으면 그 사본을 읽는다. "쓰일 수 있는" = 두 열 이상의 줄에 나오거나 교정표가 가리키는 QID
+  (교차 묶기는 두 열 이상에서만 판정한다). `qid-facts.test.ts`가 사본이 그 집합을 다 덮는지 지킨다.
+*/
+const FACTS_RAW = "curation/raw/_qid-sitelinks.json";
+const FACTS_COPY = "curation/qid-facts.json";
 const qidFacts = (() => {
-  const p = "curation/raw/_qid-sitelinks.json";
-  return existsSync(p) ? (JSON.parse(readFileSync(p, "utf8")).facts ?? {}) : {};
+  if (existsSync(FACTS_RAW)) {
+    const facts = JSON.parse(readFileSync(FACTS_RAW, "utf8")).facts ?? {};
+    // 원본에 사실이 없는 QID도 빈 항목으로 적는다 — 판정은 같고(유형 없음), 테스트가 "사본이 판정 대상을
+    // 다 덮는가"를 원본 없이도 셀 수 있다
+    const keep = [...judgedQids].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)));
+    // 한 줄에 하나 — 재발행의 차이가 줄 단위 diff로 읽힌다
+    const lines = keep.map((q) => `    ${JSON.stringify(q)}: ${JSON.stringify({ ...(facts[q]?.human ? { human: true } : {}), types: facts[q]?.types ?? [] })}`);
+    writeFileSync(
+      FACTS_COPY,
+      `{\n  "about": "사건 판정 사본 — tools/publish.mjs가 curation/raw/_qid-sitelinks.json에서 판정에 쓰일 수 있는 QID만 뽑아 쓴다. CI는 원본이 없어 이것을 읽는다. 손으로 고치지 않는다.",\n  "facts": {\n${lines.join(",\n")}\n  }\n}\n`,
+    );
+    return facts;
+  }
+  return existsSync(FACTS_COPY) ? (JSON.parse(readFileSync(FACTS_COPY, "utf8")).facts ?? {}) : {};
 })();
 const crossGroups = {};
 {
