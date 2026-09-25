@@ -13,6 +13,11 @@
  *   node --env-file=.env tools/translate.mjs --region jp             한 열 전부
  *   node --env-file=.env tools/translate.mjs                         캐시에 없는 줄 전부
  *   옵션: --model claude-sonnet-5 (기본) · --batch 25 · --dry (호출 없이 대상만 센다)
+ *         --redo <source_id,…> 캐시가 있어도 그 줄만 다시 옮긴다(새 줄이 뒤에 붙고 derive는 마지막 줄을 쓴다)
+ *
+ * 링크: 그 줄에 걸린 위키백과 문서 제목(curation/raw의 links)을 함께 보낸다(2026-09-26). 연표의 짧은
+ * 이름은 문장만으로는 뜻이 갈린다 — 「February — He died.」의 He는 **후한 화제**(링크 Emperor He of Han)인데
+ * 문장만 받은 모델이 대명사로 읽어 「2월 — 사망하였다.」로 주어를 지웠다.
  * 키: .env의 ANTHROPIC_API_KEY (gitignore). 코드·로그에 절대 찍지 않는다.
  */
 
@@ -26,6 +31,7 @@ const BATCH = Number(arg("--batch", 25));
 const SAMPLE = process.argv.includes("--sample") ? Number(arg("--sample", 100)) : null;
 const REGION = arg("--region", null);
 const DRY = process.argv.includes("--dry");
+const REDO = new Set(String(arg("--redo", "")).split(",").filter(Boolean));
 const CACHE = "curation/translations/ko.jsonl";
 
 export const hashOf = (lang, text) => createHash("sha1").update(`${lang}|${text}`).digest("hex").slice(0, 16);
@@ -44,7 +50,8 @@ const SYSTEM = `너는 역사 연표를 한국어로 옮기는 번역기다. 입
 2. 고유명사는 용어집(glossary)을 그대로 따른다. 용어집에 없으면 한국 사학계 관용 표기를 쓴다 — 일본 인명·지명은 일본어 발음(도요토미 히데요시), 중국 전근대는 한자음(주원장), 중국 근현대 인명은 원음(마오쩌둥), 영어권은 통용 표기(에이브러햄 링컨).
 3. 날짜·숫자·연호·괄호 안 원어 표기는 그대로 둔다. 원문에 없는 괄호 병기를 추가하지 않는다.
 4. 연표 문체로 — 명사형 종결("…을 체결.", "…이 즉위.")을 원문이 문장이면 문장으로, 구면 구로.
-5. 출력은 JSON 배열만. 다른 말은 쓰지 않는다: [{"id":"…","ko":"…"}]`;
+5. 출력은 JSON 배열만. 다른 말은 쓰지 않는다: [{"id":"…","ko":"…"}]
+6. 항목의 links는 그 줄의 원문에 링크로 걸린 위키백과 문서 제목이다. 원문의 낱말이 링크 대상의 이름이면 그 대상으로 옮긴다 — 「He died.」에 링크 "Emperor He of Han"이 있으면 He는 대명사가 아니라 후한 화제다. links는 뜻을 가리는 데만 쓰고 원문에 없는 내용을 더하지 않는다.`;
 
 // ── 대상 모으기 ─────────────────────────────────────────────────────────────
 mkdirSync("curation/translations", { recursive: true });
@@ -54,6 +61,9 @@ let items = [];
 for (const region of regions) {
   const f = `curation/events/${region}.jsonl`;
   if (!existsSync(f)) continue;
+  // 원천 링크(수집 원문, gitignore). 없으면 링크 없이 옮긴다 — 예전과 같다
+  const rawF = `curation/raw/${region}/candidates.jsonl`;
+  const links = new Map(existsSync(rawF) ? readFileSync(rawF, "utf8").split("\n").filter(Boolean).map((l) => { const d = JSON.parse(l); return [d.id, d.links ?? []]; }) : []);
   for (const line of readFileSync(f, "utf8").split("\n").filter(Boolean)) {
     const r = JSON.parse(line);
     if (r.status !== "published" || r.lang === "ko") continue;
@@ -62,12 +72,12 @@ for (const region of regions) {
     // 그대로 되받아쓴다. lang이 아니라 **글자**로 판정한다.
     if (isMostlyHangul(r.title)) continue;
     const h = hashOf(r.lang, r.title);
-    if (cache.has(h)) continue;
+    if (cache.has(h) && !REDO.has(r.source_id)) continue;
     // 용어집: 이 줄에 실제로 있는 원문 표제어만
     const glossary = [];
     const src = r.names_native?.[r.lang], ko = r.names_native?.ko;
     if (src && ko && r.title.includes(src)) glossary.push([src, ko.replace(/\s*\([^)]*\)$/, "")]);
-    items.push({ h, region, lang: r.lang, year: r.date.year, text: r.title, glossary });
+    items.push({ h, region, lang: r.lang, year: r.date.year, text: r.title, glossary, links: (links.get(r.source_id) ?? []).slice(0, 8) });
   }
 }
 if (SAMPLE) {
@@ -102,7 +112,7 @@ const MAX_TOKENS = 16000;
  */
 async function translateBatch(batch, depth = 0) {
   const glossary = Object.fromEntries(batch.flatMap((b) => b.glossary));
-  const user = JSON.stringify({ glossary, items: batch.map((b, k) => ({ id: String(k), lang: b.lang, text: b.text })) });
+  const user = JSON.stringify({ glossary, items: batch.map((b, k) => ({ id: String(k), lang: b.lang, text: b.text, ...(b.links?.length ? { links: b.links } : {}) })) });
   const res = await client.messages.create({ model: MODEL, max_tokens: MAX_TOKENS, system: SYSTEM, messages: [{ role: "user", content: user }] });
   usage.input += res.usage.input_tokens;
   usage.output += res.usage.output_tokens;
