@@ -11,6 +11,16 @@ describe("stripYear / parseWikiDate / segments", () => {
     expect(stripYear("1882년 조미수호조규 체결")).toBe("조미수호조규 체결");
     expect(stripYear("BC.238년경 고조선 성립")).toBe("고조선 성립");
     expect(stripYear("1882: Imo Incident: Mutiny")).toBe("Imo Incident: Mutiny");
+    // 연도 뒤 불확실 표시 — 칩에 「? 왜국대란이 발발」로 떴다(2026-09-26). 원호 괄호가 뒤따라도 함께 뗀다
+    expect(stripYear("180年頃? 倭国大乱が勃発。")).toBe("倭国大乱が勃発。");
+    expect(stripYear("893年?（寛平5年） 初めて滝口武者を置く。")).toBe("初めて滝口武者を置く。");
+    // 세기 표기와 숫자 뒤 기원 표기 — 「세기 한반도…」「BC: Beginning…」이 제목으로 남았다(2026-09-26)
+    expect(stripYear("BC.4세기경 진국 성립함")).toBe("진국 성립함");
+    expect(stripYear("300 BC: Beginning of the Iron Age.")).toBe("Beginning of the Iron Age.");
+    expect(stripYear("154 BC - Rebellion of the Seven States")).toBe("Rebellion of the Seven States");
+    expect(stripYear("1066 AD: Battle of Hastings")).toBe("Battle of Hastings");
+    // 숫자로 시작하는 이름은 연도 표기가 아니면 남긴다
+    expect(stripYear("1882년 BCG 접종")).toBe("BCG 접종");
   });
   it("한자권 연도 표기도 뗀다 — 원호 괄호·約·前·年代", () => {
     expect(stripYear("1600年（慶長5年） 関ヶ原の戦い")).toBe("関ヶ原の戦い");
