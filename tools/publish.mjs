@@ -25,6 +25,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { FOUND_VERB_STRONG, foundStrength, foundsNear, politiyCore } from "./founding.mjs";
+import { eventId } from "./event-id.mjs";
 import { isEventLike } from "./event-kind.mjs";
 import path from "node:path";
 
@@ -52,11 +53,7 @@ const REGION_LANG = { kr: "ko", cn: "zh", jp: "ja", us: "en" };
 const GENERAL_DB = new Set(["고대사연표", "근대사연표", "대한민국사연표"]);
 
 const sha = (s) => createHash("sha256").update(s).digest("hex");
-/**
- * 사건 id. 연도를 넣는다 — 수집기의 행 id는 sha1(url|revid|text)라 **같은 문장이 여러 해에 반복되면**
- * 같은 id가 된다("Rebellion breaks out in Sichuan"이 송 연표에 네 번, 2026-09-05 중복 키 경고).
- */
-const eventId = (r) => "ev_" + sha(`${r.source_id}|${r.date.year}|${r.title}`).slice(0, 12);
+// 사건 id — tools/event-id.mjs (교정표 테스트가 같은 계산을 쓴다)
 /**
  * 지은 사건 제목(tools/name.mjs). 키는 sha1(lang|원문 한 줄)로 translate.mjs와 같은 공간이다.
  *
@@ -199,6 +196,8 @@ for (const f of files) {
 const byId = new Map(all.map((r) => [r.source_id, r]));
 let mergedRows = 0;
 let liftedRows = 0;
+let qidInherited = 0;
+let qidConflicts = 0;
 for (const r of all) {
   const into = clash.drop.get(r.source_id);
   const primary = into ? byId.get(into) : null;
@@ -228,6 +227,27 @@ for (const r of all) {
   primary.importance_auto = Math.max(impBefore, r.importance_auto ?? 0);
   primary.rank_score = Math.max(primary.rank_score ?? 0, r.rank_score ?? 0);
   if (primary.importance_auto > impBefore) liftedRows++;
+  /*
+    **QID와 관점별 명칭도 같은 이유로 모인다.** 위의 중요도와 똑같은 사고가 한 층 아래에 남아
+    있었다(2026-09-25 진단 — PRD S3 「임진왜란이 세 열에 한 사건으로」가 데이터에 없던 원인):
+
+      대표  QID 없음            「…절영도에 상륙. 임진왜란 시작.」      ← 국사편찬위
+      버림  QID Q576338(임진왜란) 「…왜군이 조선을 침공하여 임진왜란이 발발」 ← 위키
+
+    대표가 QID를 못 받으니 ① 교차 묶기(아래, QID로 묶는다)에 들어갈 수 없고 ② 상세의
+    「이 사건을 부르는 이름」(文禄・慶長の役 · 萬曆朝鮮之役)이 비고 ③ 일본어·중국어 화면의
+    라벨도 그 나라 표제어를 못 쓴다. 국편 줄이 대표가 되는 합침은 전부 이 꼴이다.
+
+    대표가 **이미 다른 QID를 가졌으면 건드리지 않는다** — 어느 쪽이 맞는지는 이 자리에서 모른다.
+  */
+  if (!primary.qid && r.qid) {
+    primary.qid = r.qid;
+    primary.names_native = r.names_native;
+    if (r.sitelinks != null) primary.sitelinks = r.sitelinks;
+    qidInherited++;
+  } else if (primary.qid && r.qid && primary.qid !== r.qid) {
+    qidConflicts++;
+  }
   r.merged_into = into;
   mergedRows++;
 }
@@ -309,6 +329,35 @@ write("polities.json", { regions: polities });
   묶음은 `cross.json`으로 따로 낸다. 상세가 "다른 열은 이렇게 적었다"를 보여줄 때 **다른 열의
   청크를 받지 않고** 이름·해·id를 바로 쓸 수 있어야 한다.
 */
+/*
+  **QID 교정표**(`curation/qid-fix.json`). 줄의 QID가 사건이 아니라 인물·나라를 가리키면 위
+  판정(`isEventLike`)이 그 줄을 교차 묶기에서 뺀다 — 맞는 판정이다. 그런데 그 줄이 말하는 것이
+  사건이면 묶여야 한다. 1592년 임진왜란은 일본 열이 「도요토미 히데요시」에, 중국 열이 같은 인물과
+  「조선」에 붙어 있어 세 열이 같은 전쟁을 적고도 한 묶음이 되지 못했다(2026-09-25 진단).
+
+  기계로 고치지 않고 표로 고친다. "이 줄은 사실 이 사건을 말한다"는 역사 판단이라서다.
+  `from`이 지금 QID와 맞을 때만 붙인다 — 원본이 바뀌었으면 옛 판단을 새 줄에 씌우지 않는다.
+  이름은 그 사건 QID를 이미 가진 줄에서 가져온다(없으면 교정만 하고 이름은 그대로).
+*/
+let qidFixed = 0;
+const qidFixStale = [];
+if (existsSync("curation/qid-fix.json")) {
+  const fixes = JSON.parse(readFileSync("curation/qid-fix.json", "utf8")).fixes ?? [];
+  const namesByQid = new Map();
+  for (const r of all) if (r.qid && r.names_native && !namesByQid.has(r.qid)) namesByQid.set(r.qid, r.names_native);
+  const byEventId = new Map(all.map((r) => [eventId(r), r]));
+  for (const f of fixes) {
+    const r = byEventId.get(f.id);
+    if (!r || r.qid !== f.from) {
+      qidFixStale.push(f.id);
+      continue;
+    }
+    r.qid = f.qid;
+    if (namesByQid.has(f.qid)) r.names_native = namesByQid.get(f.qid);
+    qidFixed++;
+  }
+}
+
 const qidFacts = (() => {
   const p = "curation/raw/_qid-sitelinks.json";
   return existsSync(p) ? (JSON.parse(readFileSync(p, "utf8")).facts ?? {}) : {};
@@ -613,9 +662,9 @@ write("manifest.json", { version: "v1", stage, publishedAt: new Date().toISOStri
 console.log(`발행 — stage=${stage} → ${OUT}
   사건        ${all.length}  (${Object.entries(counts.byRegion).map(([k, v]) => `${k} ${v}`).join(" · ")})
   제외        rejected ${skipped.rejected} · period ${skipped.period}
-  겹침 합침   ${mergedRows}행 (같은 열·같은 해·같은 제목 — 원문은 대표의 alt로) · 중요도 승계 ${liftedRows}건
+  겹침 합침   ${mergedRows}행 (같은 열·같은 해·같은 제목 — 원문은 대표의 alt로) · 중요도 승계 ${liftedRows}건 · QID 승계 ${qidInherited}건 (서로 다른 QID ${qidConflicts}건은 그대로)
   나라의 시작 ${foundingRows}건 (정치체마다 한 줄, 그 해의 맨 앞)
-  교차 사건   ${Object.keys(crossGroups).length}묶음 ${Object.values(crossGroups).reduce((a, g) => a + g.length, 0)}행 (같은 사건을 여러 열이 각자 적은 것)
+  교차 사건   ${Object.keys(crossGroups).length}묶음 ${Object.values(crossGroups).reduce((a, g) => a + g.length, 0)}행 (같은 사건을 여러 열이 각자 적은 것) · QID 교정 ${qidFixed}건${qidFixStale.length ? ` — 맞지 않아 건너뜀 ${qidFixStale.join(", ")}` : ""}
   검색 색인   ${searchItems.length}건 (이름이 있는 것만 · 첫 화면에서는 받지 않는다)
   연도 색인   ${Object.values(yearsByRegion).reduce((a, d) => a + d.length, 0)}개 해 (빈 구간 힌트용)
   청크 수록   century ${byLevel.century} · decade ${byLevel.decade} · year ${byLevel.year}

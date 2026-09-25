@@ -1328,6 +1328,18 @@ export function TimelineGrid() {
                             ev.official ? t.nikhShort : "",
                             tag ? t.originalIn(ev.lang) : "",
                           ].filter(Boolean).join(" · ");
+                          /*
+                            교차 사건 글리프(§4-1 「링크 글리프」). **한 글자만** 쓴다 —
+                            1b가 채널을 아홉에서 넷으로 줄인 화면이라, 여기에 색이나 테두리를
+                            더하면 그 정리를 되돌리는 셈이 된다. 자세한 것은 상세의 「다른 열에서는」에 있다.
+                            aria-hidden이 아니다 — 이것은 장식이 아니라 사실의 표시다.
+                          */
+                          const crossLabel = xHidden > 0 ? `${t.crossGlyph(xn)} · ${t.crossHidden(xHidden)}` : t.crossGlyph(xn);
+                          const crossMark = (
+                            <span className="shrink-0 text-item-meta tabular-nums text-fg-subtle" title={crossLabel} aria-label={crossLabel} role="img">
+                              ⇄{xHidden > 0 ? `+${xHidden}` : ""}
+                            </span>
+                          );
                           return (
                             <button
                               key={ev.id}
@@ -1360,26 +1372,26 @@ export function TimelineGrid() {
                                     : ""
                               }`}
                             >
-                              <span
-                                className={`min-w-0 truncate ${kind === "lead" ? "text-item-lead font-semibold text-fg" : "text-item text-fg-muted"}${ev.hist === "traditional" ? " italic" : ""}`}
-                              >
-                                {label.name ?? label.text}
-                              </span>
-                              {meta && !narrow && <span className="min-w-0 truncate text-item-meta text-fg-subtle tabular-nums">{meta}</span>}
                               {/*
-                                교차 사건 글리프(§4-1 「링크 글리프」). **한 글자만** 쓴다 —
-                                1b가 채널을 아홉에서 넷으로 줄인 화면이라, 여기에 색이나 테두리를
-                                더하면 그 정리를 되돌리는 셈이 된다. 자세한 것은 상세의 「다른 열에서는」에 있다.
-                                aria-hidden이 아니다 — 이것은 장식이 아니라 사실의 표시다.
+                                **줄을 늘리지 않는다.** 칩 높이(ITEM_H 34/28px, 좁은 화면 24/20px)는 제목 +
+                                메타 두 줄(좁은 화면은 한 줄)로 정해져 있고 layoutCell이 그 높이로 자리를 잡는다.
+                                처음 판은 글리프를 셋째 줄로 붙여서, 메타(「국사편찬위원회 연표」)가 있는 칩은
+                                아래 칩 위로 넘쳤다(2026-09-25, 1592년 한국 열 「임진왜란」이 「상주 전투」를 덮음).
+                                좁은 화면은 메타가 없어도 글리프 하나로 넘쳤다. 그래서 글리프는 **이미 있는 줄의 끝**에 선다 —
+                                메타 줄이 보이면 거기, 아니면 제목 줄.
                               */}
-                              {xn > 0 && (
+                              <span className="flex min-w-0 items-baseline gap-1">
                                 <span
-                                  className="shrink-0 text-item-meta tabular-nums text-fg-subtle"
-                                  title={xHidden > 0 ? `${t.crossGlyph(xn)} · ${t.crossHidden(xHidden)}` : t.crossGlyph(xn)}
-                                  aria-label={xHidden > 0 ? `${t.crossGlyph(xn)} · ${t.crossHidden(xHidden)}` : t.crossGlyph(xn)}
-                                  role="img"
+                                  className={`min-w-0 truncate ${kind === "lead" ? "text-item-lead font-semibold text-fg" : "text-item text-fg-muted"}${ev.hist === "traditional" ? " italic" : ""}`}
                                 >
-                                  ⇄{xHidden > 0 ? `+${xHidden}` : ""}
+                                  {label.name ?? label.text}
+                                </span>
+                                {xn > 0 && (narrow || !meta) && crossMark}
+                              </span>
+                              {meta && !narrow && (
+                                <span className="flex min-w-0 items-baseline gap-1 text-item-meta text-fg-subtle tabular-nums">
+                                  <span className="min-w-0 truncate">{meta}</span>
+                                  {xn > 0 && crossMark}
                                 </span>
                               )}
                             </button>

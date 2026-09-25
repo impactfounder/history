@@ -86,3 +86,26 @@ describe.skipIf(!published)("묶음과 사건이 서로를 가리킨다", () => 
     expect(missing.slice(0, 5)).toEqual([]);
   });
 });
+
+/**
+ * **PRD §3 S3 — 제품의 간판 시나리오가 데이터에 있는가.** "같은 전쟁이 한국 열에서는 임진왜란,
+ * 일본 열에서는 文禄・慶長の役, 중국 열에서는 萬曆朝鮮之役으로" — 이 문장 그대로다.
+ *
+ * 2026-09-25 진단 전까지 **없었다.** 세 열 모두 1592년 줄이 있었지만 ① 한국 줄은 국사편찬위 줄과
+ * 합쳐지며 위키 쪽의 임진왜란 QID(Q576338)를 버렸고 ② 일본·중국 줄은 QID가 도요토미 히데요시·
+ * 조선에 붙어 있었다. ①은 합침의 QID 승계로, ②는 `curation/qid-fix.json`으로 고쳤다.
+ * 묶음 수를 세는 위 검사로는 이 하나가 빠져도 통과한다 — 그래서 이름으로 따로 지킨다.
+ */
+describe.skipIf(!published)("S3 — 하나의 사건, 여러 이름", () => {
+  const groups = Object.values(
+    JSON.parse(readFileSync(path.join(DATA, "cross.json"), "utf8")).groups as Record<string, { r: string; y: number; name: string | null }[]>,
+  );
+
+  it("1592년 임진왜란이 한국·일본·중국 세 열에 각자의 이름으로 한 묶음이다", () => {
+    const g = groups.find((rs) => rs.some((x) => x.r === "kr" && x.name === "임진왜란"));
+    expect(g, "임진왜란이 교차 묶음에 없다").toBeDefined();
+    const byRegion = Object.fromEntries(g!.map((x) => [x.r, x.name]));
+    expect(byRegion).toMatchObject({ kr: "임진왜란", jp: "文禄・慶長の役", cn: "萬曆朝鮮之役" });
+    for (const x of g!) expect(Math.abs(x.y - 1592), `${x.r} ${x.y}`).toBeLessThanOrEqual(1);
+  });
+});

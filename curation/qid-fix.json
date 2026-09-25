@@ -1,0 +1,29 @@
+{
+  "about": "줄의 QID가 사건이 아니라 인물·나라를 가리킬 때, 그 줄이 실제로 말하는 사건의 QID로 고친다. 교차 묶기(같은 QID를 여러 열이 적은 것)와 관점별 명칭(그 QID의 언어별 표제어)이 고친 QID를 쓴다. id는 발행 id(tools/publish.mjs eventId), from은 원래 QID다 — 원본 줄이 바뀌어 from이 맞지 않으면 교정을 붙이지 않고 qid-fix.test.ts가 실패한다. 판단 근거는 why에 원문 그대로 적는다.",
+  "fixes": [
+    {
+      "id": "ev_1082b080f71c",
+      "region": "jp",
+      "year": 1592,
+      "from": "Q187550",
+      "qid": "Q576338",
+      "why": "원문 「Toyotomi Hideyoshi … invaded Korea.」 — 임진왜란의 발발이다. QID가 사건이 아니라 인물(도요토미 히데요시)에 붙어 있었다. PRD §3 S3의 그 예."
+    },
+    {
+      "id": "ev_eb94c49e25bf",
+      "region": "cn",
+      "year": 1592,
+      "from": "Q187550",
+      "qid": "Q576338",
+      "why": "원문 「日本丰臣秀吉出兵朝鲜，朝鮮向明朝求援，萬曆朝鮮之役始。」 — 萬曆朝鮮之役(임진왜란)의 시작이다. QID가 인물(도요토미 히데요시)에 붙어 있었다."
+    },
+    {
+      "id": "ev_3622b2852f17",
+      "region": "cn",
+      "year": 1592,
+      "from": "Q28179",
+      "qid": "Q576338",
+      "why": "원문 「Japanese invasions of Korea: Some two hundred thousand Japanese troops invaded Joseon.」 — 전쟁 자체다. QID가 나라(조선)에 붙어 있었다."
+    }
+  ]
+}
