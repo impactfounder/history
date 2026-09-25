@@ -30,6 +30,7 @@ import {
 import { assignLanes, baseTier, SPAN_MIN_PX } from "@/lib/timeline/rank";
 import { decodeYears, isEmptyRange, nearestYears } from "@/lib/timeline/gap";
 import { uncoveredFraction } from "@/lib/timeline/uncovered";
+import { orderRowGroups, rowSheetRegions } from "@/lib/timeline/row-sheet";
 import type { SearchHit } from "@/lib/search";
 import { layoutCell } from "@/lib/timeline/layout-cell";
 import { originalTag } from "@/lib/timeline/item-kind";
@@ -58,6 +59,7 @@ import {
 } from "@/lib/design/metrics";
 import { LOCALES, LOCALE_LABEL, LOCALE_REGION, REGION_LABEL, T, dropYearPrefix, dupNames, eventLabel, formatRowLabelL, formatYearL, isEventName, isLocale, localePath, nameIn, type Locale } from "@/lib/i18n";
 import { CellSheet } from "./CellSheet";
+import { RowSheet, type RowGroup } from "./RowSheet";
 import { clipForReport, reportMailto } from "@/lib/report";
 import { SearchOverlay } from "./SearchOverlay";
 import { ThemeToggle } from "./ThemeToggle";
@@ -373,6 +375,11 @@ export function TimelineGrid() {
     시트를 연 뒤에 뒷부분(`.more.json`)이 도착하므로, 연 순간의 목록을 붙들면 가려진 것이 빠진다.
   */
   const [cellSheet, setCellSheet] = useState<{ region: RegionId; b: number; unit: number; level: Level } | null>(null);
+  /*
+    행 시트(PRD §5-7, 폰 P0) — 그 행의 **모든 열**. 폰 격자는 2열이라 나머지는 여기서만 보인다.
+    칸 시트처럼 자리만 기억하고 목록은 그릴 때마다 청크에서 읽는다(뒷부분·다른 열 청크가 나중에 온다).
+  */
+  const [rowSheet, setRowSheet] = useState<{ b: number; unit: number; level: Level } | null>(null);
   /** 패널이 격자를 덮는가 — 덮으면 모달이고, 격자는 inert가 된다. */
   const modalPanel = selected !== null && !pushMode;
   /** 상세 제목 — 모달로 열릴 때 포커스가 여기로 간다. */
@@ -817,6 +824,23 @@ export function TimelineGrid() {
     const meta = chunkMeta.current.get(`${DATA}/events/${region}/${chunkKeyFor(b, level)}.json`);
     return Math.max(loaded, meta?.counts[String(b)] ?? 0);
   };
+  // cellTotal 뒤에 둔다 — 앞에 두면 시트가 열리는 순간 초기화 전 참조로 죽는다(2026-09-25 실측)
+  /** 행 시트의 열 — 격자에 보이는 열이 먼저, 나머지가 뒤(「격자 밖」 표시). */
+  const rowGroups: RowGroup[] = rowSheet
+    ? orderRowGroups(rowSheetRegions(cols, COLUMNS.map((c) => c.id)).map((region) => {
+        const key = chunkKeyFor(rowSheet.b, rowSheet.level);
+        const evs = cellEvents(region, rowSheet.b, rowSheet.level, rowSheet.unit);
+        const cov = coverage[region];
+        return {
+          region,
+          events: evs,
+          total: cellTotal(region, rowSheet.b, evs.length, rowSheet.level),
+          loading: !chunks.current.has(`${DATA}/events/${region}/${key}.json`),
+          offGrid: !cols.includes(region),
+          coverageNote: cov != null && rowSheet.b < cov ? t.coverageFrom(cov) : undefined,
+        };
+      }))
+    : [];
   const loadedChunks = Array.from(chunks.current.values()).filter(Boolean).length;
 
   const openOfficialYear = (year: number) => {
@@ -890,6 +914,15 @@ export function TimelineGrid() {
     십년 칸이 앞부분(`head`)보다 많이 담을 만큼 커지면 뒷부분을 받는다. 칸당 최대 개수는 layoutCell의
     높이 예산과 같은 식이다 — 가장 낮은 칩 높이로 세므로 실제보다 적게 잡는 일은 없다.
   */
+  useEffect(() => {
+    if (!rowSheet) return;
+    for (const c of COLUMNS) {
+      const key = chunkKeyFor(rowSheet.b, rowSheet.level);
+      ensureChunk(c.id, key);
+      if (rowSheet.level === "decade") ensureMore(c.id, key);
+    }
+  }, [rowSheet, loadedChunks, ensureChunk, ensureMore]);
+
   const cellCapacity = Math.floor((rows.unit * axis.s - CELL_PAD * 2 + ITEM_GAP) / (Math.min(itemH.lead, itemH.plain) + ITEM_GAP));
   useEffect(() => {
     if (rows.level !== "decade") return;
@@ -1027,6 +1060,22 @@ export function TimelineGrid() {
         />
       )}
 
+      {rowSheet && (
+        <RowSheet
+          t={t}
+          locale={locale}
+          bucket={rowSheet.b}
+          unit={rowSheet.unit}
+          groups={rowGroups}
+          onClose={() => setRowSheet(null)}
+          onPick={(region, id) => {
+            const ev = rowGroups.find((g) => g.region === region)?.events.find((x) => x.id === id);
+            setRowSheet(null);
+            if (ev) openDetail(ev as PublishedEvent);
+          }}
+        />
+      )}
+
       {cellSheet && (
         <CellSheet
           t={t}
@@ -1051,7 +1100,7 @@ export function TimelineGrid() {
           상세 패널은 **이 밖에** 둔다 — 모달일 때 여기에 inert를 걸기 때문이다. 안에 두면 패널 자신도
           비활성이 된다.
         */}
-        <main className="relative flex min-w-0 flex-1" aria-label={t.timelineAria} inert={modalPanel || searchOpen || cellSheet !== null}>
+        <main className="relative flex min-w-0 flex-1" aria-label={t.timelineAria} inert={modalPanel || searchOpen || cellSheet !== null || rowSheet !== null}>
         {/* 시대 미니맵 10px — 레일 64 + 거터 56 = 120px을 86px 한 축으로 합친 그 왼쪽 끝(README 7-2).
             라벨은 없앴다. 왕조 이름은 열 헤더(sticky)가 맡는다 */}
         <div
@@ -1339,6 +1388,15 @@ export function TimelineGrid() {
                     aria-colindex={1}
                   >
                     <span className="whitespace-nowrap">{formatRowLabelL(b, rows.level, locale)}</span>
+                    {/* 폰: 행 머리를 탭하면 그 행의 모든 열(행 시트). 라벨 위를 덮는 투명 버튼 — 글자는 그대로 보인다 */}
+                    {narrow && (
+                      <button
+                        type="button"
+                        className="absolute inset-0"
+                        aria-label={t.rowSheet(formatRowLabelL(b, rows.level, locale))}
+                        onClick={() => setRowSheet({ b, unit: rows.unit, level: rows.level })}
+                      />
+                    )}
                     {sub > 0 &&
                       Array.from({ length: sub - 1 }, (_, i) => (
                         <span key={i} className="absolute right-2 text-item-meta text-fg-subtle" style={{ top: ((i + 1) / sub) * h - 6 }}>
@@ -1357,7 +1415,15 @@ export function TimelineGrid() {
                     const dup = dupNames(placed.map((pl) => pl.ev), locale);
                     return (
                       // 세로 구분선은 없다 — 카드 사이 10px 여백이 그 일을 한다
-                      <div key={c.id} className="relative min-w-0 flex-1 overflow-hidden" style={{ marginLeft: CARD_GAP }} role="gridcell" aria-colindex={ci + 2}>
+                      <div
+                        key={c.id}
+                        className="relative min-w-0 flex-1 overflow-hidden"
+                        style={{ marginLeft: CARD_GAP }}
+                        role="gridcell"
+                        aria-colindex={ci + 2}
+                        // 폰: 칸의 빈 곳을 탭해도 행 시트 — 「행 탭」(§5-7). 칩·배지는 버튼이라 거기서 멈춘다
+                        onClick={narrow ? (e) => { if (!(e.target as HTMLElement).closest("button")) setRowSheet({ b, unit: rows.unit, level: rows.level }); } : undefined}
+                      >
                         {/*
                           미수록 빗금(C-3). 경계가 걸친 칸은 **걸친 만큼만** 칠한다 — 1600년대 칸의 위 7%(1600–1607).
                           무늬라 글자 대비 규칙 밖이고, 설명은 열 헤더가 한다(aria-hidden).

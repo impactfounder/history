@@ -113,6 +113,12 @@ export interface Strings {
   crossGlyph: (n: number) => string;
   /** 열의 수록 시작(PRD §11 C-3). 격자 헤더와 연도 페이지가 같은 말을 쓴다. */
   coverageFrom: (year: number) => string;
+  /** 행 시트(PRD §5-7) — 폰에서 그 해 모든 열. 이름표·여는 버튼의 접근성 이름. */
+  rowSheet: (span: string) => string;
+  /** 격자에 보이지 않는 열 — 폰은 2열이라 나머지는 행 시트에서만 보인다. */
+  offGrid: string;
+  count: (n: number) => string;
+  rowEmpty: string;
   /** 그중 꺼져 있는 열이 있을 때(PRD §5-6 「+1 지역」). `1개 열은 꺼져 있다 — 상세에서 켤 수 있다` */
   crossHidden: (n: number) => string;
   zoomGroup: string;
@@ -194,6 +200,10 @@ export const T: Record<Locale, Strings> = {
     crossTitle: "다른 열에서는",
     crossGlyph: (n) => `다른 ${n}개 열에도 있다`,
     coverageFrom: (y) => `${y}년~ 수록`,
+    rowSheet: (span) => `${span} 모든 열`,
+    offGrid: "격자 밖",
+    count: (n) => `${n.toLocaleString("ko-KR")}건`,
+    rowEmpty: "수록 사건 없음",
     crossHidden: (n) => `그중 ${n}개 열은 꺼져 있다 — 상세에서 켤 수 있다`,
     zoomGroup: "확대·축소",
     zoomOut: "축소",
@@ -263,6 +273,10 @@ export const T: Record<Locale, Strings> = {
     crossTitle: "In other columns",
     crossGlyph: (n) => `Also in ${n} other column${n > 1 ? "s" : ""}`,
     coverageFrom: (y) => `covered from ${y}`,
+    rowSheet: (span) => `${span} — every column`,
+    offGrid: "not on grid",
+    count: (n) => `${n.toLocaleString("en-US")}`,
+    rowEmpty: "No events recorded",
     crossHidden: (n) => `${n} of them hidden — turn on from the detail`,
     zoomGroup: "Zoom",
     zoomOut: "Zoom out",
@@ -332,6 +346,10 @@ export const T: Record<Locale, Strings> = {
     crossTitle: "他の列では",
     crossGlyph: (n) => `他の${n}列にもある`,
     coverageFrom: (y) => `${y}年〜収録`,
+    rowSheet: (span) => `${span}のすべての列`,
+    offGrid: "グリッド外",
+    count: (n) => `${n.toLocaleString("ja-JP")}件`,
+    rowEmpty: "収録なし",
     crossHidden: (n) => `うち${n}列は非表示 — 詳細から表示できる`,
     zoomGroup: "拡大・縮小",
     zoomOut: "縮小",
@@ -401,6 +419,10 @@ export const T: Record<Locale, Strings> = {
     crossTitle: "其他列中",
     crossGlyph: (n) => `另有${n}列`,
     coverageFrom: (y) => `${y}年起收录`,
+    rowSheet: (span) => `${span}的所有列`,
+    offGrid: "未显示",
+    count: (n) => `${n.toLocaleString("zh-CN")}条`,
+    rowEmpty: "无收录事件",
     crossHidden: (n) => `其中${n}列未显示 — 可从详情打开`,
     zoomGroup: "缩放",
     zoomOut: "缩小",
