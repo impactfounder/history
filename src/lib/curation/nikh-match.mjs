@@ -26,6 +26,7 @@
 
 const MONTHS = { january: 1, february: 2, march: 3, april: 4, may: 5, june: 6, july: 7, august: 8, september: 9, october: 10, november: 11, december: 12 };
 const MONTH_RE = /\b(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)\b|\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})\b/i;
+const EN_MONTH_LEAD_RE = /^(January|February|March|April|May|June|July|August|September|October|November|December)\s*[—–-]/;
 const KO_DATE_RE = /(\d{1,2})월\s*(\d{1,2})일|(\d{1,2})월/;
 /** ja·zh: 5月3日 / 5月. "1633年（寛永10年）"의 원호 연수와는 다르다(年 뒤가 아니라 月). */
 const CJK_DATE_RE = /(?<![\d年])(\d{1,2})月(?:(\d{1,2})日)?/;
@@ -62,6 +63,13 @@ export function parseWikiDate(text) {
   if (cjk) return cjk[2] ? { m: Number(cjk[1]), d: Number(cjk[2]) } : { m: Number(cjk[1]) };
   const en = MONTH_RE.exec(text);
   if (en) return en[2] ? { m: MONTHS[en[2].toLowerCase()], d: Number(en[1]) } : { m: MONTHS[en[3].toLowerCase()], d: Number(en[4]) };
+  /*
+    달만 있는 머리 「March — Ordos Campaign: …」(2026-09-27). 위 규칙은 「6 September」처럼 날짜가 붙어야 읽어서,
+    중국 261 · 일본 17줄이 달을 잃고 그 해 맨 앞 자리에 섰다. **줄 맨 앞 · 대문자 · 대시**가 모두 있을 때만 —
+    그래야 「march」(행진)·「may」(조동사)가 달로 읽히지 않는다.
+  */
+  const lead = EN_MONTH_LEAD_RE.exec(text);
+  if (lead) return { m: MONTHS[lead[1].toLowerCase()] };
   return {};
 }
 

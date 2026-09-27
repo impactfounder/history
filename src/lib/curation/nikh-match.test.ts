@@ -7,6 +7,14 @@ const n = (id: string, db: string, m: number | undefined, d: number | undefined,
 });
 
 describe("stripYear / parseWikiDate / segments", () => {
+  it("달만 있는 영문 머리 「March — 」를 달로 읽는다 — 행진·조동사는 아니다(2026-09-27)", () => {
+    expect(parseWikiDate("March — Ordos Campaign: Liu Dongyang and Pubei rebel in Ningxia")).toEqual({ m: 3 });
+    expect(parseWikiDate("May – The Treaty is signed")).toEqual({ m: 5 });
+    expect(parseWikiDate("Protesters march on the capital")).toEqual({});
+    expect(parseWikiDate("He may abdicate — sources differ")).toEqual({});
+    expect(parseWikiDate("6 September — Ordos Campaign: Ningxia is flooded")).toEqual({ m: 9, d: 6 });
+  });
+
   it("연도 표기를 뗀다 — ko·BC·en", () => {
     expect(stripYear("1882년 조미수호조규 체결")).toBe("조미수호조규 체결");
     expect(stripYear("BC.238년경 고조선 성립")).toBe("고조선 성립");

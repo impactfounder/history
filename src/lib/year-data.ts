@@ -11,7 +11,7 @@ import path from "node:path";
 import { cache } from "react";
 import { AXIS_YEAR_END, AXIS_YEAR_START } from "@/lib/timeline/axis";
 import { decodeYears } from "@/lib/timeline/gap";
-import { REGION_LABEL, dupNames,
+import { REGION_LABEL, dropMonthPrefix, dropYearPrefix, dupNames,
   eventLabel, formatYearL, type LabelSource, type Locale, type RegionId } from "@/lib/i18n";
 import { YEAR } from "@/lib/i18n-pages";
 
@@ -31,6 +31,8 @@ export interface Region { id: RegionId; label_ko: string; coverage_from?: number
 export interface Ev extends LabelSource {
   id: string;
   y0: number;
+  /** 월(원문에 있을 때만) — 요약에서 달 접두를 뗄 때 그 사건의 달인지 본다(dropMonthPrefix) */
+  m?: number;
   hist: "historical" | "traditional";
   regions: { r: RegionId; imp: number }[];
   /** 국사편찬위 연표에 맞춰진 공식 항목 수(한국 열). */
@@ -126,7 +128,11 @@ export function summarize(year: number, d: YearData, locale: Locale, maxLen = 15
   const parts: string[] = [];
   for (const r of d.regions) {
     const top = d.byRegion[r.id]?.filter((e) => e.y0 === year).sort(byImp)[0];
-    if (top) parts.push(`${REGION_LABEL[locale][r.id]}: ${labelOf(top, locale).text.replace(/[.。]$/, "")}`);
+    /*
+      요약은 앞에 해를 이미 달고 있고, 한 줄이라 달은 군더더기다 — 「China: March — Ordos Campaign: …」
+      (2026-09-27 연도 페이지 점검). 같은 해 접두와 그 사건의 달 접두를 뗀다. 아래 사건 목록은 달이 따로 없어 그대로 둔다.
+    */
+    if (top) parts.push(`${REGION_LABEL[locale][r.id]}: ${dropMonthPrefix(dropYearPrefix(labelOf(top, locale).text, year, locale), top.m).replace(/[.。]$/, "")}`);
   }
   if (!parts.length) return YEAR[locale].summaryFallback(label);
   const s = `${label} — ${parts.join(" / ")}`;
