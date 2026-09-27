@@ -188,3 +188,21 @@ describe("formatMonthL — 달과 달력", () => {
     expect(formatMonthL(4, "zh")).toBe("4月");
   });
 });
+
+describe("eventLabel — 위키데이터 사건 줄(qe)", () => {
+  // 원문이 한국어 표제어이고, 영어 이름은 사건 꼴 판정(isEventName)에 걸리지 않는다
+  const covid: LabelSource & { qe: 1 } = {
+    title: "코로나19 범유행",
+    lang: "ko",
+    names: { kr: { nat: "코로나19 범유행", lang: "ko" }, us: { nat: "COVID-19 pandemic", lang: "en" } },
+    name_ko: "코로나19 범유행",
+    qe: 1,
+  };
+  it("한국어가 아닌 화면은 그 언어의 이름을 믿는다 — 영어 화면에 한국어 제목이 뜨던 것(2026-09-27)", () => {
+    expect(eventLabel(covid, "en")).toEqual({ name: "COVID-19 pandemic" });
+    expect(eventLabel({ ...covid, qe: undefined }, "en")).toEqual({ text: "코로나19 범유행" });
+  });
+  it("한국어 화면은 그대로 — 지은 제목이 있다", () => {
+    expect(eventLabel({ ...covid, names: { kr: { nat: "2015년 한·일 일본군 위안부 협상 타결", lang: "ko" } }, name_ko: "한일 위안부 합의", title: "한일 위안부 합의" }, "ko")).toEqual({ name: "한일 위안부 합의" });
+  });
+});

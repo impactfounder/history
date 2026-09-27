@@ -143,6 +143,8 @@ function toRecord(r) {
     ...(r.date.end_year ? { y1: r.date.end_year } : {}),
     approx: Boolean(r.date.approximate),
     hist: r.historicity ?? "historical",
+    // QID가 곧 이 사건인 줄 — 위키데이터 사건 줄(tools/wikidata-events.mjs). 라벨이 이름 꼴 판정을 건너뛴다(i18n.ts)
+    ...(String(r.source_id).startsWith("wd_") ? { qe: 1 } : {}),
     title: r.title,
     ...(r.title_ko ? { title_ko: r.title_ko } : {}),
     // 지은 제목(tools/name.mjs). 원문 표제어가 사건 꼴이 아닐 때 칩·상세 제목이 된다.

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { CELL_PAD, ITEM_GAP, ITEM_H, ITEM_H_COMPACT, MORE_BADGE_BAND, MORE_LANE_W } from "@/lib/design/metrics";
-import { layoutCell } from "./layout-cell";
+import { ITEM_FLOOR_H, layoutCell } from "./layout-cell";
 
 /**
  * 셀 안 배치. 두 단계(높이 예산 → 시점 위치)는 기존 규칙 그대로이고,
@@ -64,8 +64,14 @@ describe("높이 예산 — 개수가 아니라 높이로 자른다", () => {
     expect(hidden).toBe(1);
   });
 
-  it("plain조차 못 담는 행이면 전부 숨는다", () => {
-    const { placed, hidden } = run([lead("a", 1900)], ITEM_H_COMPACT.plain);
+  it("바닥은 쓸 자리만큼 — 줌 띠로 폰 세기 행이 23px(쓸 자리 19px)가 돼도 19px 칩이 선다(2026-09-27)", () => {
+    const touch = { lead: 24, plain: 24 };
+    const { placed } = layoutCell([lead("a", 1900)], 23, 1900, 100, "ko", touch);
+    expect(placed.map((p) => p.h)).toEqual([19]);
+  });
+
+  it("한 줄 글자도 못 서는 행(쓸 자리 < ITEM_FLOOR_H)이면 전부 숨는다", () => {
+    const { placed, hidden } = run([lead("a", 1900)], ITEM_FLOOR_H + CELL_PAD * 2 - 1);
     expect(placed).toHaveLength(0);
     expect(hidden).toBe(1);
   });

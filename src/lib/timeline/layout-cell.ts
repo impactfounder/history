@@ -18,6 +18,9 @@ import { CELL_PAD, ITEM_GAP, ITEM_H, ITEM_H_COMPACT, MORE_BADGE_BAND, MORE_LANE_
 import { itemKind, type KindSource } from "@/lib/timeline/item-kind";
 import type { Locale } from "@/lib/i18n";
 
+/** 한 줄 칩이 서는 가장 낮은 높이 — 13px 글자 + 위아래 여백. 이보다 좁은 칸은 「N건 더」만 둔다. */
+export const ITEM_FLOOR_H = 16;
+
 export interface PlacedItem<T> {
   ev: T;
   kind: "lead" | "plain";
@@ -87,10 +90,14 @@ export function layoutCell<T extends KindSource & { y0: number; m?: number }>(
       폰은 터치라 plain이 24px(HIT_MIN)인데 가장 줄인 세기 행이 약 24px(쓸 자리 20px)라, 폰 화면만 칸마다
       숫자 배지뿐이었다. 20px 칩은 SC 2.5.8의 크기(24px)엔 못 미치지만 행 간격이 24px 이상이라 **간격 예외**
       (대상 중심 간 24px)에 든다. 이 높이의 칩은 메타 줄을 싣지 않는다(TimelineGrid가 ih로 가른다).
+
+      바닥은 고정값이 아니라 **쓸 자리만큼**이다(2026-09-27). 줌 컨트롤을 격자 아래 띠로 빼자(ZOOM_BAND_H)
+      폰 격자가 46px 짧아져 가장 줄인 세기 행이 24 → 23px(쓸 자리 19px)가 됐고, 20px 고정 바닥이 다시 안 들어가
+      영·일·중·한 폰 화면이 모두 칩 0개로 돌아갔다. 한 줄 글자(13px)가 서는 ITEM_FLOOR_H 16px까지 줄인다.
     */
-    if (!chosen.length && ih > avail && ITEM_H_COMPACT.plain <= avail) {
+    if (!chosen.length && ih > avail && avail >= ITEM_FLOOR_H) {
       kind = "plain";
-      ih = ITEM_H_COMPACT.plain;
+      ih = Math.min(ITEM_H_COMPACT.plain, avail);
     }
     if (used + ih > avail) break;
     chosen.push({ ev, kind, h: ih });

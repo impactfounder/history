@@ -62,7 +62,7 @@ import {
   ZOOM_BAND_H,
   ZOOM_FLOAT_H,
 } from "@/lib/design/metrics";
-import { LOCALES, LOCALE_LABEL, LOCALE_REGION, REGION_LABEL, T, dropMonthPrefix, dropYearPrefix, dupNames, eventLabel, formatMonthL, formatRowLabelL, formatYearL, isEventName, isLocale, localePath, nameIn, type Locale } from "@/lib/i18n";
+import { LOCALES, LOCALE_LABEL, LOCALE_REGION, REGION_LABEL, REGION_LABEL_SHORT, T, dropMonthPrefix, dropYearPrefix, dupNames, eventLabel, formatMonthL, formatRowLabelL, formatYearL, isEventName, isLocale, localePath, nameIn, type Locale } from "@/lib/i18n";
 import { CellSheet } from "./CellSheet";
 import { RowSheet, type RowGroup } from "./RowSheet";
 import { clipForReport, reportMailto } from "@/lib/report";
@@ -1233,6 +1233,30 @@ export function TimelineGrid() {
                 gap 0에서 중심이 정확히 24px 떨어지므로 두 조건이 한 번에 풀린다 — 그래서
                 gap-0.5를 버린다. 글리프는 13px 그대로이고 눌리는 면만 커진다.
               */
+              /*
+                열 넣기 — **마지막 열 머리 안에** 선다(2026-09-27 다국어 점검). 전에는 헤더 오른쪽 위에 absolute로
+                떠서 마지막 열의 ▸ ×를 덮었다(폰에서는 늘 — 「한국 ◂ [+ 열]」). 넓은 화면은 조작 버튼 뒤,
+                좁은 화면은 아랫줄(시대 이름 옆)이다.
+              */
+              const isLast = i === shown.length - 1 && hiddenCols.length > 0;
+              const addMenu = isLast ? (
+                <details className="relative z-30 shrink-0 text-meta">
+                    <summary className="cursor-pointer list-none rounded border border-line-strong bg-surface px-1.5 leading-[18px] text-fg-muted hover:bg-surface-hover">{t.addColumn}</summary>
+                    <div className="absolute right-0 mt-1 flex flex-col rounded border border-line bg-surface py-1 shadow-[var(--shadow-float)]">
+                      {hiddenCols.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          className="px-3 py-1 text-left hover:bg-surface-hover"
+                          style={{ color: regionVar(c.id) }}
+                          onClick={(e) => { addCol(c.id); (e.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open"); }}
+                        >
+                          {regionLabel(c.id)}
+                        </button>
+                      ))}
+                    </div>
+                  </details>
+              ) : null;
               const btn = "flex items-center justify-center rounded leading-none text-fg-subtle hover:bg-surface-hover hover:text-fg disabled:invisible";
               const hit = { width: HIT_MIN, height: HIT_MIN } as const;
               const label = regionLabel(c.id);
@@ -1256,19 +1280,32 @@ export function TimelineGrid() {
                     README §7-3(`◂ ▸ ×`는 그대로)과 §7-4(왕조 이름은 헤더에)가 둘 다 지켜진다.
                   */}
                   <div className={narrow ? "flex w-full items-center gap-2" : "contents"}>
-                    <img src={FLAG[c.id]} alt="" width={20} height={14} className="h-[14px] w-5 shrink-0 rounded-[2px] object-cover opacity-90" draggable={false} />
-                    <span className="shrink-0 text-col font-bold tracking-tight" style={{ color: regionVar(c.id) }}>{label}</span>
+                    {/*
+                      좁은 화면(열 머리 129px)은 이름 자리를 먼저 챙긴다(2026-09-27 다국어 점검): 「人工智能」이 ◂ ▸ ×를
+                      열 밖으로 밀어 × 버튼이 사라졌고, 이름을 줄이게 하자 「人」 한 글자만 남았다. 그래서 국기를 빼고
+                      (나라는 이름의 색과 밑선 색이 말한다) 쓸 수 없는 이동 버튼은 그리지 않는다 — 이름 자리 21 → 73px.
+                    */}
+                    {!narrow && <img src={FLAG[c.id]} alt="" width={20} height={14} className="h-[14px] w-5 shrink-0 rounded-[2px] object-cover opacity-90" draggable={false} />}
+                    <span className={`${narrow ? "min-w-0 truncate" : "shrink-0"} text-col font-bold tracking-tight`} style={{ color: regionVar(c.id) }}>{narrow ? (REGION_LABEL_SHORT[locale]?.[c.id] ?? label) : label}</span>
                     {/* 시대는 색이 아니라 서체로(README 규칙 2). 넓은 화면은 이 자리, 좁은 화면은 아랫줄 */}
                     {p && !narrow && <span className="min-w-0 truncate font-serif text-meta text-fg-muted">{polityLabel(p)}</span>}
                     {uncoveredNote && !narrow && <span className="min-w-0 truncate text-meta text-fg-subtle">{uncoveredNote}</span>}
                     {/* 열 조작(§4-1): 순서 ◂ ▸, 빼기 ×. 마지막 한 열은 뺄 수 없다 */}
                     <span className="ml-auto flex shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100">
-                      <button type="button" style={hit} className={btn} disabled={i === 0} onClick={() => moveCol(c.id, -1)} aria-label={t.colLeft(label)}>◂</button>
-                      <button type="button" style={hit} className={btn} disabled={i === shown.length - 1} onClick={() => moveCol(c.id, 1)} aria-label={t.colRight(label)}>▸</button>
-                      <button type="button" style={hit} className={btn} disabled={shown.length === 1} onClick={() => removeCol(c.id)} aria-label={t.colRemove(label)}>×</button>
+                      {!(narrow && i === 0) && <button type="button" style={hit} className={btn} disabled={i === 0} onClick={() => moveCol(c.id, -1)} aria-label={t.colLeft(label)}>◂</button>}
+                      {!(narrow && i === shown.length - 1) && <button type="button" style={hit} className={btn} disabled={i === shown.length - 1} onClick={() => moveCol(c.id, 1)} aria-label={t.colRight(label)}>▸</button>}
+                      {!(narrow && shown.length === 1) && <button type="button" style={hit} className={btn} disabled={shown.length === 1} onClick={() => removeCol(c.id)} aria-label={t.colRemove(label)}>×</button>}
                     </span>
+                    {!narrow && addMenu}
                   </div>
-                  {p && narrow && <span className="w-full truncate font-serif text-meta text-fg-muted">{polityLabel(p)}</span>}
+                  {narrow && addMenu ? (
+                    <div className="flex w-full items-center gap-1">
+                      {p && <span className="min-w-0 flex-1 truncate font-serif text-meta text-fg-muted">{polityLabel(p)}</span>}
+                      <span className="ml-auto">{addMenu}</span>
+                    </div>
+                  ) : (
+                    p && narrow && <span className="w-full truncate font-serif text-meta text-fg-muted">{polityLabel(p)}</span>
+                  )}
                   {uncoveredNote && narrow && <span className="w-full truncate text-meta text-fg-subtle">{uncoveredNote}</span>}
                   {/* 나라색이 남는 두 곳 중 하나 — 이름과 이 3px 밑선 */}
                   <span className="absolute inset-x-0 bottom-0 h-[3px]" style={{ background: regionVar(c.id) }} aria-hidden />
@@ -1276,24 +1313,6 @@ export function TimelineGrid() {
               );
             })}
             {/* 열 넣기 — 행과 폭을 맞추기 위해 헤더 오른쪽 끝에 얹는다(셀을 추가하면 열 폭이 어긋난다) */}
-            {hiddenCols.length > 0 && (
-              <details className="absolute right-1 top-1 z-20 text-meta">
-                <summary className="cursor-pointer list-none rounded border border-line-strong bg-surface px-1.5 leading-[18px] text-fg-muted hover:bg-surface-hover">{t.addColumn}</summary>
-                <div className="absolute right-0 mt-1 flex flex-col rounded border border-line bg-surface py-1 shadow-[var(--shadow-float)]">
-                  {hiddenCols.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      className="px-3 py-1 text-left hover:bg-surface-hover"
-                      style={{ color: regionVar(c.id) }}
-                      onClick={(e) => { addCol(c.id); (e.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open"); }}
-                    >
-                      {regionLabel(c.id)}
-                    </button>
-                  ))}
-                </div>
-              </details>
-            )}
           </div>
 
           {/* 스페이서 */}
@@ -1447,20 +1466,28 @@ export function TimelineGrid() {
                       /*
                         기원전 라벨은 두 줄로 — 시대 낱말을 윗줄에 작게(2026-09-26 줌 점검). 한 줄이면 76px 거터에서
                         「기원전 801–702」「기원전 265년」의 뒤가 잘려 「기원전 201-1」처럼 **다른 수로** 읽혔다.
-                        잘린 라벨은 틀린 라벨이다. 영어(「801–702 BC」)는 한 줄에 들어간다.
+                        잘린 라벨은 틀린 라벨이다. 영어(「401–302 BC」)도 넓은 화면에서 잘렸다(2026-09-27 다국어 점검).
                         두 줄이 안 들어가는 행(폰의 가장 줄인 세기 행 24px)은 범위만 한 줄로 — 내려가는 수(501–402,
                         401–302…)가 기원전임을 말하고, 온전한 라벨은 title로 남긴다.
+                        경계 행(「기원전 1–서기 99」 「1 BC–AD 99」)은 「기원전 1–」 / 「서기 99」로 가른다.
                       */
                       const lab = formatRowLabelL(b, rows.level, locale);
-                      const era = /^(기원전|紀元前|公元前)\s*(.+)$/.exec(lab);
-                      // 경계 행(「1–서기 99」)은 서기 표기까지 빼야 폰 거터(56px)에 든다
-                      if (era && h < 30) return <span className="whitespace-nowrap" title={lab}>{era[2]!.replace(/(서기|西暦|公元)\s*/, "")}</span>;
-                      // 경계 행은 「기원전 1–」 / 「서기 99」로 가른다 — 「1–서기 99」 한 줄은 폰 거터를 넘는다
-                      const bound = era ? /^(.+?–)((?:서기|西暦|公元).+)$/.exec(era[2]!) : null;
+                      const pre = /^(기원전|紀元前|公元前)\s*(.+)$/.exec(lab);
+                      const preB = pre ? /^(.+?–)((?:서기|西暦|公元).+)$/.exec(pre[2]!) : null;
+                      const enB = /^(\d+) BC–AD (\d+)$/.exec(lab);
+                      const en = enB ? null : /^(.+?)\s+BC$/.exec(lab);
+                      const era: { top: string; main: string; tight: string } | null = pre
+                        ? { top: preB ? `${pre[1]} ${preB[1]}` : pre[1]!, main: preB ? preB[2]! : pre[2]!, tight: pre[2]!.replace(/(서기|西暦|公元)\s*/, "") }
+                        : enB
+                          ? { top: `${enB[1]} BC–`, main: `AD ${enB[2]}`, tight: `${enB[1]}–${enB[2]}` }
+                          : en
+                            ? { top: "BC", main: en[1]!, tight: en[1]! }
+                            : null;
+                      if (era && h < 30) return <span className="whitespace-nowrap" title={lab}>{era.tight}</span>;
                       return era ? (
                         <>
-                          <span className="block text-item-meta leading-tight">{bound ? `${era[1]} ${bound[1]}` : era[1]}</span>
-                          <span className="block whitespace-nowrap leading-tight">{bound ? bound[2] : era[2]}</span>
+                          <span className="block text-item-meta leading-tight">{era.top}</span>
+                          <span className="block whitespace-nowrap leading-tight">{era.main}</span>
                         </>
                       ) : (
                         <span className="whitespace-nowrap">{lab}</span>

@@ -32,6 +32,14 @@ export type RegionId = "kr" | "cn" | "jp" | "ai" | "us";
 /** 열 → 그 열의 자국어판(관점 명칭 원문). 사건 라벨을 언어별로 고를 때 names[열]을 쓴다. */
 export const LOCALE_REGION: Record<Locale, RegionId> = { ko: "kr", en: "us", ja: "jp", zh: "cn" };
 
+/**
+ * 좁은 화면 열 머리용 짧은 이름 — 없으면 REGION_LABEL. 폰 열 머리의 이름 자리는 73px이라(국기를 빼고 쓸 수 없는
+ * 이동 버튼을 빼도) 「United States」가 들어가지 않는다(2026-09-27 다국어 점검). 화면 낭독용 이름은 전체 이름이다.
+ */
+export const REGION_LABEL_SHORT: Partial<Record<Locale, Partial<Record<RegionId, string>>>> = {
+  en: { us: "U.S." },
+};
+
 export const REGION_LABEL: Record<Locale, Record<RegionId, string>> = {
   ko: { kr: "한국", cn: "중국", jp: "일본", ai: "AI", us: "미국" },
   en: { kr: "Korea", cn: "China", jp: "Japan", ai: "AI", us: "United States" },
@@ -533,6 +541,11 @@ export interface LabelSource {
   name_ko?: string;
   /** 위키데이터에서 온 구조 라벨. "accession" = 재위 시작 — 인물 이름 뒤에 언어별 "즉위"를 붙인다. */
   role?: string;
+  /**
+   * QID가 곧 이 사건이다(위키데이터 사건 줄, publish.mjs). 연표 줄의 QID는 인물·왕조일 때가 많아 이름을
+   * 사건 꼴 판정(isEventName)으로 거르지만, 이 줄은 **사건 항목만 골라 온 것**이라 그 이름이 곧 사건 이름이다.
+   */
+  qe?: 1;
 }
 
 /** 그 언어의 표제어(괄호 구분자 제거). 없으면 undefined. */
@@ -673,7 +686,14 @@ function eventLabelRaw(ev: LabelSource, locale: Locale, dupNames?: ReadonlySet<s
     return { name: locale === "en" ? `${who}, ${T.en.accession}` : `${who} ${T[locale].accession}` };
   }
   const dup = name !== undefined && dupNames?.has(name) === true;
-  if (name && !dup && isEventName(name, locale)) return { name };
+  /*
+    위키데이터 사건 줄(qe)은 이름 꼴을 따지지 않는다(2026-09-27 다국어 점검). 「COVID-19 pandemic」
+    「2017 Las Vegas shooting」이 꼴 판정에서 떨어져 원문 제목으로 갔는데, 이 줄들은 원문이 한국어 표제어라
+    **영어 화면의 미국 열에 「라스베이거스 스트립 총기 난사 사건」이** 떴다. 실측: 한글 라벨 영어 117→60 ·
+    일본어 174→105 · 중국어 219→112. **한국어 화면은 빼다** — 지은 제목(name_ko)이 있어서, 이 규칙을 걸면
+    「한일 위안부 합의」가 「2015년 한·일 일본군 위안부 협상 타결」처럼 연도 붙은 긴 표제어로 바뀐다(27건).
+  */
+  if (name && !dup && ((locale !== "ko" && ev.qe === 1) || isEventName(name, locale))) return { name };
   /*
     지은 제목 — 원문 표제어가 없거나 사건 꼴이 아닐 때. ko UI에서만(다른 언어는 아직 안 지었다).
     **중복 검사를 똑같이 받는다.** 같은 사건이 위키 줄과 국사편찬위 줄로 두 번 실리는 일이
