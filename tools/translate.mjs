@@ -98,7 +98,8 @@ for (const stem of stems) {
       (고국천왕·광개토대왕…). 그래서 lang이 아니라 **글자**로 판정한다: ko 방향은 한국어가 아닌 제목만,
       반대 방향은 한국어 제목만.
     */
-    if (TO === "ko" ? r.lang === "ko" || isMostlyHangul(r.title) : !isMostlyHangul(r.title)) continue;
+    // 반대 방향: 한국어 원문 줄이면 한자가 섞여 한글이 절반이 안 돼도(「이완(李完, 李琓) 출생」) 대상이다
+    if (TO === "ko" ? r.lang === "ko" || isMostlyHangul(r.title) : !(isMostlyHangul(r.title) || (r.lang === "ko" && /[가-힣]/.test(r.title)))) continue;
     /*
       반대 방향: 그 화면이 이미 **그 언어의 이름**을 보여 주는 줄은 옮기지 않는다 — 번역이 쓰일 자리가 없다.
       화면의 라벨 규칙(src/lib/i18n.ts eventLabelRaw)과 같은 판정: 위키데이터 사건 줄(source_id wd_)이거나

@@ -32,9 +32,33 @@ export const titleOf = (s) => {
   const ends = [...s0.matchAll(SENT_END)].map((m) => m.index + 1);
   const before = ends.filter((x) => x < b).pop();
   if (before != null && /^[^.。]{1,30}[,，]\s*$/.test(s0.slice(before + 1, b))) return norm(s0.slice(0, before + 1).trim());
-  if (!/[.,，]/.test(s0.slice(0, b))) {
+  /*
+    2-보강(2026-09-27). 두 빈틈이 반쪽 제목을 남겼다:
+    - 원문에 **마침표가 아예 없는** 줄(「삼강군(三江郡)에서 ≪총통식≫ 간행≪신기비결≫」) — 이을 문장 끝이 없었다.
+      그때는 첫 책 이름이 닫힌 뒤 **다음 겹꺾쇠(출전) 직전까지** 잇는다.
+    - 연도 가드가 본문의 연도까지 출전으로 봤다(「1455년 … ≪소자진서≫와 1459년 큰 활자로 …」). 출전 꼴만 막는다:
+      쪽수 · ＜＞ · 「, 1999」처럼 쉼표 뒤 네 자리 연도.
+    괄호 앞의 쉼표는 15자 이상 문장이면 허용한다(「…서로 다르니, 그 값을 ≪속육전≫의 …」) — 짧은 「저자, ≪책≫」은 여전히 막힌다.
+    **둘 다 괄호 앞이 조사·관형형으로 끝나 문장이 이어질 때만**(「…에서」「…가」「…을」「…한」「…된」) — 괄호 앞이 이미
+    끝난 문장(「…실패함」)이면 첫 괄호가 곧 출전이라, 처음 판은 「≪고려사절요≫, 명종 2년 6월」을 제목에 붙였다.
+  */
+  const head = s0.slice(0, b);
+  const CITE = /쪽|[＜<]|[,，]\s*\d{4}/;
+  const h = head.trim();
+  const cont = /(에서|에게|께서|이|가|을|를|은|는|인|한|된|던|의|와|과|로|으로|및)$/.test(h) && !/(건의|회의|논의|합의|결의|협의|심의|제의|동의)$/.test(h);
+  // 원래 규칙(괄호 앞에 쉼표도 문장 끝도 없다)은 그대로, 쉼표가 든 긴 머리는 문장이 이어질 때만
+  if ((!/[.,，]/.test(head) || (cont && !/[.。]/.test(head) && h.length >= 15))) {
     const after = ends.find((x) => x > b);
-    if (after != null && !/쪽|\d{4}|[＜<]/.test(s0.slice(b, after))) return norm(s0.slice(0, after + 1).trim());
+    if (after != null && !CITE.test(s0.slice(b, after))) return norm(s0.slice(0, after + 1).trim());
+    if (after == null && cont) {
+      const close = s0.slice(b).search(/[≫》〉]/);
+      if (close >= 0) {
+        const from = b + close + 1;
+        const nb = s0.slice(from).search(/[≪《〈]/);
+        const end = nb < 0 ? s0.length : from + nb;
+        if (end - b <= 80 && !CITE.test(s0.slice(b, end))) return norm(s0.slice(0, end).trim());
+      }
+    }
   }
   return cut();
 };
