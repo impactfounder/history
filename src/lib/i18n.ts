@@ -85,6 +85,8 @@ export interface Strings {
   viewInDb: string;
   wikiOriginal: string;
   notTranslated: string;
+  /** 상세 — 한국어 원문 줄을 화면 언어로 옮긴 기계 번역 블록의 머리 */
+  mtSelf: string;
   mt: string;
   /** 제목이 원문에 없고 지어진 것임을 알린다(tools/name.mjs). 번역과 같은 지위의 파생물. */
   derivedTitle: string;
@@ -184,6 +186,7 @@ export const T: Record<Locale, Strings> = {
     viewInDb: "한국사데이터베이스에서 보기",
     wikiOriginal: "위키백과 연표 원문",
     notTranslated: "한글 옮김은 아직",
+    mtSelf: "기계 번역",
     mt: "한국어 · 기계 번역",
     derivedTitle: "지은 제목",
     sameEvent: (lang) => `같은 사건 · ${lang} 위키백과 연표 원문`,
@@ -259,6 +262,7 @@ export const T: Record<Locale, Strings> = {
     viewInDb: "Open in the Korean History Database",
     wikiOriginal: "Wikipedia timeline, verbatim",
     notTranslated: "not translated yet",
+    mtSelf: "English · machine translation",
     mt: "Korean · machine translation",
     derivedTitle: "generated title",
     sameEvent: (lang) => `Same event · ${lang} Wikipedia timeline`,
@@ -334,6 +338,7 @@ export const T: Record<Locale, Strings> = {
     viewInDb: "韓国史データベースで見る",
     wikiOriginal: "Wikipedia年表の原文",
     notTranslated: "未翻訳",
+    mtSelf: "日本語 · 機械翻訳",
     mt: "韓国語 · 機械翻訳",
     derivedTitle: "生成された見出し",
     sameEvent: (lang) => `同じ出来事 · ${lang}版Wikipedia年表の原文`,
@@ -409,6 +414,7 @@ export const T: Record<Locale, Strings> = {
     viewInDb: "在韩国史数据库查看",
     wikiOriginal: "维基百科年表原文",
     notTranslated: "尚未翻译",
+    mtSelf: "中文 · 机器翻译",
     mt: "韩语 · 机器翻译",
     derivedTitle: "生成的标题",
     sameEvent: (lang) => `同一事件 · ${lang}语维基百科年表原文`,
@@ -546,6 +552,11 @@ export interface LabelSource {
    * 사건 꼴 판정(isEventName)으로 거르지만, 이 줄은 **사건 항목만 골라 온 것**이라 그 이름이 곧 사건 이름이다.
    */
   qe?: 1;
+  /**
+   * 화면 언어로의 기계 번역 — 한국어 원문 줄을 en/ja/zh로(tools/translate.mjs --to, 2026-09-27). 발행 청크에는 없고
+   * 격자·연도 페이지가 그 화면 언어의 번역 파일에서 붙인다. 한국어 화면의 title_ko와 같은 자리다.
+   */
+  title_mt?: string;
 }
 
 /** 그 언어의 표제어(괄호 구분자 제거). 없으면 undefined. */
@@ -701,6 +712,8 @@ function eventLabelRaw(ev: LabelSource, locale: Locale, dupNames?: ReadonlySet<s
     세 번), 검사를 건너뛰면 같은 이름이 나란히 찍힌다. 그때는 원문이 둘을 구별해 준다.
   */
   if (locale === "ko" && ev.name_ko && dupNames?.has(ev.name_ko) !== true) return { name: ev.name_ko };
+  // 한국어가 아닌 화면의 한국어 원문 줄 — 그 언어 번역이 있으면 원문 대신(한국어 화면이 title_ko를 쓰는 자리)
+  if (locale !== "ko" && ev.title_mt) return { text: ev.title_mt };
   if (ev.lang === SAME_LANG[locale]) return { text: locale === "ko" ? shortKo(ev.title) : ev.title };
   if (locale === "ko" && ev.title_ko) return { text: ev.title_ko };
   return { text: ev.title };

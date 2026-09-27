@@ -320,6 +320,49 @@ all.push(...kept);
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
 const chunks = {};
+/*
+  **반대 방향 번역**(한국어 원문 → en/ja/zh, tools/translate.mjs --to, 2026-09-27 대표 결정).
+  청크마다 화면 언어별 파일 `mt/{lang}/{region}/{level}/{key}.json` = { t: { 사건id: 번역 } }을 둔다 — events/ 밖이다
+  (청크 폴더를 훑는 테스트·도구가 번역 파일을 청크로 읽지 않게). 청크 본체에는 번역이 있는
+  언어 목록(`mt`)만 싣는다 — 한국어 화면은 이 파일을 받지 않고, 다른 화면은 목록에 있을 때만 받는다(404 없음).
+  청크에 번역을 직접 실으면 한국어 화면의 첫 화면까지 세 언어치를 받는다(데이터 예산).
+  키는 번역 캐시와 같은 sha1(lang|title) — 제목이 바뀌면 번역도 다시 돌아야 한다(이름·한국어 번역과 같다).
+*/
+const MT_LANGS = ["en", "ja", "zh"];
+const mtHash = (lang, text) => createHash("sha1").update(`${lang}|${text}`).digest("hex").slice(0, 16);
+const mtCache = Object.fromEntries(
+  MT_LANGS.map((l) => {
+    const m = new Map();
+    const f = `curation/translations/${l}.jsonl`;
+    if (existsSync(f)) {
+      for (const line of readFileSync(f, "utf8").split("\n").filter(Boolean)) {
+        let d; try { d = JSON.parse(line); } catch { continue; }
+        if (d?.h && d.t) m.set(d.h, d.t); // 같은 키는 마지막 줄 — --redo가 뒤에 붙인다
+      }
+    }
+    return [l, m];
+  }),
+);
+let mtFiles = 0, mtEntries = 0;
+/** 그 청크의 번역 파일들을 쓰고, 파일이 생긴 언어 목록을 돌려준다. `base` = 「{region}/{level}/{key}」 */
+const writeMt = (base, events) => {
+  const langs = [];
+  for (const l of MT_LANGS) {
+    const t = {};
+    for (const e of events) {
+      const hit = mtCache[l].get(mtHash(e.lang, e.title));
+      if (hit) t[e.id] = hit;
+    }
+    const n = Object.keys(t).length;
+    if (!n) continue;
+    write(`mt/${l}/${base}.json`, { lang: l, t });
+    langs.push(l);
+    mtFiles++;
+    mtEntries += n;
+  }
+  return langs;
+};
+
 const write = (rel, obj) => {
   const p = path.join(OUT, rel);
   mkdirSync(path.dirname(p), { recursive: true });
@@ -669,7 +712,8 @@ for (const region of REGIONS.map((x) => x.id)) {
       events.sort(sortKey); // §6-2: imp desc, y0 asc, id asc — 클라이언트는 재정렬하지 않는다
       byLevel[level] += events.length;
       if (level !== "decade") {
-        write(`events/${region}/${level}/${key}.json`, { region, level, key, count: events.length, events });
+        const mt = writeMt(`${region}/${level}/${key}`, events);
+        write(`events/${region}/${level}/${key}.json`, { region, level, key, count: events.length, ...(mt.length ? { mt } : {}), events });
         continue;
       }
       /*
@@ -701,7 +745,9 @@ for (const region of REGIONS.map((x) => x.id)) {
         counts[b] = n + 1;
         (n < HEAD ? head : more).push(e);
       }
-      write(`events/${region}/decade/${key}.json`, { region, level, key, count: events.length, head: HEAD, counts, events: head });
+      // 번역은 앞부분·뒷부분을 한 파일로 — 뒷부분을 받는 순간 번역도 이미 손에 있다
+      const mt = writeMt(`${region}/decade/${key}`, events);
+      write(`events/${region}/decade/${key}.json`, { region, level, key, count: events.length, head: HEAD, counts, ...(mt.length ? { mt } : {}), events: head });
       if (more.length) write(`events/${region}/decade/${key}.more.json`, { region, level, key, count: more.length, events: more });
     }
   }
@@ -843,6 +889,7 @@ console.log(`발행 — stage=${stage} → ${OUT}
   검색 색인   ${searchItems.length}건 (이름이 있는 것만 · 첫 화면에서는 받지 않는다)
   연도 색인   ${Object.values(yearsByRegion).reduce((a, d) => a + d.length, 0)}개 해 (빈 구간 힌트용)
   청크 수록   century ${byLevel.century}(빈 세기 칸 채움 ${centuryFilled}) · decade ${byLevel.decade}(빈 십년 칸 채움 ${decadeFilled}) · year ${byLevel.year}
+  번역 파일   ${mtFiles}개 · ${mtEntries}건 (한국어 원문 → en·ja·zh, 한국어가 아닌 화면만 받는다)
   기간        막대 ${spanKept}건 (중복 제거 ${spanDupes})
   공식 출처   매칭 사건 ${officialMatched} · 연도 파일 ${officialYears} (항목 ${officialEntries})
   파일        ${Object.keys(chunks).length}`);

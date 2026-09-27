@@ -37,6 +37,8 @@ export interface Ev extends LabelSource {
   regions: { r: RegionId; imp: number }[];
   /** 국사편찬위 연표에 맞춰진 공식 항목 수(한국 열). */
   official?: number;
+  /** 한국어 원문 줄의 화면 언어별 기계 번역(`mt/{lang}/…`, publish.mjs writeMt). 라벨은 forLocale로 꺼낸다. */
+  mt?: Partial<Record<Locale, string>>;
 }
 export interface Polity { name: string; names?: Partial<Record<Locale, string>>; label: string; y0: number; y1: number | null }
 export interface YearData { regions: Region[]; polities: Record<string, Polity[]>; byRegion: Record<string, Ev[]>; total: number }
@@ -96,8 +98,15 @@ export const loadYear = cache(async (year: number): Promise<YearData> => {
   for (const r of regions) {
     const evs: Ev[] = [];
     for (const b of buckets) {
-      const chunk = await readJson<{ events: Ev[] }>(`events/${r.id}/year/${b}.json`);
-      if (chunk) evs.push(...chunk.events.filter((e) => years.includes(e.y0)));
+      const chunk = await readJson<{ events: Ev[]; mt?: Locale[] }>(`events/${r.id}/year/${b}.json`);
+      if (!chunk) continue;
+      // 번역 파일은 청크가 목록에 실은 언어만 — 한 청크를 네 언어 페이지가 같이 쓰므로 세 언어를 다 붙여 둔다
+      const mts = await Promise.all((chunk.mt ?? []).map(async (l) => [l, (await readJson<{ t: Record<string, string> }>(`mt/${l}/${r.id}/year/${b}.json`))?.t ?? {}] as const));
+      for (const e of chunk.events) {
+        if (!years.includes(e.y0)) continue;
+        const mt = Object.fromEntries(mts.filter(([, t]) => t[e.id]).map(([l, t]) => [l, t[e.id]!]));
+        evs.push(Object.keys(mt).length ? { ...e, mt } : e);
+      }
     }
     byRegion[r.id] = evs.sort((a, b) => a.y0 - b.y0 || byImp(a, b));
   }
@@ -109,12 +118,20 @@ export const loadYear = cache(async (year: number): Promise<YearData> => {
  * 한 열 안에서 둘 이상 나오는 라벨. 규칙 자체는 `i18n.ts`의 `dupNames`에 한 벌만 있다 —
  * 그리드도 같은 것을 부른다(두 벌이던 시절에 둘이 갈라졌다).
  */
-export const dupNamesIn = (evs: Ev[], locale: Locale): Set<string> => dupNames(evs, locale);
+export const dupNamesIn = (evs: Ev[], locale: Locale): Set<string> => dupNames(evs.map((e) => forLocale(e, locale)), locale);
+
+/** 그 화면 언어의 번역을 라벨 규칙이 읽는 자리(title_mt)에 놓는다. 한국어 화면·번역 없는 사건은 그대로. */
+export function forLocale(ev: Ev, locale: Locale): Ev {
+  const t = locale === "ko" ? undefined : ev.mt?.[locale];
+  return t ? { ...ev, title_mt: t } : ev;
+}
 
 /** 칩 라벨과 그 언어. 표제어를 쓰면 UI 언어, 원문을 쓰면 원문 언어(한국어 옮김이 있으면 ko). */
-export function labelOf(ev: Ev, locale: Locale, dup?: ReadonlySet<string>): { text: string; lang: string } {
+export function labelOf(ev0: Ev, locale: Locale, dup?: ReadonlySet<string>): { text: string; lang: string } {
+  const ev = forLocale(ev0, locale);
   const l = eventLabel(ev, locale, dup);
   if (l.name !== undefined) return { text: l.name, lang: locale };
+  if (ev.title_mt && l.text === ev.title_mt) return { text: l.text, lang: locale };
   const translated = locale === "ko" && ev.lang !== "ko" && Boolean(ev.title_ko);
   return { text: l.text ?? ev.title, lang: translated ? "ko" : ev.lang };
 }

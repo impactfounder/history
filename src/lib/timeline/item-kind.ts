@@ -52,6 +52,7 @@ export function itemKind(ev: KindSource, locale: Locale): ItemKind {
   if (eventLabel(ev, locale).name !== undefined) return "lead";
   if (ev.lang === LOCALE_LANG[locale]) return "lead";
   if (locale === "ko" && ev.title_ko) return "lead";
+  if (locale !== "ko" && ev.title_mt) return "lead"; // 반대 방향 번역도 같은 대우 — 읽히는 글줄이다
   return "plain";
 }
 

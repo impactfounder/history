@@ -206,3 +206,16 @@ describe("eventLabel — 위키데이터 사건 줄(qe)", () => {
     expect(eventLabel({ ...covid, names: { kr: { nat: "2015년 한·일 일본군 위안부 협상 타결", lang: "ko" } }, name_ko: "한일 위안부 합의", title: "한일 위안부 합의" }, "ko")).toEqual({ name: "한일 위안부 합의" });
   });
 });
+
+describe("eventLabel — 한국어 원문 줄의 화면 언어 번역(title_mt)", () => {
+  const armistice: LabelSource = { title: "7월 27일 휴전 협정 조인", lang: "ko", names: {}, title_mt: "July 27, Armistice Agreement signed" };
+  it("한국어가 아닌 화면은 원문 대신 번역 — 영·일·중 화면에 한국어 원문이 뜨던 것(2026-09-27)", () => {
+    expect(eventLabel(armistice, "en")).toEqual({ text: "July 27, Armistice Agreement signed" });
+  });
+  it("한국어 화면은 번역을 쓰지 않는다", () => {
+    expect(eventLabel(armistice, "ko")).toEqual({ text: "7월 27일 휴전 협정 조인" });
+  });
+  it("그 언어의 사건 이름이 있으면 이름이 먼저다", () => {
+    expect(eventLabel({ ...armistice, names: { us: { nat: "Korean Armistice Agreement", lang: "en" } } }, "en")).toEqual({ name: "Korean Armistice Agreement" });
+  });
+});

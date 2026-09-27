@@ -3,7 +3,7 @@ import { AXIS_YEAR_START } from "@/lib/timeline/axis";
 import { REGION_LABEL, T, formatYearL, localePath, type Locale } from "@/lib/i18n";
 import { itemKind } from "@/lib/timeline/item-kind";
 import { YEAR } from "@/lib/i18n-pages";
-import { CONTEXT_YEARS, DATA_END_YEAR, dupNamesIn, labelOf, loadYear, polityLabel, summarize } from "@/lib/year-data";
+import { CONTEXT_YEARS, DATA_END_YEAR, dupNamesIn, forLocale, labelOf, loadYear, polityLabel, summarize } from "@/lib/year-data";
 import { LocaleNav } from "@/components/pages/LocaleNav";
 
 /**
@@ -96,7 +96,7 @@ export async function YearArticle({ year, locale }: { year: number; locale: Loca
                           <ul className="space-y-[7px]">
                             {here.map((e) => {
                               const label = labelOf(e, locale, dup);
-                              const kind = itemKind(e, locale);
+                              const kind = itemKind(forLocale(e, locale), locale);
                               return (
                                 /*
                                   **줄마다 앵커를 준다.** `/y/1592#ev_…`가 특정 사건을 가리킨다 —

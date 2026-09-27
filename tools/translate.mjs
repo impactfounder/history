@@ -14,6 +14,10 @@
  *   node --env-file=.env tools/translate.mjs                         캐시에 없는 줄 전부
  *   옵션: --model claude-sonnet-5 (기본) · --batch 25 · --dry (호출 없이 대상만 센다)
  *         --redo <source_id,…> 캐시가 있어도 그 줄만 다시 옮긴다(새 줄이 뒤에 붙고 derive는 마지막 줄을 쓴다)
+ *         --to en|ja|zh  반대 방향 — **한국어 원문 줄을 그 언어로**(2026-09-27, 대표 결정). 영·일·중 화면에 한국 열
+ *                        사건이 한국어 원문으로 떠서(일·중 화면 각 약 2,900건, 97%가 한국 열) 그 화면 사용자는 한 글자도
+ *                        읽을 수 없었다. 다른 언어끼리(일본어 화면의 영어 원문 등)는 옮기지 않는다 — 어느 정도 읽힌다.
+ *                        캐시는 curation/translations/{en,ja,zh}.jsonl, 발행이 화면 언어별 파일로 따로 싣는다(publish.mjs).
  *
  * 링크: 그 줄에 걸린 위키백과 문서 제목(curation/raw의 links)을 함께 보낸다(2026-09-26). 연표의 짧은
  * 이름은 문장만으로는 뜻이 갈린다 — 「February — He died.」의 He는 **후한 화제**(링크 Emperor He of Han)인데
@@ -24,6 +28,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { createHash } from "node:crypto";
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { isEventName } from "../src/lib/event-name.mjs";
 
 const arg = (name, def) => (process.argv.includes(name) ? process.argv[process.argv.indexOf(name) + 1] : def);
 const MODEL = arg("--model", "claude-sonnet-5");
@@ -32,7 +37,9 @@ const SAMPLE = process.argv.includes("--sample") ? Number(arg("--sample", 100)) 
 const REGION = arg("--region", null);
 const DRY = process.argv.includes("--dry");
 const REDO = new Set(String(arg("--redo", "")).split(",").filter(Boolean));
-const CACHE = "curation/translations/ko.jsonl";
+const TO = arg("--to", "ko");
+if (!["ko", "en", "ja", "zh"].includes(TO)) { console.error(`--to는 ko|en|ja|zh — 받은 값: ${TO}`); process.exit(1); }
+const CACHE = `curation/translations/${TO}.jsonl`;
 
 export const hashOf = (lang, text) => createHash("sha1").update(`${lang}|${text}`).digest("hex").slice(0, 16);
 
@@ -43,6 +50,22 @@ export const isMostlyHangul = (text) => {
   const ko = String(text).match(/[\uac00-\ud7a3]/g)?.length ?? 0;
   return ko / letters.length > 0.5;
 };
+
+/** 한국어 원문 → 영·일·중. 표기 관례만 언어마다 다르고 나머지 규칙은 ko 방향과 같다. */
+const TARGET_RULES = {
+  en: "영어. 한국 인명·지명은 영어판 위키백과의 통용 표기(대개 개정 로마자 표기: Gwanggaeto the Great, Gyeongju), 왕조는 Goryeo · Joseon, 관직·제도는 뜻을 옮긴다",
+  ja: "일본어. 한국 인명·지명은 일본어판 위키백과의 통용 표기(한자가 있으면 한자: 李舜臣, 慶州), 조선 왕조는 朝鮮王朝, 문체는 연표의 だ・である체 또는 체언 종결",
+  zh: "중국어 간체. 한국 인명·지명은 중국어판 위키백과의 통용 표기(한자가 있으면 한자: 李舜臣, 庆州), 왕조는 高丽 · 朝鲜王朝, 문체는 연표의 간결한 서술",
+};
+const SYSTEM_TO = (to) => `너는 한국사 연표를 ${TARGET_RULES[to]}로 옮기는 번역기다. 입력은 한국어 연표의 한 줄(위키백과 또는 국사편찬위원회 연표)이다.
+규칙:
+1. 뜻을 더하거나 빼지 않는다. 요약·해설·보충 금지. 원문의 문장 수를 유지한다.
+2. 고유명사는 용어집(glossary)을 그대로 따른다. 용어집에 없으면 위 표기 관례를 따른다.
+3. 날짜·숫자·연호는 그대로 둔다. 원문 괄호 안의 한자는 그대로 두거나, 그 언어가 한자를 쓰면 본문 표기로 흡수한다. 원문에 없는 괄호 병기를 추가하지 않는다.
+4. 원문이 문장이면 문장으로, 구면 구로.
+5. 출력은 JSON 배열만. 다른 말은 쓰지 않는다: [{"id":"…","t":"…"}]
+6. 항목의 links는 그 줄에 링크로 걸린 위키백과 문서 제목이다. 뜻을 가리는 데만 쓰고 원문에 없는 내용을 더하지 않는다.
+7. 원문의 1인칭 나라 표현(「우리 나라」「아국」「본국」)은 그 시기 한국의 나라 이름(고려·조선 등, 모르면 Korea/朝鮮/朝鲜)으로 옮긴다 — 그대로 옮기면 읽는 사람의 나라가 된다(일본어 「我が国」= 일본).`;
 
 const SYSTEM = `너는 역사 연표를 한국어로 옮기는 번역기다. 입력은 위키백과 연표의 한 줄(영어·일본어·중국어)이다.
 규칙:
@@ -57,26 +80,41 @@ const SYSTEM = `너는 역사 연표를 한국어로 옮기는 번역기다. 입
 mkdirSync("curation/translations", { recursive: true });
 const cache = new Set(existsSync(CACHE) ? readFileSync(CACHE, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l).h) : []);
 const regions = REGION ? [REGION] : ["kr", "cn", "jp", "ai", "us"];
+// ko 방향은 한국어 원문이 없는 파일만 보면 되지만, 반대 방향은 국사편찬위 줄(kr-nikh, 전부 한국어)이 대상의 중심이다
+const stems = regions.flatMap((r) => (TO !== "ko" && r === "kr" ? ["kr", "kr-nikh"] : [r]));
 let items = [];
-for (const region of regions) {
-  const f = `curation/events/${region}.jsonl`;
+for (const stem of stems) {
+  const region = stem.split("-")[0];
+  const f = `curation/events/${stem}.jsonl`;
   if (!existsSync(f)) continue;
   // 원천 링크(수집 원문, gitignore). 없으면 링크 없이 옮긴다 — 예전과 같다
   const rawF = `curation/raw/${region}/candidates.jsonl`;
   const links = new Map(existsSync(rawF) ? readFileSync(rawF, "utf8").split("\n").filter(Boolean).map((l) => { const d = JSON.parse(l); return [d.id, d.links ?? []]; }) : []);
   for (const line of readFileSync(f, "utf8").split("\n").filter(Boolean)) {
     const r = JSON.parse(line);
-    if (r.status !== "published" || r.lang === "ko") continue;
-    // lang이 en이어도 제목이 이미 한국어인 줄이 있다 — 위키데이터 즉위 줄의 ko 표제어가
-    // title로 들어온 경우다(고국천왕·광개토대왕…). 전체의 9%(796줄)였고, 보내면 모델이
-    // 그대로 되받아쓴다. lang이 아니라 **글자**로 판정한다.
-    if (isMostlyHangul(r.title)) continue;
+    if (r.status !== "published") continue;
+    /*
+      lang이 en이어도 제목이 이미 한국어인 줄이 있다 — 위키데이터 즉위 줄의 ko 표제어가 title로 들어온 경우다
+      (고국천왕·광개토대왕…). 그래서 lang이 아니라 **글자**로 판정한다: ko 방향은 한국어가 아닌 제목만,
+      반대 방향은 한국어 제목만.
+    */
+    if (TO === "ko" ? r.lang === "ko" || isMostlyHangul(r.title) : !isMostlyHangul(r.title)) continue;
+    /*
+      반대 방향: 그 화면이 이미 **그 언어의 이름**을 보여 주는 줄은 옮기지 않는다 — 번역이 쓰일 자리가 없다.
+      화면의 라벨 규칙(src/lib/i18n.ts eventLabelRaw)과 같은 판정: 위키데이터 사건 줄(source_id wd_)이거나
+      그 언어 표제어가 사건 꼴(isEventName)이면 이름이 선다. 3,570 → 아래 대상 수.
+    */
+    if (TO !== "ko") {
+      const nat = r.names_native?.[TO]?.replace(/\s*\([^)]*\)$/, "");
+      if (nat && (String(r.source_id).startsWith("wd_") || isEventName(nat, TO))) continue;
+    }
     const h = hashOf(r.lang, r.title);
     if (cache.has(h) && !REDO.has(r.source_id)) continue;
-    // 용어집: 이 줄에 실제로 있는 원문 표제어만
+    // 용어집: 이 줄에 실제로 있는 원문 표제어만 — ko 방향은 원어 → ko, 반대 방향은 ko → 그 언어
     const glossary = [];
-    const src = r.names_native?.[r.lang], ko = r.names_native?.ko;
-    if (src && ko && r.title.includes(src)) glossary.push([src, ko.replace(/\s*\([^)]*\)$/, "")]);
+    const strip = (x) => x.replace(/\s*\([^)]*\)$/, "");
+    const from = TO === "ko" ? r.names_native?.[r.lang] : r.names_native?.ko, into = r.names_native?.[TO];
+    if (from && into && r.title.includes(strip(from))) glossary.push([strip(from), strip(into)]);
     items.push({ h, region, lang: r.lang, year: r.date.year, text: r.title, glossary, links: (links.get(r.source_id) ?? []).slice(0, 8) });
   }
 }
@@ -89,7 +127,7 @@ if (SAMPLE) {
   const rnd = () => (seed = (seed * 48271) % 2147483647) / 2147483647;
   items = groups.flatMap((g) => g.sort(() => rnd() - 0.5).slice(0, Math.ceil(SAMPLE / 4))).slice(0, SAMPLE);
 }
-console.log(`대상 ${items.length}줄 (캐시 ${cache.size}) · 모델 ${MODEL} · 배치 ${BATCH}${DRY ? " · dry" : ""}`);
+console.log(`${TO} 방향 · 대상 ${items.length}줄 (캐시 ${cache.size}) · 모델 ${MODEL} · 배치 ${BATCH}${DRY ? " · dry" : ""}`);
 if (DRY || !items.length) process.exit(0);
 if (!process.env.ANTHROPIC_API_KEY) { console.error("ANTHROPIC_API_KEY 없음 — .env에 넣고 node --env-file=.env 로 실행"); process.exit(1); }
 
@@ -113,7 +151,7 @@ const MAX_TOKENS = 16000;
 async function translateBatch(batch, depth = 0) {
   const glossary = Object.fromEntries(batch.flatMap((b) => b.glossary));
   const user = JSON.stringify({ glossary, items: batch.map((b, k) => ({ id: String(k), lang: b.lang, text: b.text, ...(b.links?.length ? { links: b.links } : {}) })) });
-  const res = await client.messages.create({ model: MODEL, max_tokens: MAX_TOKENS, system: SYSTEM, messages: [{ role: "user", content: user }] });
+  const res = await client.messages.create({ model: MODEL, max_tokens: MAX_TOKENS, system: TO === "ko" ? SYSTEM : SYSTEM_TO(TO), messages: [{ role: "user", content: user }] });
   usage.input += res.usage.input_tokens;
   usage.output += res.usage.output_tokens;
 
@@ -142,8 +180,10 @@ async function translateBatch(batch, depth = 0) {
   const at = new Date().toISOString();
   batch.forEach((b, k) => {
     const hit = parsed.find((p) => String(p.id) === String(k));
-    if (!hit?.ko) { failed++; return; }
-    appendFileSync(CACHE, JSON.stringify({ h: b.h, lang: b.lang, src: b.text, ko: String(hit.ko).trim(), model: MODEL, at }) + "\n");
+    const out = TO === "ko" ? hit?.ko : hit?.t;
+    if (!out) { failed++; return; }
+    // ko 캐시는 예전 모양(ko 필드) 그대로 — derive.mjs가 그것을 읽는다. 반대 방향은 t 필드
+    appendFileSync(CACHE, JSON.stringify({ h: b.h, lang: b.lang, src: b.text, ...(TO === "ko" ? { ko: String(out).trim() } : { to: TO, t: String(out).trim() }), model: MODEL, at }) + "\n");
     done++;
   });
 }

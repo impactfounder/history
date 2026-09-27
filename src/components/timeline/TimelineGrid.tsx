@@ -125,6 +125,8 @@ interface PublishedEvent {
   title: string;
   /** 기계 번역(tools/translate.mjs). 있으면 칩에 이것을 보인다. */
   title_ko?: string;
+  /** 화면 언어로의 기계 번역(한국어 원문 → en/ja/zh). 청크 옆 번역 파일에서 붙인다(withMt). 발행 청크에는 없다. */
+  title_mt?: string;
   /** 지은 제목(tools/name.mjs). 원문 표제어가 사건 꼴이 아닐 때 칩 라벨이 된다. */
   name_ko?: string;
   /**
@@ -147,7 +149,8 @@ interface PublishedEvent {
  * 청크 파일. 십년 청크는 **앞부분**(행마다 앞의 `head`건)과 `.more.json`(나머지, 같은 순서)으로
  * 나뉜다(tools/publish.mjs). `counts`는 행별 총수 — 뒷부분을 받기 전에도 「N건 더」가 맞다.
  */
-interface Chunk { events: PublishedEvent[]; head?: number; counts?: Record<string, number> }
+/** mt: 이 청크의 번역 파일(`mt/{lang}/{region}/{level}/{key}.json`)이 있는 화면 언어(publish.mjs writeMt). */
+interface Chunk { events: PublishedEvent[]; head?: number; counts?: Record<string, number>; mt?: Locale[] }
 /** 국사편찬위원회 연표 한 항목 — 원문 그대로. */
 interface OfficialEntry { id: string; db: string; series: string | null; date_ko: string; text: string; url: string | null }
 interface Detail {
@@ -352,6 +355,13 @@ export function TimelineGrid() {
   const chunks = useRef(new Map<string, PublishedEvent[] | null>());
   /** 앞부분 파일의 머리 정보(head · counts) — 경로별. 없으면 나뉘지 않은 청크다. */
   const chunkMeta = useRef(new Map<string, { head: number; counts: Record<string, number> }>());
+  /*
+    반대 방향 번역(2026-09-27). 청크 경로 → 번역이 있는 언어, `언어|사건id` → 번역.
+    한국어 화면은 받지 않는다. 화면 언어를 바꾸면 이미 받은 청크의 그 언어 번역을 받는다(아래 effect).
+  */
+  const chunkMt = useRef(new Map<string, Locale[]>());
+  const mtText = useRef(new Map<string, string>());
+  const mtAsked = useRef(new Set<string>());
   const inflight = useRef(new Set<string>());
   const [, bump] = useState(0);
   const [manifest, setManifest] = useState<Manifest | null>(null);
@@ -491,6 +501,26 @@ export function TimelineGrid() {
       .catch(() => { setManifest(null); setPolities({}); setSpans([]); setYearIndex({}); setCross({}); setCoverage({}); });
   }, []);
 
+  /** 그 청크의 화면 언어 번역을 받는다. 청크 본체가 그 언어를 목록에 실었을 때만 — 404를 내지 않는다. */
+  const ensureMt = useCallback((path: string, lang: Locale) => {
+    if (lang === "ko" || !chunkMt.current.get(path)?.includes(lang)) return;
+    const ask = `${lang}|${path}`;
+    if (mtAsked.current.has(ask)) return;
+    mtAsked.current.add(ask);
+    fetch(withV(path.replace(`${DATA}/events/`, `${DATA}/mt/${lang}/`)))
+      .then((r) => (r.ok ? (r.json() as Promise<{ t: Record<string, string> }>) : null))
+      .then((m) => {
+        if (!m) return;
+        for (const [id, text] of Object.entries(m.t)) mtText.current.set(`${lang}|${id}`, text);
+        bump((n) => n + 1);
+      })
+      .catch(() => mtAsked.current.delete(ask));
+  }, [withV]);
+  // 화면 언어가 바뀌면 이미 받은 청크의 그 언어 번역을 받는다
+  useEffect(() => {
+    for (const path of chunkMt.current.keys()) ensureMt(path, locale);
+  }, [locale, ensureMt]);
+
   const ensureChunk = useCallback((region: RegionId, key: string) => {
     if (!dataVersion) return; // manifest가 오기 전엔 받지 않는다 — 버전 없는 URL은 이전 발행분 캐시를 부른다
     const path = `${DATA}/events/${region}/${key}.json`;
@@ -510,6 +540,7 @@ export function TimelineGrid() {
       .then((r) => (r.ok ? (r.json() as Promise<Chunk>) : null))
       .then((c) => {
         const evs = c?.events ?? null;
+        if (c?.mt?.length) { chunkMt.current.set(path, c.mt); ensureMt(path, locale); }
         if (c?.head != null && c.counts) chunkMeta.current.set(path, { head: c.head, counts: c.counts });
         chunks.current.set(path, evs); // 404도 기록 — 빈 구간은 다시 묻지 않는다
       })
@@ -518,7 +549,7 @@ export function TimelineGrid() {
         inflight.current.delete(path);
         bump((n) => n + 1);
       });
-  }, [dataVersion, withV, yearIndex]);
+  }, [dataVersion, withV, yearIndex, ensureMt, locale]);
 
   /**
    * 십년 청크의 **뒷부분**(`.more.json`). 앞부분이 이미 행마다 필요한 만큼을 다 가졌으면 받지 않는다 —
@@ -846,8 +877,14 @@ export function TimelineGrid() {
     const inRow = (e: PublishedEvent) => bucketStart(e.y0, unit) === b;
     // 뒷부분은 앞부분 **뒤에** 붙인다 — 행마다 앞의 head건이 앞부분이라 이어 붙이면 원래 순서다
     const more = chunks.current.get(`${DATA}/events/${region}/${key}.more.json`) ?? [];
-    return [...evs.filter(inRow), ...more.filter(inRow)];
+    return [...evs.filter(inRow), ...more.filter(inRow)].map(withMt);
   };
+  /** 화면 언어 번역을 붙인다(한국어 화면·번역 없는 사건은 그대로 — 같은 객체). */
+  function withMt(e: PublishedEvent): PublishedEvent {
+    if (locale === "ko") return e;
+    const t = mtText.current.get(`${locale}|${e.id}`);
+    return t ? { ...e, title_mt: t } : e;
+  }
   const sheetEvents = cellSheet ? cellEvents(cellSheet.region, cellSheet.b, cellSheet.level, cellSheet.unit) : [];
   /** 칸의 총수 — 뒷부분을 아직 안 받았어도 맞다(앞부분 파일의 counts). */
   const cellTotal = (region: RegionId, b: number, loaded: number, level: Level = rows.level): number => {
@@ -1804,7 +1841,8 @@ export function TimelineGrid() {
                   )}
                 </div>
                 <h2 ref={headingRef} tabIndex={-1} className="mt-0.5 text-title font-bold outline-none [text-wrap:balance] [word-break:keep-all]">
-                  {(() => { const l = eventLabel(selected.ev, locale); return l.name ?? l.text; })()}
+                  {/* 딥링크·검색으로 연 사건은 칩을 거치지 않아 번역이 안 붙어 있다 — 여기서 붙인다(withMt) */}
+                  {(() => { const l = eventLabel(withMt(selected.ev), locale); return l.name ?? l.text; })()}
                 </h2>
               </div>
               {/* 패널의 주 조작이므로 간격 예외에 기대지 않고 24px 정사각을 직접 만든다 */}
@@ -1858,6 +1896,13 @@ export function TimelineGrid() {
                       <p lang="ko" className={BLOCK_BODY}>{selected.detail.text_ko}</p>
                     </section>
                   )}
+                  {/* 한국어가 아닌 화면의 한국어 원문 줄 — 그 언어 기계 번역(제목 줄). 원문은 아래에 그대로 */}
+                  {locale !== "ko" && withMt(selected.ev).title_mt && (
+                    <section className={BLOCK}>
+                      <h3 className={BLOCK_LABEL}>{t.mtSelf}</h3>
+                      <p lang={locale} className={BLOCK_BODY}>{withMt(selected.ev).title_mt}</p>
+                    </section>
+                  )}
                   {selected.detail.text && (
                     <section className={BLOCK}>
                       <h3 className={BLOCK_LABEL}>
@@ -1865,7 +1910,7 @@ export function TimelineGrid() {
                         {selected.detail.lang !== locale && <span className={LANG_TAG}>{selected.detail.lang.toUpperCase()}</span>}
                       </h3>
                       {/* 번역이 아직인 원문은 진하게 — 읽어야 할 것이 그것뿐이기 때문이다 */}
-                      <p lang={selected.detail.lang} className={`${BLOCK_BODY}${selected.detail.text_ko ? " text-fg-muted" : " text-fg-strong"}`}>{selected.detail.text}</p>
+                      <p lang={selected.detail.lang} className={`${BLOCK_BODY}${selected.detail.text_ko || (locale !== "ko" && withMt(selected.ev).title_mt) ? " text-fg-muted" : " text-fg-strong"}`}>{selected.detail.text}</p>
                       <p className={BLOCK_META}>
                         {locale === "ko" && !selected.detail.text_ko && `${t.notTranslated} · `}{selected.detail.license}
                       </p>
