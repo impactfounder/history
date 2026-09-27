@@ -28,6 +28,7 @@ import { FOUND_VERB_STRONG, foundStrength, foundsNear, politiyCore } from "./fou
 import { eventId } from "./event-id.mjs";
 import { pickMergedQid } from "./merge-qid.mjs";
 import { isEventLike } from "./event-kind.mjs";
+import { isEventName } from "../src/lib/event-name.mjs";
 import path from "node:path";
 
 const OUT = "public/data/v1";
@@ -866,6 +867,42 @@ searchItems.sort((a, b) => (a[2] < b[2] ? -1 : a[2] > b[2] ? 1 : 0) || a[1] - b[
 write("search.json", { version: "v1", items: searchItems });
 
 /*
+  **화면 언어별 검색 색인**(2026-09-27). search.json은 한국어 이름을 보여서, 영·일·중 화면의 검색 결과가 한국어로
+  떴고 일·중 화면은 자기 말로 찾을 수조차 없었다(영어만 별칭으로 맞았다). 표시 이름은 그 화면의 라벨 규칙
+  (src/lib/i18n.ts eventLabelRaw)과 같은 차례로 고른다: 그 언어 표제어(위키데이터 사건 줄이거나 사건 꼴) → 한국어 원문
+  줄의 기계 번역(mt) → 원문(칩이 보이는 그대로). 한국어 원문뿐이면 싣지 않는다 — 그 화면에서 읽을 수 없다.
+  별칭은 영어 표제어(일·중 화면). 여럿이면 「|」로 잇는다(질의에 없는 글자) — search.ts가 나눠 본다.
+*/
+const LOCALE_LANG_OF = { en: "en", ja: "ja", zh: "zh" };
+let searchByLocale = {};
+for (const loc of MT_LANGS) {
+  const lang = LOCALE_LANG_OF[loc];
+  const items = [];
+  for (const r of all) {
+    const nat = r.names_native?.[lang]?.replace(/\s*\([^)]*\)$/, "");
+    const mt = mtCache[loc].get(mtHash(r.lang, r.title));
+    // 화면이 보이는 그대로 — 그 언어 표제어 → 번역 → 원문(한국어 원문이면 그 화면에서 못 읽으니 뺀다)
+    const shown =
+      (nat && (String(r.source_id).startsWith("wd_") || isEventName(nat, loc)) ? nat : null) ??
+      mt ??
+      (/[가-힣]/.test(r.title) && !/[a-zA-Z぀-ヿ一-鿿]{4}/.test(r.title) ? null : r.title);
+    if (!shown) continue;
+    // 결과는 한 줄이다 — 긴 원문 문장은 60자에서 자른다(자르기 전 영어 색인 gzip 600KB였다 · 한국어 색인 280KB)
+    const show = shown.length > 60 ? shown.slice(0, 59) + "…" : shown;
+    // 별칭은 영어 표제어만 — 일·중 화면에서 영어로도 찾히게. 한국어 이름까지 넣으면 색인이 두 배가 된다
+    // 그 언어 표제어도 — 표시로는 사건 꼴일 때만 쓰지만(「真珠湾攻撃」은 꼴 판정에 안 걸려 영어 원문이 표시된다)
+    // 그 말로 치면 찾혀야 한다. 처음 판은 「真珠湾」이 0건이었다
+    const alias = [nat, loc === "en" ? null : r.names_native?.en].filter((x) => x && x !== show);
+    const item = [show, r.date.year, r.region, eventId(r).replace(/^ev_/, ""), r.importance_auto ?? 2];
+    if (alias.length) item.push([...new Set(alias)].join("|"));
+    items.push(item);
+  }
+  items.sort((a, b) => (a[2] < b[2] ? -1 : a[2] > b[2] ? 1 : 0) || a[1] - b[1]);
+  write(`search.${loc}.json`, { version: "v1", items });
+  searchByLocale[loc] = items.length;
+}
+
+/*
   **manifest는 작아야 한다.** 그리드가 첫 로드에 `cache: "no-cache"`로 받아 **매번 재검증**하는
   파일이고(발행 버전을 알아야 나머지 URL에 ?v=를 붙일 수 있다), 읽는 값은 셋뿐이다 —
   `stage` · `counts.events` · `publishedAt`.
@@ -890,6 +927,7 @@ console.log(`발행 — stage=${stage} → ${OUT}
   연도 색인   ${Object.values(yearsByRegion).reduce((a, d) => a + d.length, 0)}개 해 (빈 구간 힌트용)
   청크 수록   century ${byLevel.century}(빈 세기 칸 채움 ${centuryFilled}) · decade ${byLevel.decade}(빈 십년 칸 채움 ${decadeFilled}) · year ${byLevel.year}
   번역 파일   ${mtFiles}개 · ${mtEntries}건 (한국어 원문 → en·ja·zh, 한국어가 아닌 화면만 받는다)
+  검색 색인   ko ${searchItems.length} · ${Object.entries(searchByLocale).map(([l, n]) => `${l} ${n}`).join(" · ")}
   기간        막대 ${spanKept}건 (중복 제거 ${spanDupes})
   공식 출처   매칭 사건 ${officialMatched} · 연도 파일 ${officialYears} (항목 ${officialEntries})
   파일        ${Object.keys(chunks).length}`);

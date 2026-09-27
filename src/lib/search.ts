@@ -71,11 +71,15 @@ export function search(items: readonly SearchItem[], query: string, limit = 40):
     const n = normalize(it[0]);
     let i = n.indexOf(q);
     let len = n.length;
-    // 이름에 없으면 영문 별칭을 본다. 별칭으로 맞아도 **화면에 보이는 것은 이름**이다.
+    // 이름에 없으면 별칭을 본다(영문 표제어, 다른 화면 색인은 한국어 이름도 — 「|」로 이은 것). 별칭으로 맞아도 **화면에 보이는 것은 이름**이다.
     if (i < 0 && it[5]) {
-      const a = normalize(it[5]);
-      i = a.indexOf(q);
-      len = a.length;
+      for (const part of it[5].split("|")) {
+        const a = normalize(part);
+        const j = a.indexOf(q);
+        if (j < 0) continue;
+        // 별칭 중 가장 잘 맞는 것 — 통째로 같은 것 > 앞에서 시작하는 것
+        if (i < 0 || (a.length === q.length && len !== q.length) || (j === 0 && i !== 0)) { i = j; len = a.length; }
+      }
     }
     if (i < 0) continue;
     hits.push({ it, exact: len === q.length ? 0 : 1, where: i === 0 ? 0 : 1 });
@@ -97,21 +101,24 @@ export function search(items: readonly SearchItem[], query: string, limit = 40):
  * 색인을 **한 번만** 받는다. 두 번째 열기부터는 같은 약속을 돌려준다 — 실패했으면 다시 받는다
  * (한 번 실패했다고 검색이 영영 죽으면 안 된다).
  */
-let pending: Promise<SearchItem[]> | null = null;
+// 주소마다 하나 — 화면 언어를 바꾸면 색인도 바뀐다(search.json · search.en.json …). 하나만 두던 때는 첫 색인이 남았다
+const pending = new Map<string, Promise<SearchItem[]>>();
 export function loadSearchIndex(url: string): Promise<SearchItem[]> {
-  if (!pending) {
-    pending = fetch(url)
+  let p = pending.get(url);
+  if (!p) {
+    p = fetch(url)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((j: { items?: SearchItem[] }) => j.items ?? [])
       .catch((e) => {
-        pending = null; // 다음 시도를 막지 않는다
+        pending.delete(url); // 다음 시도를 막지 않는다
         throw e;
       });
+    pending.set(url, p);
   }
-  return pending;
+  return p;
 }
 
 /** 테스트용 — 모듈 수준 캐시를 비운다. */
 export const resetSearchIndex = (): void => {
-  pending = null;
+  pending.clear();
 };

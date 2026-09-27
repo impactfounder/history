@@ -178,3 +178,16 @@ describe("영문 별칭으로도 찾는다", () => {
     expect(search(both, "전투").map((h) => h.id)).toEqual(["ev_c2", "ev_c1"]);
   });
 });
+
+describe("화면 언어별 색인 — 별칭 여럿(「|」)과 주소별 캐시(2026-09-27)", () => {
+  const items: SearchItem[] = [
+    ["文禄・慶長の役", 1592, "jp", "a1", 5, "Imjin War|Japanese invasions of Korea"],
+    ["Imjin War memorial", 1600, "kr", "a2", 2],
+  ];
+  it("별칭 중 통째로 같은 것을 먼저 — 이름에 없어도 별칭 하나가 질의와 같으면 1번", () => {
+    expect(search(items, "imjin war").map((h) => h.id)).toEqual(["ev_a1", "ev_a2"]);
+  });
+  it("별칭으로 맞아도 보이는 것은 그 화면 언어 이름", () => {
+    expect(search(items, "japanese invasions")[0]?.name).toBe("文禄・慶長の役");
+  });
+});

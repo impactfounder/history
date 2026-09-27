@@ -1137,7 +1137,8 @@ export function TimelineGrid() {
         <SearchOverlay
           t={t}
           locale={locale}
-          indexUrl={withV(`${DATA}/search.json`)}
+          // 화면 언어별 색인 — 한국어는 search.json, 다른 화면은 그 언어 이름으로 보이는 search.{locale}.json(publish.mjs)
+          indexUrl={withV(locale === "ko" ? `${DATA}/search.json` : `${DATA}/search.${locale}.json`)}
           dataEndYear={AXIS_YEAR_END}
           onClose={() => setSearchOpen(false)}
           onPickYear={(y) => { setSearchOpen(false); goTo(y); }}
