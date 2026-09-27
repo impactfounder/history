@@ -109,6 +109,10 @@ export interface Strings {
   prevEvent: (year: string) => string;
   /** 교차 사건 — 같은 사건을 다른 열이 각자의 이름으로 적은 것(PRD §4-1·§5-6). */
   crossTitle: string;
+  /** 음력 표시 — 국사편찬위 날짜에서 온 달(publish.mjs calOf). */
+  lunar: string;
+  /** 교차 목록에서 열마다 달이 다르고 한쪽이 음력일 때 */
+  crossCalNote: string;
   /** 칩에 붙는 글리프의 이름. `다른 2개 열에도 있다` */
   crossGlyph: (n: number) => string;
   /** 열의 수록 시작(PRD §11 C-3). 격자 헤더와 연도 페이지가 같은 말을 쓴다. */
@@ -198,6 +202,8 @@ export const T: Record<Locale, Strings> = {
     nextEvent: (y) => `다음 사건 ${y}`,
     prevEvent: (y) => `이전 사건 ${y}`,
     crossTitle: "다른 열에서는",
+    lunar: "음력",
+    crossCalNote: "달이 서로 다른 것은 달력 차이일 수 있다 — 음력은 국사편찬위원회 연표의 표기다.",
     crossGlyph: (n) => `다른 ${n}개 열에도 있다`,
     coverageFrom: (y) => `${y}년~ 수록`,
     rowSheet: (span) => `${span} 모든 열`,
@@ -271,6 +277,8 @@ export const T: Record<Locale, Strings> = {
     nextEvent: (y) => `Next: ${y}`,
     prevEvent: (y) => `Previous: ${y}`,
     crossTitle: "In other columns",
+    lunar: "lunar calendar",
+    crossCalNote: "Months may differ because of the calendar — lunar dates follow the National Institute of Korean History.",
     crossGlyph: (n) => `Also in ${n} other column${n > 1 ? "s" : ""}`,
     coverageFrom: (y) => `covered from ${y}`,
     rowSheet: (span) => `${span} — every column`,
@@ -344,6 +352,8 @@ export const T: Record<Locale, Strings> = {
     nextEvent: (y) => `次の出来事 ${y}`,
     prevEvent: (y) => `前の出来事 ${y}`,
     crossTitle: "他の列では",
+    lunar: "旧暦",
+    crossCalNote: "月が異なるのは暦の違いによる場合がある — 旧暦は韓国国史編纂委員会の表記。",
     crossGlyph: (n) => `他の${n}列にもある`,
     coverageFrom: (y) => `${y}年〜収録`,
     rowSheet: (span) => `${span}のすべての列`,
@@ -417,6 +427,8 @@ export const T: Record<Locale, Strings> = {
     nextEvent: (y) => `下一事件 ${y}`,
     prevEvent: (y) => `上一事件 ${y}`,
     crossTitle: "其他列中",
+    lunar: "农历",
+    crossCalNote: "月份不同可能是历法差异 — 农历日期依据韩国国史编纂委员会的记载。",
     crossGlyph: (n) => `另有${n}列`,
     coverageFrom: (y) => `${y}年起收录`,
     rowSheet: (span) => `${span}的所有列`,
@@ -445,6 +457,14 @@ export const T: Record<Locale, Strings> = {
 
 // ── 연도 표기 ────────────────────────────────────────────────────────────────
 /** 단일 연도. 천문학적 연수(1 BC = 0)를 각 언어의 관용대로. */
+const MONTH_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+/** 달 표기. 음력이면 달력을 붙인다 — 「4월(음력)」 「Apr (lunar calendar)」 「4月（旧暦）」. */
+export function formatMonthL(month: number, locale: Locale, cal?: "lunar"): string {
+  const m = locale === "ko" ? `${month}월` : locale === "en" ? MONTH_EN[month - 1]! : `${month}月`;
+  if (cal !== "lunar") return m;
+  return locale === "en" ? `${m} (${T.en.lunar})` : locale === "ko" ? `${m}(${T.ko.lunar})` : `${m}（${T[locale].lunar}）`;
+}
+
 export function formatYearL(year: number, locale: Locale): string {
   const bc = year <= 0, n = bc ? 1 - year : year;
   switch (locale) {

@@ -31,6 +31,7 @@ import {
   TOPBAR_H,
   ZOOM_FLOAT_H,
   ZOOM_FLOAT_INSET,
+  ZOOM_BAND_H,
 } from "./metrics";
 
 /**
@@ -77,6 +78,7 @@ describe("치수 토큰 — metrics.ts(원본) ↔ globals.css(사본)", () => {
     ["topbar", TOPBAR_H],
     ["zoom-float", ZOOM_FLOAT_H],
     ["zoom-float-inset", ZOOM_FLOAT_INSET],
+    ["zoom-band", ZOOM_BAND_H],
   ];
 
   for (const [token, value] of pairs) {

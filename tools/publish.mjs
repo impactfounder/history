@@ -97,6 +97,19 @@ if (existsSync("curation/names/clash.jsonl")) {
   }
 }
 
+/**
+ * 그 사건의 달이 어느 달력인가 — **아는 것만** 말한다(2026-09-27, 대표 결정 「원문 유지 + 달력 표시」).
+ * 국사편찬위 연표는 날짜가 전부 음력이다(원천 20,590항목 모두 cal: lunar). 사건의 달이 그 국편 항목의 달과 같으면
+ * 그 달은 음력이다. 위키 원문의 달(중·일·미 열의 「23 May」)은 대개 양력이지만 원천이 밝히지 않으므로 표시하지
+ * 않는다 — 틀린 표시는 표시가 없는 것보다 나쁘다. 실측: 임진왜란이 한국 열 4월(음력 4월 13일) · 일본 열 5월
+ * (영어판 23 May)로 한 칸 어긋나 보였다.
+ */
+function calOf(r) {
+  if (!r.date?.month) return null;
+  const n = (r.sources ?? []).find((s) => s.kind === "nikh" && s.date?.cal === "lunar" && s.date?.m === r.date.month);
+  return n ? "lunar" : null;
+}
+
 const bucket = (y, u) => Math.floor(y / u) * u;
 const yearKo = (y) => (y <= 0 ? `기원전 ${1 - y}년` : `${y}년`);
 const formatYear = (y, approx) => yearKo(y) + (approx ? "경" : "");
@@ -118,12 +131,14 @@ function toRecord(r) {
     if (region && REGION_LANG[region] === lang) names[region] = { nat: title, lang };
   }
   const official = r.sources.filter((s) => s.kind === "nikh").length;
+  const cal = calOf(r);
   return {
     id: eventId(r),
     kind: "point",
     y0: r.date.year,
     prec: r.date.precision ?? "year",
     ...(r.date.month ? { m: r.date.month } : {}),
+    ...(cal ? { cal } : {}),
     // 기간 사건의 끝 연도(derive.mjs endYearOf) — 그리드가 기간 막대를 그린다
     ...(r.date.end_year ? { y1: r.date.end_year } : {}),
     approx: Boolean(r.date.approximate),
@@ -469,6 +484,9 @@ const crossGroups = {};
         // 그 열의 **자국어 이름**. 이 기능의 뜻이 "중국은 이것을 义和团运动이라 부른다"이므로
         // 한국어 지은 제목이 아니라 그쪽 말이 와야 한다. 없으면 지은 제목으로 떨어진다.
         name: r.names_native?.[REGION_LANG[r.region]] ?? nameOf(r) ?? null,
+        // 달과 달력 — 열마다 달이 다르게 적힌 것이 달력 차이인지 상세가 알려 줄 수 있게(calOf)
+        ...(r.date.month ? { m: r.date.month } : {}),
+        ...(calOf(r) ? { cal: calOf(r) } : {}),
       }))
       .sort((a, b) => (a.r < b.r ? -1 : 1));
   }

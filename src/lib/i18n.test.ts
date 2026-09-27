@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LOCALES, PREFIXED_LOCALES, REGION_LABEL, dropMonthPrefix, dropYearPrefix, eventLabel, formatRowLabelL, formatYearL, isEventName, localePath, trimLabelEnd, type LabelSource } from "./i18n";
+import { LOCALES, PREFIXED_LOCALES, REGION_LABEL, dropMonthPrefix, formatMonthL, dropYearPrefix, eventLabel, formatRowLabelL, formatYearL, isEventName, localePath, trimLabelEnd, type LabelSource } from "./i18n";
 import { YEAR } from "./i18n-pages";
 
 describe("formatYearL / formatRowLabelL", () => {
@@ -176,5 +176,15 @@ describe("dropMonthPrefix — 월 눈금이 이미 말하는 달", () => {
   it("일까지 적힌 것과 범위는 두다 — 눈금보다 정밀하다", () => {
     expect(dropMonthPrefix("5월 10일 남한 총선거", 5)).toBe("5월 10일 남한 총선거");
     expect(dropMonthPrefix("9월 – 10월 31일. 조선박람회", 9)).toBe("9월 – 10월 31일. 조선박람회");
+  });
+});
+
+describe("formatMonthL — 달과 달력", () => {
+  it("음력이면 달력을 붙인다 — 임진왜란 한국 열 4월(음력) · 일본 열 5월", () => {
+    expect(formatMonthL(4, "ko", "lunar")).toBe("4월(음력)");
+    expect(formatMonthL(5, "ko")).toBe("5월");
+    expect(formatMonthL(4, "en", "lunar")).toBe("Apr (lunar calendar)");
+    expect(formatMonthL(4, "ja", "lunar")).toBe("4月（旧暦）");
+    expect(formatMonthL(4, "zh")).toBe("4月");
   });
 });

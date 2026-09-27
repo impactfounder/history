@@ -59,8 +59,10 @@ import {
   MORE_LANE_W_COMPACT,
   TOPBAR_H,
   ZOOM_FLOAT_INSET,
+  ZOOM_BAND_H,
+  ZOOM_FLOAT_H,
 } from "@/lib/design/metrics";
-import { LOCALES, LOCALE_LABEL, LOCALE_REGION, REGION_LABEL, T, dropMonthPrefix, dropYearPrefix, dupNames, eventLabel, formatRowLabelL, formatYearL, isEventName, isLocale, localePath, nameIn, type Locale } from "@/lib/i18n";
+import { LOCALES, LOCALE_LABEL, LOCALE_REGION, REGION_LABEL, T, dropMonthPrefix, dropYearPrefix, dupNames, eventLabel, formatMonthL, formatRowLabelL, formatYearL, isEventName, isLocale, localePath, nameIn, type Locale } from "@/lib/i18n";
 import { CellSheet } from "./CellSheet";
 import { RowSheet, type RowGroup } from "./RowSheet";
 import { clipForReport, reportMailto } from "@/lib/report";
@@ -114,6 +116,8 @@ interface PublishedEvent {
   y0: number;
   /** 월(1~12). 원문에 표기가 있을 때만. 행 안 배치의 시점 오프셋에 쓴다. */
   m?: number;
+  /** 그 달이 음력인가 — 국사편찬위 날짜에서 온 달만(publish.mjs calOf). 모르면 없다. */
+  cal?: "lunar";
   /** 기간 사건의 끝 연도(원문 범위 또는 위키데이터 P582). 있으면 기간 막대. */
   y1?: number;
   approx: boolean;
@@ -297,7 +301,7 @@ export function TimelineGrid() {
    * 청크와 따로 받는 이유: 상세가 "다른 열은 이렇게 적었다"를 보이려면 **그 열의 청크를 받지
    * 않고도** 이름을 알아야 한다. 50묶음 111행으로 gzip 3.4KB다.
    */
-  const [cross, setCross] = useState<Record<string, { r: RegionId; id: string; y: number; name: string | null }[]>>({});
+  const [cross, setCross] = useState<Record<string, { r: RegionId; id: string; y: number; name: string | null; m?: number; cal?: "lunar" }[]>>({});
   /**
    * **지금 가리키고 있는 교차 묶음.** 한 칩에 손이나 포커스가 닿으면 다른 열의 같은 사건이
    * 함께 밝아진다(PRD §5-6 「호버 시 다른 열 칩 동시 강조」).
@@ -1172,14 +1176,14 @@ export function TimelineGrid() {
           <div className="absolute inset-x-0 border-y-[1.5px] border-fg bg-fg/[.08]" style={{ top: win.top, height: win.height }} />
         </div>
 
-        {/* 격자 — 카드 프레임 층(스크롤 안 함) 위에 스크롤러가 얹힌다 */}
-        <div className="relative min-w-0 flex-1">
+        {/* 격자 — 카드 프레임 층(스크롤 안 함) 위에 스크롤러가 얹힌다. 아래 ZOOM_BAND_H는 줌 컨트롤의 띠(metrics.ts) */}
+        <div className="relative min-w-0 flex-1" style={{ paddingBottom: ZOOM_BAND_H }}>
           {/*
             열 카드 테두리는 **스크롤하지 않는 층**에 그린다(README 7-3). 스크롤 컨테이너가 시간축
             그 자체이고 스페이서가 2만 px을 넘으므로, 카드를 스크롤 콘텐츠 안에 두면 둥근 모서리가
             축의 양 끝에서만 보인다. 이 층은 뷰포트 높이에 고정이라 위아래 모서리가 늘 보인다.
           */}
-          <div className="pointer-events-none absolute inset-0 z-0 flex" aria-hidden>
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-0 flex" style={{ bottom: ZOOM_BAND_H }} aria-hidden>
             <div className="shrink-0" style={{ width: axisLabelW }} />
             {shown.map((c) => (
               <div key={c.id} className="min-w-0 flex-1 rounded-card border border-line bg-surface" style={{ marginLeft: CARD_GAP }} />
@@ -1662,10 +1666,9 @@ export function TimelineGrid() {
           </div>
           </div>
 
-          {/* 떠 있는 줌 컨트롤(README 7-7) — 하단 40px 줌 바를 없애고 격자 위에 얹었다.
-              레이아웃 높이를 먹지 않으므로 격자에 세로 52px이 돌아온다.
-              조작 힌트도 여기 상시 있다 — 첫 방문 1회 알약과 상단바 안내문을 대신한다 */}
-          <div className="absolute z-20 flex items-center gap-2 rounded-lg border border-line-strong bg-surface/95 px-2 py-1.5 shadow-[var(--shadow-float)] backdrop-blur" style={{ right: ZOOM_FLOAT_INSET, bottom: ZOOM_FLOAT_INSET }}>
+          {/* 줌 컨트롤(README 7-7). 격자 위에 띄웠다가 그 자리의 칩을 늘 가려서(2026-09-27) 격자 아래 띠로 뺐다 —
+              ZOOM_BAND_H(metrics.ts). 조작 힌트도 여기 상시 있다 — 첫 방문 1회 알약과 상단바 안내문을 대신한다 */}
+          <div className="absolute z-20 flex items-center gap-2 rounded-lg border border-line-strong bg-surface/95 px-2 py-1.5 shadow-[var(--shadow-float)] backdrop-blur" style={{ right: ZOOM_FLOAT_INSET, bottom: (ZOOM_BAND_H - ZOOM_FLOAT_H) / 2 }}>
             <span className="font-serif text-meta text-fg-strong tabular-nums">{formatYearL(Math.round(centerYear(scrollTop, axis)), locale)}</span>
             <span className="h-4 w-px bg-line" aria-hidden />
             <div className="flex items-center gap-0.5" role="group" aria-label={t.zoomGroup}>
@@ -1761,7 +1764,9 @@ export function TimelineGrid() {
             <div className="flex shrink-0 items-start justify-between gap-2 px-5 pt-4 pb-3">
               <div className="min-w-0">
                 <div className="font-serif text-meta text-fg-muted">
-                  {yearLabel(selected.ev)} · {regionLabel(selected.ev.regions[0]?.r ?? "kr")}
+                  {yearLabel(selected.ev)}
+                  {/* 달과 달력(2026-09-27) — 교차 사건이 열마다 다른 달 칸에 서는 이유를 여기서 읽을 수 있게 */}
+                  {selected.ev.m ? ` ${formatMonthL(selected.ev.m, locale, selected.ev.cal)}` : ""} · {regionLabel(selected.ev.regions[0]?.r ?? "kr")}
                   {/*
                     편집 원칙(§1-6)은 "우리가 쓴 문장은 없다"였다. 제목은 이제 예외다 —
                     원천이 문장으로 쓴 연대기라 이름이 없어서 지었다. 번역을 "기계 번역"이라
@@ -1880,9 +1885,16 @@ export function TimelineGrid() {
                             >
                               {s2.name ?? formatYearL(s2.y, locale)}
                             </button>
+                            {s2.m && <span className="shrink-0 font-serif text-item-meta leading-[1.6] text-fg-subtle tabular-nums">{formatMonthL(s2.m, locale, s2.cal)}</span>}
                           </li>
                         ))}
                       </ul>
+                      {(() => {
+                        // 달이 서로 다르고 그중 음력이 있으면 — 달력 차이일 수 있다(한국 음력 4월 · 일본 양력 5월의 임진왜란)
+                        const all = cross[selected.ev.x]!;
+                        const ms = new Set(all.map((s2) => s2.m).filter(Boolean));
+                        return ms.size > 1 && all.some((s2) => s2.cal === "lunar") ? <p className="mt-2 text-item-meta leading-[1.6] text-fg-subtle">{t.crossCalNote}</p> : null;
+                      })()}
                     </section>
                   )}
                   {/* 이 사건을 부르는 이름 (§5-9) — 사이트링크 원문. 표가 아니라 라벨 + 값의 행이다 */}
