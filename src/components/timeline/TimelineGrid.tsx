@@ -10,6 +10,7 @@ import {
   centerYear,
   chunkKeyFor,
   chunkRange,
+  boundaryRank,
   clampScale,
   contentHeight,
   formatRowLabel,
@@ -1484,10 +1485,12 @@ export function TimelineGrid() {
               const top = yearToY(b, axis);
               const h = rows.unit * axis.s;
               const sub = subdivisions(rows.level, h);
+              // 행 경계의 위계(boundaryRank) — 한 단계 위 단위가 바뀌는 자리는 진하게, 두 단계 위는 굵게
+              const rank = boundaryRank(b, rows.unit);
               return (
                 <div
                   key={b}
-                  className="absolute inset-x-0 flex border-t border-line-hairline"
+                  className={`absolute inset-x-0 flex ${rank === 2 ? "border-t-2 border-line-strong" : rank === 1 ? "border-t border-line-strong" : "border-t border-line-hairline"}`}
                   style={{ top, height: h }}
                   role="row"
                   aria-rowindex={Math.floor((b - AXIS_YEAR_START) / rows.unit) + 2}
@@ -1495,7 +1498,7 @@ export function TimelineGrid() {
                   {/* 연도 라벨 76px — 오른쪽 정렬 + 명조체(README 7-2). 시대·연도는 서체로 사건과 갈린다.
                       라벨이 행 높이를 넘으면 잘라 다음 행과 겹치지 않게(2026-09-05) */}
                   <div
-                    className={`relative shrink-0 overflow-hidden ${narrow ? "pr-0.5" : "pr-2"} text-right font-serif text-axis text-fg-muted tabular-nums`}
+                    className={`relative shrink-0 overflow-hidden ${narrow ? "pr-0.5" : "pr-2"} text-right font-serif text-axis tabular-nums ${rank === 2 ? "font-semibold text-fg" : rank === 1 ? "font-semibold text-fg-strong" : "text-fg-muted"}`}
                     style={{ width: axisLabelW }}
                     role="rowheader"
                     aria-colindex={1}

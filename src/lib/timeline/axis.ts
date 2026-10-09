@@ -185,6 +185,18 @@ export function bucketStart(year: number, unit: number): number {
 }
 
 /**
+ * 행 경계의 위계 — 행 단위의 10배 경계는 1, 100배 경계는 2, 나머지는 0(2026-10-09 대표 제안).
+ * 세기 보기는 1000년 경계가 1, 십년 보기는 100년이 1 · 1000년이 2, 연도 보기는 10년이 1 · 100년이 2.
+ * 모든 행 경계가 같은 가는 선이라 어디서 세기·천년이 바뀌는지 눈으로 잡히지 않았다. 규칙은 줌 단계와
+ * 무관하게 한 벌이다 — 「한 단계 위의 단위가 바뀌는 자리」가 굵다. 서기 0년(기원전/서기)은 모든 배수라 어느 보기에서나 2다.
+ */
+export function boundaryRank(bucket: number, unit: number): 0 | 1 | 2 {
+  if (bucket % (unit * 100) === 0) return 2;
+  if (bucket % (unit * 10) === 0) return 1;
+  return 0;
+}
+
+/**
  * 지금 렌더해야 할 행 범위. `from`·`to`는 버킷의 시작 연도다.
  * 이 출력에서 프리페치할 청크 키가 나온다(`chunkKeyFor`).
  *

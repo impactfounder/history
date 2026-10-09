@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  boundaryRank,
   anchorYearAt,
   AXIS_SPAN_YEARS,
   AXIS_YEAR_END,
@@ -391,5 +392,17 @@ describe("총 높이 — PRD §5-5A 표와 일치", () => {
     [400, 1010400],
   ])("s=%i이면 스페이서 본문이 %ipx", (s, h) => {
     expect(AXIS_SPAN_YEARS * s).toBe(h);
+  });
+});
+
+describe("boundaryRank — 행 경계의 위계(2026-10-09)", () => {
+  it("세기 보기: 1000년 경계 1 · 서기 0년(기원전/서기)은 2 — 어느 보기에서나 가장 굵다", () => {
+    expect([900, 1000, 1100, 0, -500].map((b) => boundaryRank(b, 100))).toEqual([0, 1, 0, 2, 0]);
+  });
+  it("십년 보기: 100년 경계 1 · 1000년 경계 2", () => {
+    expect([1590, 1600, 1000, 2020].map((b) => boundaryRank(b, 10))).toEqual([0, 1, 2, 0]);
+  });
+  it("연도 보기: 10년 경계 1 · 100년 경계 2", () => {
+    expect([1592, 1590, 1600, -300].map((b) => boundaryRank(b, 1))).toEqual([0, 1, 2, 2]);
   });
 });
