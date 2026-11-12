@@ -24,7 +24,7 @@ import { SITE_NAME } from "@/lib/site";
  * 색은 `globals.css` 라이트 팔레트의 사본이다(satori는 CSS 변수를 읽지 못한다). 폰트는
  * node_modules의 Pretendard TTF(OFL)를 빌드 때 읽는다 — satori 기본 폰트에 한글 글리프가 없다.
  */
-export const alt = "AI & Human History — AI의 역사를 인류사와 같은 축에";
+export const alt = "AI-HI History · 인간지능과 인공지능의 연대기";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 const FONT = (w: "Bold" | "Regular") => path.join(process.cwd(), "node_modules/pretendard/dist/public/static/alternative", `Pretendard-${w}.ttf`);
@@ -41,7 +41,7 @@ export default async function Image() {
     <div style={{ width: "100%", height: "100%", display: "flex", background: "#f4f2ee", fontFamily: "Pretendard", padding: 64 }}>
       <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", flex: 1 }}>
         <div style={{ fontSize: 64, fontWeight: 700, color: "#191713" }}>{SITE_NAME}</div>
-        <div style={{ fontSize: 30, color: "#56524b", marginTop: 20 }}>AI의 역사를 인류사와 같은 축에</div>
+        <div style={{ fontSize: 30, color: "#56524b", marginTop: 20 }}>인간지능과 인공지능의 연대기</div>
         <div style={{ fontSize: 22, color: "#7a746c", marginTop: 32 }}>{`기원전 500년 – 2026년 · ${comma(total)}건`}</div>
       </div>
       <div style={{ display: "flex", gap: 16 }}>

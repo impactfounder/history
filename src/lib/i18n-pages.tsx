@@ -32,7 +32,7 @@ export function languageAlternates(path: string): Record<string, string> {
 // ── 사이트 머리말 ────────────────────────────────────────────────────────────
 export const SITE_COPY: Record<Locale, { tagline: string; description: string; ogLocale: string }> = {
   ko: {
-    tagline: "AI의 역사를 인류사와 같은 축에",
+    tagline: "인간지능과 인공지능의 연대기",
     description: SITE_DESCRIPTION,
     ogLocale: "ko_KR",
   },

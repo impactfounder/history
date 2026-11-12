@@ -13,24 +13,28 @@ import { loadYear, summarize, yearsWithEvents } from "@/lib/year-data";
  * OG 이미지 경로. **명시해야 한다** — `app/opengraph-image.tsx`가 있어도 `openGraph`를 직접
  * 지정하면 Next가 자동으로 넣어 주지 않고, 연도 페이지처럼 `openGraph`를 다시 쓰는 곳은
  * 부모 것을 통째로 덮는다. 실제로 빌드 산출 HTML에 `og:image`가 하나도 없었다(2026-09-20).
- * `metadataBase`가 있어 상대 경로가 절대 주소로 풀린다.
+ * 주소는 배포 주소로 시작하는 **전체 주소**로 적는다 — 카톡·문자 미리보기 크롤러가 상대 경로나
+ * 빌드 환경마다 달라지는 `metadataBase`(미리보기 배포의 호스트 등)에 기대지 않게 한다.
  */
-const OG_IMAGE = { url: "/opengraph-image", width: 1200, height: 630 };
+const OG_IMAGE_ORIGIN = "https://history-one-sable.vercel.app";
+const OG_IMAGE = { url: `${OG_IMAGE_ORIGIN}/opengraph-image`, width: 1200, height: 630 };
 
 /** 루트 레이아웃 두 벌(`(ko)`·`(intl)/[locale]`)이 공유하는 사이트 머리말. */
 export function rootMetadata(locale: Locale): Metadata {
   const c = SITE_COPY[locale];
-  const title = `${SITE_NAME} — ${c.tagline}`;
+  // 탭 제목 「서비스 이름 · 한 줄 설명」. 링크 미리보기(og·twitter)의 설명도 한 줄 설명이다.
+  // og:url은 넣지 않는다(openGraph.url 미지정).
+  const title = `${SITE_NAME} · ${c.tagline}`;
   return {
     metadataBase: new URL(SITE_URL),
     title: { default: title, template: `%s | ${SITE_NAME}` },
     description: c.description,
-    openGraph: { type: "website", siteName: SITE_NAME, locale: c.ogLocale, title, description: c.description, images: [OG_IMAGE] },
+    openGraph: { type: "website", siteName: SITE_NAME, locale: c.ogLocale, title, description: c.tagline, images: [OG_IMAGE] },
     /*
       카드 종류를 밝히지 않으면 X·슬랙이 작은 썸네일로 떨어뜨린다. 이미지 자체는
       `src/app/opengraph-image.tsx`가 만들고 Next가 두 곳에 자동으로 붙인다.
     */
-    twitter: { card: "summary_large_image", title, description: c.description, images: [OG_IMAGE.url] },
+    twitter: { card: "summary_large_image", title, description: c.tagline, images: [OG_IMAGE.url] },
   };
 }
 
